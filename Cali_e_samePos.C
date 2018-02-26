@@ -86,6 +86,7 @@
       cutIntep[2] = 960;
       cutIntep[3] = 940;
       slope = 3.7;
+      yIntep = 0;
       
       eRange[1]= -1000;
       eRange[2]=  800;
@@ -240,6 +241,8 @@
       tree->Draw(expression, gate , "");
    }
    
+   cScript->Update();
+   
    vector<double> * peak = new vector<double>[numDet];
    int numCommonPeaks = 10;
    
@@ -252,7 +255,6 @@
       for( int i = 0; i < numDet; i ++){
          cScript->cd(i+1);
          int nPeaks = spec->Search(g[i], 1 ,"", 0.10);
-         //float * xpos = new float[nPeaks];
          if( nPeaks < numCommonPeaks ) numCommonPeaks = nPeaks;
 
          float * xpos = spec->GetPositionX();
@@ -275,46 +277,57 @@
          peak[3].push_back(717); peak[3].push_back( 994); peak[3].push_back(1428);
       }
       
-      if( detID == 2){
+      if( detID == 5){
          numCommonPeaks = 4;
-         peak[0].push_back(  -5); peak[0].push_back(553); peak[0].push_back(676); peak[0].push_back(968);
-         peak[1].push_back(-112); peak[1].push_back(340); peak[1].push_back(437); peak[1].push_back(683);
-         peak[2].push_back(-193); peak[2].push_back(197); peak[2].push_back(286); peak[2].push_back(496);
-         peak[3].push_back( -56); peak[3].push_back(452); peak[3].push_back(560); peak[3].push_back(827);
-      }
-   }
-  
-   cScript->Update();
-   printf("0 for choosing lowest %d-peak, 1 for manual: ", numCommonPeaks);
-   scanf("%d", &dummy);
-   
-   // select peaks
-   vector<double> * Upeak = new vector<double>[numDet];
-   if( dummy == 0){
+         peak[0].push_back(-543); peak[0].push_back(-476); peak[0].push_back(-335); peak[0].push_back(-82);
+         peak[1].push_back(-543); peak[1].push_back(-476); peak[1].push_back(-335); peak[1].push_back(-82);
+         peak[2].push_back(-456); peak[2].push_back(-386); peak[2].push_back(-217); peak[2].push_back( 66); 
+         peak[3].push_back(-537); peak[3].push_back(-478); peak[3].push_back(-332); peak[3].push_back(-79); 
+      }   
       
+   }
+
+   vector<double> * Upeak = new vector<double>[numDet];  
+   if( dummy == 1){
+      cScript->Update();
+      printf("0 for choosing lowest %d-peak, 1 for manual: ", numCommonPeaks);
+      scanf("%d", &dummy);
+      
+      // select peaks
+      if( dummy == 0){
+         
+         for( int i = 0; i < numDet; i ++){
+            for( int j = 0; j < numCommonPeaks; j++){
+                  Upeak[i].push_back(peak[i][j]);
+            }
+         }
+      
+      
+      }else{
+      
+         for( int i = 0; i < numDet; i ++){
+            printf("======== for g%d \n", i);
+            for( int j = 0; j < peak[i].size(); j++){
+               printf(" %8.3f ? ", peak[i][j]);
+               int ok;
+               scanf("%d", &ok);
+               if( ok == 1){
+                  Upeak[i].push_back(peak[i][j]);
+               }
+               
+            }
+         }
+         
+         numCommonPeaks = Upeak[0].size();
+      
+      }
+   }else if(dummy == 2){
+   
       for( int i = 0; i < numDet; i ++){
          for( int j = 0; j < numCommonPeaks; j++){
-               Upeak[i].push_back(peak[i][j]);
+           Upeak[i].push_back(peak[i][j]);
          }
       }
-   
-   
-   }else{
-   
-      for( int i = 0; i < numDet; i ++){
-         printf("======== for g%d \n", i);
-         for( int j = 0; j < peak[i].size(); j++){
-            printf(" %8.3f ? ", peak[i][j]);
-            int ok;
-            scanf("%d", &ok);
-            if( ok == 1){
-               Upeak[i].push_back(peak[i][j]);
-            }
-            
-         }
-      }
-      
-      numCommonPeaks = Upeak[0].size();
    
    }
    
@@ -322,7 +335,7 @@
    for( int i = 0; i < numDet; i ++){
       printf("-------------------------- g%d \n", i);
       for(int j = 0; j < numCommonPeaks ; j ++){
-         printf("%d, x: %f \n", j, peak[i][j]);
+         printf("%d, x: %8.3f \n", j, peak[i][j]);
       }
    }
    
@@ -342,7 +355,7 @@
       ga[i]->Fit("pol1", "q");
       c0[i] = pol1->GetParameter(0);
       c1[i] = pol1->GetParameter(1);
-      printf("==== %d | c0:%f, c1:%f \n", i, c0[i], c1[i]);
+      printf("==== %d | c0:%8.3f, c1:%8.3f \n", i, c0[i], c1[i]);
    }
    
    //======== scale the energy
