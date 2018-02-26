@@ -285,13 +285,38 @@
    }
   
    cScript->Update();
+   printf("0 for choosing lowest %d-peak, 1 for manual: ", numCommonPeaks);
+   scanf("%d", &dummy);
+   
    // select peaks
    vector<double> * Upeak = new vector<double>[numDet];
-   for( int i = 0; i < numDet; i ++){
+   if( dummy == 0){
+      
+      for( int i = 0; i < numDet; i ++){
+         for( int j = 0; j < numCommonPeaks; j++){
+               Upeak[i].push_back(peak[i][j]);
+         }
+      }
+   
+   
+   }else{
+   
+      for( int i = 0; i < numDet; i ++){
+         printf("======== for g%d \n", i);
+         for( int j = 0; j < peak[i].size(); j++){
+            printf(" %8.3f ? ", peak[i][j]);
+            int ok;
+            scanf("%d", &ok);
+            if( ok == 1){
+               Upeak[i].push_back(peak[i][j]);
+            }
+            
+         }
+      }
+      
+      numCommonPeaks = Upeak[0].size();
    
    }
-   
-   
    
    numPeak = numCommonPeaks;   
    for( int i = 0; i < numDet; i ++){
@@ -301,10 +326,8 @@
       }
    }
    
-   printf("======= scaling respect to g0.\n");
-   
    cScript->Update();
-   printf("0 for stop, 1 for continues: ");
+   printf("0 for stop, 1 for scaling respect to g0: ");
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    
@@ -314,7 +337,7 @@
    TGraph ** ga = new TGraph[numDet];
    
    for( int i = 0; i < numDet; i++){
-      ga[i] = new TGraph(numPeak, peak[i], peak[0] );
+      ga[i] = new TGraph(numPeak, &Upeak[i][0], &Upeak[0][0] );
       ga[i]->Draw("*ap");
       ga[i]->Fit("pol1", "q");
       c0[i] = pol1->GetParameter(0);
