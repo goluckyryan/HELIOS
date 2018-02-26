@@ -18,6 +18,7 @@
    double cutIntep[4] = {920, 900, 880, 920}; 
    double slope = 4.75;
    double yIntep = 700;
+   int numPeak = 10;
    eRange[0]=  80;   
    
    if( detID == 0){
@@ -239,27 +240,27 @@
       tree->Draw(expression, gate , "");
    }
    
-   double ** peak = new double[numDet];
+   vector<double> * peak = new vector<double>[numDet];
    int numCommonPeaks = 10;
+   
+   int ** index = new int[numDet];
    
    if( dummy == 1){
       //======== find peak using TSpectrum
-      TSpectrum * spec = new TSpectrum();
+      TSpectrum * spec = new TSpectrum(20);
    
       for( int i = 0; i < numDet; i ++){
          cScript->cd(i+1);
          int nPeaks = spec->Search(g[i], 1 ,"", 0.10);
-         float * xpos = new float[nPeaks];
+         //float * xpos = new float[nPeaks];
          if( nPeaks < numCommonPeaks ) numCommonPeaks = nPeaks;
-         
-         xpos = spec->GetPositionX();
-         
-         // sorting      
-         int index[nPeaks];
-         peak[i] = new double[numCommonPeaks];
-         TMath::Sort(nPeaks, xpos, index, 0 );
-         for( int j = 0; j < numCommonPeaks; j++){
-            peak[i][j] = xpos[index[j]];
+
+         float * xpos = spec->GetPositionX();
+         // sorting and save 
+         index[i] = new int[nPeaks];
+         TMath::Sort(nPeaks, xpos, index[i], 0 );  
+         for( int j = 0; j < nPeaks; j++){
+            peak[i].push_back(xpos[index[i][j]]);
          }
          
       }
@@ -268,26 +269,28 @@
       
       if( detID == 0){
          numCommonPeaks = 3;
-         for(int i = 0; i < 4; i++){
-            peak[i] = new double[numCommonPeaks];
-         }
-         peak[0][0] = 746; peak[0][1] = 1057; peak[0][2] = 1514;
-         peak[1][0] = 804; peak[1][1] = 1128; peak[1][2] = 1607;
-         peak[2][0] = 604; peak[2][1] =  860; peak[2][2] = 1240;
-         peak[3][0] = 717; peak[3][1] =  994; peak[3][2] = 1428;
+         peak[0].push_back(746); peak[0].push_back(1057); peak[0].push_back(1514);
+         peak[1].push_back(804); peak[1].push_back(1128); peak[1].push_back(1607);
+         peak[2].push_back(604); peak[2].push_back( 860); peak[2].push_back(1240);
+         peak[3].push_back(717); peak[3].push_back( 994); peak[3].push_back(1428);
       }
       
       if( detID == 2){
          numCommonPeaks = 4;
-         for(int i = 0; i < 4; i++){
-            peak[i] = new double[numCommonPeaks];
-         }
-         peak[0][0] =   -5; peak[0][1] =  553; peak[0][2] =  676; peak[0][3] = 968;
-         peak[1][0] = -112; peak[1][1] =  340; peak[1][2] =  437; peak[1][3] = 683;
-         peak[2][0] = -193; peak[2][1] =  197; peak[2][2] =  286; peak[2][3] = 496;
-         peak[3][0] =  -56; peak[3][1] =  452; peak[3][2] =  560; peak[3][3] = 827;
+         peak[0].push_back(  -5); peak[0].push_back(553); peak[0].push_back(676); peak[0].push_back(968);
+         peak[1].push_back(-112); peak[1].push_back(340); peak[1].push_back(437); peak[1].push_back(683);
+         peak[2].push_back(-193); peak[2].push_back(197); peak[2].push_back(286); peak[2].push_back(496);
+         peak[3].push_back( -56); peak[3].push_back(452); peak[3].push_back(560); peak[3].push_back(827);
       }
    }
+  
+   cScript->Update();
+   // select peaks
+   vector<double> * Upeak = new vector<double>[numDet];
+   for( int i = 0; i < numDet; i ++){
+   
+   }
+   
    
    
    numPeak = numCommonPeaks;   
