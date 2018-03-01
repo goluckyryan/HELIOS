@@ -35,13 +35,13 @@ public :
    Double_t length;
    Double_t eCorr[24];
    Double_t xnCorr[24];
-   Double_t exCorr[24][2];
    
    Int_t eventID;
    Float_t eC[24];
    Float_t xfC[24];
    Float_t xnC[24];
    Float_t x[24];
+   Float_t rdtC[8];
    
 
    // Declaration of leaf types
@@ -157,40 +157,7 @@ void Cali_root::Init(TTree *tree)
       printf("%6.2f mm, ", nearPos[i]);
    }
    printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
-
-   /** this correction is old 
-   printf("----- loading e-correction.");
-   ifstream file;
-   file.open("correction_e.dat");
-   double a;
-   int i = 0;
-   while( file >> a ){
-      if( i >= numDet) break;
-      eCorr[i] = a;
-      //eCorr[i] = 1.0;
-      i = i + 1;
-   }
-   file.close();
-   printf("... done.\n");
-   */
    
-   printf("----- loading e-correction.");
-   ifstream file;
-   for( int i = 0; i < 6; i++){
-      TString filename;
-      filename.Form("e_correction_%d.dat", i);
-      file.open("e_correction_0.dat");
-      double a;
-      int j = 0;
-      while( file >> a ){
-         if( i >= 4) break;
-         eCorr[i] = a;
-         //eCorr[i] = 1.0;
-         i = i + 1;
-      }
-      file.close();
-   }
-   printf("... done.\n");
    
    printf("----- loading xf-xn correction.");
    file.open("correction_xf_xn.dat");
@@ -205,25 +172,6 @@ void Cali_root::Init(TTree *tree)
    file.close();
    printf("... done.\n");
    
-   
-   printf("----- loading e vs xf+xn correction.");
-   file.open("correction_xfxn_e.dat");
-   double a, b;
-   int i = 0;
-   while( file >> a >> b){
-      if( i >= numDet) break;
-      //exCorr[i][0] = a;
-      //exCorr[i][1] = b;
-      exCorr[i][0] = 0;
-      exCorr[i][1] = 1;
-      i = i + 1;
-   }
-   file.close();
-   //for(int i = 0; i < numDet-1 ; i++){
-   //   printf("%6.2f,%6.2f| ", exCorr[i][0], exCorr[i][1]);
-   //}
-   //printf("%6.2f,%6.2f\n", exCorr[numDet-1][0], exCorr[numDet-1][1], length);
-   printf("... done.\n");
    
    //===================================================== tree branch
    
@@ -240,6 +188,7 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("xf", xfC, "xfC[24]/F");
    newTree->Branch("xn", xnC, "xnC[24]/F");
    newTree->Branch("x" ,   x, "x[24]/F");
+   newTree->Branch("rdt", rdtC, "rdtC[8]/F");
    
 }
 

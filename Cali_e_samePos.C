@@ -27,7 +27,6 @@
       cutIntep[2] = 800;
       cutIntep[3] = 900;
       slope = 4.75;
-
    
       eRange[1]=  400;
       eRange[2]= 1800;
@@ -290,8 +289,10 @@
    vector<double> * Upeak = new vector<double>[numDet];  
    if( dummy == 1){
       cScript->Update();
-      printf("0 for choosing lowest %d-peak, 1 for manual: ", numCommonPeaks);
+      printf("0 for choosing lowest %d-peak, 1 for manual-select, 2 for end: ", numCommonPeaks);
       scanf("%d", &dummy);
+      
+      if( dummy == 2) return;
       
       // select peaks
       if( dummy == 0){
@@ -306,13 +307,14 @@
       }else{
       
          for( int i = 0; i < numDet; i ++){
-            printf("======== for g%d \n", i);
+            printf("======== for g%d ( 0 = reject, 1 = accept )\n", i);
             for( int j = 0; j < peak[i].size(); j++){
-               printf(" %8.3f ? ", peak[i][j]);
+               double temp = peak[i][j];
+               printf(" %8.3f ? ", temp);
                int ok;
                scanf("%d", &ok);
                if( ok == 1){
-                  Upeak[i].push_back(peak[i][j]);
+                  Upeak[i].push_back(temp);
                }
                
             }

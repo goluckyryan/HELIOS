@@ -84,17 +84,35 @@ Bool_t Cali_root::Process(Long64_t entry)
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);
+   b_RDT->GetEntry(entry,0);
+   b_TAC->GetEntry(entry,0);
+   b_EnergyTimestamp->GetEntry(entry,0);
+   b_RDTTimestamp->GetEntry(entry,0);
    
    //printf("---------%d \n", entry);
    
+   //gate on rdt, a kind of recoil detector, total has 8 of them
+   
+   if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
+   
+   //if( rdt[0] > 5000  rdt[1] < 5000 || rdt[2] < 5000 || rdt[3] < 5000 || rdt[4] < 5000 || rdt[5] < 5000 || rdt[6] < 5000 || rdt[6] < 5000  ) return kTRUE; 
+   
+   for(int i = 0; i < 8; i++){
+      rdtC[i] = rdt[i];
+   }
+   
+   
    for(int i = 0; i < numDet; i++){
-      if( e[i] > 0 ) eC[i] = e[i] * eCorr[i]/eCorr[0];
-      if( xf[i] > 0) xfC[i] = exCorr[i][0]/2. + xf[i] * exCorr[i][1];
-      if( xn[i] > 0) xnC[i] = exCorr[i][0]/2. + xn[i] * exCorr[i][1] * xnCorr[i];
-
-      //printf("%d | %f, %f, %f \n", i, e[i], xf[i], xn[i]);      
-      //printf("%d | %f, %f, %f, %f \n", i, eC[i], xfC[i], xnC[i], x[i]);
-     
+      
+      for(int rID = 0; rID < 8; rID ++){
+         if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
+         //if(  rdt[rID] > 5000){  // recoil energy gate
+            if( e[i] > 0 ) eC[i] = e[i] ;             
+            if( xf[i] > 0) xfC[i] = xf[i] ;
+            if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
+         }
+      }
+      
       // calculate x
       int detID = i%6;
       if(xf[i] > 0 && xn[i] > 0) {

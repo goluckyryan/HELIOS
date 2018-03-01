@@ -10,7 +10,7 @@
    int eRange[3] = {150, -1000, 1000};
 
    double cutSlope = -2.35;
-   double cutIntep[numDet] = {1000, 980, 1130, 990, 930, 900}; 
+   double cutIntep[numDet] = {900, 880, 1015, 890, 830, 800}; 
    double slope = 4.75;
    double yIntep = 700;
    int numPeak = 3; 
@@ -34,10 +34,10 @@
    
    TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
    cScript->Divide(Div[0],Div[1]);
-   cScript->cd(1);
    for( int i = 1; i <= Div[0]+Div[1] ; i++){
       cScript->cd(i)->SetGrid();
    }
+   cScript->cd(1);
 
    gStyle->SetOptStat(1111111);
    gStyle->SetStatY(1.0);
@@ -67,7 +67,7 @@
    printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
    
 /**///========================================================= Analysis
-   // ======== d with no correction
+
    TString name;
    name.Form("b");
    TH2F * b = new TH2F(name, name , 200, nearPos[0]-2 , nearPos[5]+length+2 , 200, -100 , 2000);
@@ -78,30 +78,45 @@
    line->SetParameter(1, cutSlope);
    line->SetParameter(0, cutIntep[0]);
    line->SetLineColor(2);
-   line->Draw("same");
 
-   for( int i = 0; i < numDet; i ++){  
-      TString expression;
-      expression.Form("e[%d] *%f:x[%d]>> + b" , i, cutIntep[0]/cutIntep[i] , i );
-      TString gate;
-      gate.Form("");
-      
-      tree->Draw(expression, gate , "");
-   }
-   
-   
-   
    TF1 * eline = new TF1("eline", "[0] + x* [1] + x*x*[2]", nearPos[0]-2 , nearPos[5]+length+2);
    eline->SetParameter(2, -0.0025);
    eline->SetParameter(1, 4.88107);
    eline->SetParameter(0, -100);
    eline->SetLineColor(4);
-   eline->Draw("same");
+
+   int dummy = 0;
+   do{
+      b->Reset();
+      printf("==== drawing e vs x plot, wait\n");
+      for( int i = 0; i < numDet; i ++){  
+         printf(" %d : %8.3f\n", i, cutIntep[i]);
+         TString expression;
+         expression.Form("e[%d] *%f:x[%d]>> + b" , i, cutIntep[0]/cutIntep[i] , i );
+         TString gate;
+         gate.Form("");
+         
+         tree->Draw(expression, gate , "");
+      }
+      line->Draw("same");
+      eline->Draw("same");
+      
+      cScript->Update();
+      
+      int detID;
+      float newPos;
+      printf(" which detector to adjust and new position? " );
+      scanf("%d, %f", &detID, &newPos);
+      printf(" %d, newPos : %f \n", detID, newPos);
+      if( detID > 5) break;
+      cutIntep[detID] = newPos;
+      
+   }while(detID <= 5);
+   
 
    // pause
    cScript->Update();
    //printf("0 for stop, 1 for continous : ");
-   double dummy;
    float a2 , a1, a0;
    do{
       printf("new a2 (%f), a1 (%f), a0 (%f) : ", eline->GetParameter(2) , eline->GetParameter(1) , eline->GetParameter(0) );
