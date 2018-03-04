@@ -35,9 +35,15 @@ public :
    Double_t length;
    Double_t eCorr[24];
    Double_t xnCorr[24];
-   
+   double c1[6][4];
+   double c0[6][4];
+   double m[6]  ;
+   double j0[6];
+   double j1[6];
+     
    Int_t eventID;
    Float_t eC[24];
+   Float_t energy[24];
    Float_t xfC[24];
    Float_t xnC[24];
    Float_t x[24];
@@ -126,7 +132,7 @@ void Cali_root::Init(TTree *tree)
    printf( "========== Coverting root to Calibrated root.\n");
    saveFileName = fChain->GetDirectory()->GetName();
    TString prefix;
-   prefix.Form("C_");
+   prefix.Form("X_");
    saveFileName = prefix + saveFileName;
    totnumEntry = tree->GetEntries();
    printf("Converting %s ------> %s , total Entry : %d \n", fChain->GetDirectory()->GetName(), saveFileName.Data(), totnumEntry);
@@ -143,35 +149,91 @@ void Cali_root::Init(TTree *tree)
    printf("----- loading sensor position.");
    ifstream file;
    file.open("nearPos.dat");
-   double a;
-   int i = 0;
-   while( file >> a ){
-      if( i >= 7) break;
-      if( i == 6) length = a;
-      nearPos[i] = a;
-      i = i + 1;
+   if( file.is_open() ){
+      double a;
+      int i = 0;
+      while( file >> a ){
+         if( i >= 7) break;
+         if( i == 6) length = a;
+         nearPos[i] = a;
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+      for(int i = 0; i < 5 ; i++){
+         printf("%6.2f mm, ", nearPos[i]);
+      }
+      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
+   }else{
+       printf("... fail\n");
    }
-   file.close();
-   printf("... done.\n      ");
-   for(int i = 0; i < 5 ; i++){
-      printf("%6.2f mm, ", nearPos[i]);
-   }
-   printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
-   
    
    printf("----- loading xf-xn correction.");
    file.open("correction_xf_xn.dat");
-   double a;
-   int i = 0;
-   while( file >> a ){
-      if( i >= numDet) break;
-      xnCorr[i] = a;
-      //xnCorr[i] = 1;
-      i = i + 1;
+   if( file.is_open() ){
+      double a;
+      int i = 0;
+      while( file >> a ){
+         if( i >= numDet) break;
+         xnCorr[i] = a;
+         //xnCorr[i] = 1;
+         i = i + 1;
+      }
+      
+      printf("... done.\n");
+   }else{
+      printf("... fail.\n");
    }
    file.close();
-   printf("... done.\n");
    
+   
+   printf("----- loading energy calibration for same position. \n");
+   for( int i = 0; i < 6; i++){
+      TString filename;
+      filename.Form("e_correction_%d.dat", i);
+      printf("        %s", filename.Data());
+      file.open(filename.Data());
+      if( file.is_open() ){
+         double a, b;
+         int j = 0;
+         while( file >> a >> b ){
+            c0[i][j] = a;
+            c1[i][j] = b;
+            j = j + 1;
+            if( j >= 4) break;
+         }
+         file >> a;
+         m[i] = a;
+         
+         printf("... done.\n");
+         for(int j = 0; j < 4; j++){ 
+            printf("                %d,  c0 : %f,  c1 : %f, m : %f \n", j, c0[i][j], c1[i][j], m[i]);
+         }
+      }else{
+         printf("... fail.\n");
+      }
+      file.close();
+   }
+   
+   printf("----- loading energy calibration for different position.");
+   file.open("e_correction_diff.dat");
+   if( file.is_open() ){
+      double a, b;
+      int i = 0;
+      while( file >> a >> b ){
+         j0[i] = a;
+         j1[i] = b;
+         i = i+ 1;
+      }
+      file.close();
+      printf("... ok.\n");
+      for(int i = 0; i < 6 ; i++){
+         printf("                  %d, j0: %f, j1: %f \n", i, j0[i], j1[i]);
+      }
+   }else{
+      printf("... fail.\n");
+   }
+   file.close();
    
    //===================================================== tree branch
    
@@ -185,6 +247,7 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    
    newTree->Branch("e" ,  eC, "eC[24]/F");
+   newTree->Branch("energy" ,  energy, "energy[24]/F");
    newTree->Branch("xf", xfC, "xfC[24]/F");
    newTree->Branch("xn", xnC, "xnC[24]/F");
    newTree->Branch("x" ,   x, "x[24]/F");

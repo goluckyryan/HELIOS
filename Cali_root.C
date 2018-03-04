@@ -71,6 +71,7 @@ Bool_t Cali_root::Process(Long64_t entry)
    //#################################################################### initialization
    for(int i = 0; i < numDet; i++){
       eC[i]  = TMath::QuietNaN();
+      energy[i]  = TMath::QuietNaN();
       xfC[i] = TMath::QuietNaN();
       xnC[i] = TMath::QuietNaN();
       x[i]   = TMath::QuietNaN();
@@ -105,9 +106,9 @@ Bool_t Cali_root::Process(Long64_t entry)
    for(int i = 0; i < numDet; i++){
       
       for(int rID = 0; rID < 8; rID ++){
-         if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
-         //if(  rdt[rID] > 5000){  // recoil energy gate
-            if( e[i] > 0 ) eC[i] = e[i] ;             
+         //if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
+         if(  rdt[rID] > 5000){  // recoil energy gate
+            if( e[i] > 0 ) eC[i]  = e[i] ;
             if( xf[i] > 0) xfC[i] = xf[i] ;
             if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
          }
@@ -120,6 +121,23 @@ Bool_t Cali_root::Process(Long64_t entry)
          count++;
       }else{
          x[i] = TMath::QuietNaN();
+      }
+      
+      // recalculate energy;
+      
+      int posID = (i - i%6)/6;
+      
+      if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(x[i]) ){
+
+         energy[i] = ((m[detID] * x[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
+      }else{
+         energy[i] = TMath::QuietNaN();
+      }
+      
+      if( energy [i] < -3000 ){
+         printf("%15.3f, %2d, %d, %d, m:%f,  c1:%f, c0:%f, j1:%f, j0:%f \n", energy[i], i, detID, posID, m[detID], 
+                                c1[detID][posID], 
+                                c0[detID][posID], j1[detID], j0[detID] );
       }
       
       /*
@@ -175,7 +193,6 @@ void Cali_root::SlaveTerminate()
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
    // on each slave server.
-
 }
 
 void Cali_root::Terminate()

@@ -40,68 +40,76 @@
    printf("----- loading sensor position.");
    ifstream file;
    file.open("nearPos.dat");
-   double a;
-   int i = 0;
-   while( file >> a ){
-      if( i >= 7) break;
-      if( i == 6) length = a;
-      nearPos[i] = a;
-      i = i + 1;
+   if( file.is_open() ){
+      double a;
+      int i = 0;
+      while( file >> a ){
+         if( i >= 7) break;
+         if( i == 6) length = a;
+         nearPos[i] = a;
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+      for(int i = 0; i < 5 ; i++){
+         printf("%6.2f mm, ", nearPos[i]);
+      }
+      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
+   }else{
+       printf("... fail\n");
    }
-   file.close();
-   printf("... ok.\n      ");
-   for(int i = 0; i < 5 ; i++){
-      printf("%6.2f mm, ", nearPos[i]);
-   }
-   printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
    
-   double ** c0 = new double[6];
-   double ** c1 = new double[6];
-   double * m  = new double[6];
-   for(int i = 0; i < 6; i ++){
-      c0[i] = new double[4];
-      c1[i] = new double[4];
-   }
+   double c1[6][4];
+   double c0[6][4];
+   double m[6]  ;
    printf("----- loading energy calibration for same position. \n");
    for( int i = 0; i < 6; i++){
       TString filename;
       filename.Form("e_correction_%d.dat", i);
       printf("        %s", filename.Data());
       file.open(filename.Data());
-      double a, b;
-      int j = 0;
-      while( file >> a >> b ){
-         c0[i][j] = a;
-         c1[i][j] = b;
-         j = j + 1;
-         if( j >= 4) break;
+      if( file.is_open() ){
+         double a, b;
+         int j = 0;
+         while( file >> a >> b ){
+            c0[i][j] = a;
+            c1[i][j] = b;
+            j = j + 1;
+            if( j >= 4) break;
+         }
+         file >> a;
+         m[i] = a;
+         
+         printf("... done.\n");
+         printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
+      }else{
+         printf("... fail.\n");
       }
-      file >> a;
-      m[i] = a;
-      
+      file.close();
+   }
+   
+   double p0[6];
+   double p1[6];
+   printf("----- loading energy calibration for different position.");
+   file.open("e_correction_diff.dat");
+   if( file.is_open() ){
+      double a, b;
+      int i = 0;
+      while( file >> a >> b ){
+         p0[i] = a;
+         p1[i] = b;
+         i = i+ 1;
+      }
       file.close();
       printf("... ok.\n");
-      
-      //printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
-   }
-   
-   double * j0 = new double[6];
-   double * j1 = new double[6];
-   
-   printf("----- loading energy calibration different position.");
-   file.open("e_correction_diff.dat");
-   double a, b;
-   int i = 0;
-   while( file >> a >> b ){
-      j0[i] = a;
-      j1[i] = b;
-      i = i+ 1;
+      for(int i = 0; i < 6 ; i++){
+         printf("                    p0: %f, p1: %f \n", p0[i], p1[i]);
+      }
+   }else{
+      printf("... fail.\n");
    }
    file.close();
-   printf("... ok.\n");
-   //for(int i = 0; i < 6 ; i++){
-   //   printf("%d, j0:%f, j1:%f \n", i, j0[i], j1[i]);
-   //}
+   
       
    
 /**///========================================================= Analysis
@@ -119,8 +127,8 @@
                             i + 6*j , 
                             c1[i][j], 
                             c0[i][j],
-                            j1[i],
-                            j0[i]);
+                            p1[i],
+                            p0[i]);
         
          tree->Draw(expression, "" , "");
       }
