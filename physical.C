@@ -1,4 +1,4 @@
-{   
+{
 /**///======================================================== initial input
    
    //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
@@ -15,7 +15,6 @@
    
 /**///======================================================== Browser or Canvas
 
-   //TBrowser B ;   
    Int_t Div[2] = {1,2};  //x,y
    Int_t size[2] = {800,400}; //x,y
    
@@ -56,25 +55,6 @@
    }else{
        printf("... fail\n");
    }
-   
-   double xnCorr[24];
-   printf("----- loading xf-xn correction.");
-   file.open("correction_xf_xn.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= numDet) break;
-         xnCorr[i] = a;
-         //xnCorr[i] = 1;
-         i = i + 1;
-      }
-      
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
    
    double c1[6][4];
    double c0[6][4];
@@ -127,70 +107,87 @@
    }
    file.close();
    
+      
+   
 /**///========================================================= Analysis
    
    printf("========== plotting final spectrum \n");
    
    TH1F * k = new TH1F("k", "k" , 400, -2000, 1500);
    k->SetXTitle("Ex [a.u.]");
-   for( int i = 0; i < 6; i++){  
-      for( int j = 0; j < 4; j++){   
-         TString expression;
-         expression.Form("(-(e[%d] - %f * x[%d])*%f - %f)*%f + %f >>  + k" , 
-                            i + 6*j ,  
-                            m[i] ,
-                            i + 6*j , 
-                            c1[i][j], 
-                            c0[i][j],
-                            p1[i],
-                            p0[i]);
-        
-         tree->Draw(expression, "" , "");
-      }
-   }
+   TString expression;
+   expression.Form("energy >> +k");        
+   tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
    
-   cScript->cd(2);
    TH2F * h = new TH2F("h", "h" , 400, -2000, 1500, 400, 0, 350);
    h->SetXTitle("Ex [a.u.]");
-   for( int i = 0; i < 6; i++){  
-      for( int j = 0; j < 4; j++){   
-         TString expression;
-         expression.Form("x[%d] : (-(e[%d] - %f * x[%d])*%f - %f)*%f + %f >>  + h" , 
-                            i + 6*j ,
-                            i + 6*j ,  
-                            m[i] ,
-                            i + 6*j , 
-                            c1[i][j], 
-                            c0[i][j],
-                            p1[i],
-                            p0[i]);
-                            
-         TString gate;
-        
-         tree->Draw(expression, "" , "");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+   
+         expression.Form("x[%d]: energy >> + h", i + 6*j , i +6*j);        
+         tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
       }
    }
    
    /*
-   TH2F ** h = new TH2F[numDet];
-   TString * gate = new TString[numDet];
-   for( int i = 0; i < numDet; i ++){
-      TString name;
-      name.Form("h%d", i);
-      h[i] = new TH2F(name, name, 200, 55 , 115, 200, 0, 2000);
-      name.Form("e[%d]", i); h[i]->SetYTitle(name);
-      name.Form("x[%d]", i); h[i]->SetXTitle(name);
-      
-      TString expression;
-      expression.Form("e[%d]:(xf[%d]-xn[%d]) >> h%d" ,1 + 6*i , 1 + 6*i ,i);
-      //gate[i].Form("xf[%d]!=0 && xn[%d]!=0 && e[%d]!=0", i, i, i);
-      gate[i] = "";
-      //cScript->cd(i+1);
-      tree->Draw(expression, gate[i] , "");
+   TH2F * g1 = new TH2F("g1", "g1" , 400, -2000, 1500);
+   k->SetXTitle("Ex [a.u.]");
+   expression.Form("energy >> +k");        
+   tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
+   */   
+   
+   cScript->cd(2);
+   TSpectrum * spec = new TSpectrum(20);
+   int nPeaks = spec->Search(k, 1 ,"", 0.01);
+   float * xpos = spec->GetPositionX();
+   
+   int * inX = new int[nPeaks];
+   TMath::Sort(nPeaks, xpos, inX, 0 );  
+   vector<double> energy;   
+   for( int j = 0; j < nPeaks; j++){
+      printf(" %d , x: %8.3f \n", j, xpos[inX[j]]);
+      //energy.push_back(xpos[inX[j]]-xpos[inX[0]]);
+      energy.push_back(xpos[inX[j]]);
    }
-   /**/
+   
+   //TH1 *hb = spec->Background
+   
+   // fitting using gaussians
    
    
-   /**/
+   vector<double> knownE;
+   knownE.push_back(0);
+   knownE.push_back(1808.74);
+   knownE.push_back(2938.33);
+   knownE.push_back(3941.57);
+   knownE.push_back(4318.89);
+   knownE.push_back(4896);
+   knownE.push_back(5291);
+   
+   // convert to real energy 
+   int numPeak = knownE.size();
+   TGraph * ga = new TGraph(numPeak, &energy[0], &knownE[0] );
+   ga->Draw("*ap");
+   ga->Fit("pol1", "q");
+   double eC0 = pol1->GetParameter(0);
+   double eC1 = pol1->GetParameter(1);
+   printf("====  eC0:%8.3f, eC1:%8.3f \n", eC0, eC1);
+   
+   vector<double> realEnergy;
+   for( int j = 0; j < nPeaks; j++){
+      realEnergy.push_back(energy[j] * eC1 + eC0);
+      printf(" %d , e: %8.3f \n", j, realEnergy[j]);
+   }
+   
+   
+   TH1F * z = new TH1F("z", "z" , 500, -500, 10000);
+   z->SetXTitle("Ex [keV]");
+   expression.Form("energy*%f + %f >> +z", i + 6*j, eC1, eC0);
+   tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
+   
+   cScript->cd(1);
+   z->Draw();
+   cScript->cd(2);
+   k->Draw();
+   
 }
-

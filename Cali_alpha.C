@@ -1,13 +1,8 @@
-//#include "TFile"
-
 //void Cali_alpha()
 {
 /**///======================================================== initial input
    
-   //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   
-   const char* rootfile="C_H052_Mg25.root"; const char* treeName="tree";
-   
+   const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
    
    const int numDet = 24;
    
@@ -68,6 +63,7 @@
       cAlpha->SaveAs("alpha_e.pdf");
    }
    
+   printf("----- finding the edge of the energy spectrum...\n");
    //----------- 2, find the edge of the energy 
    double xHalf[numDet];
    double yMax[numDet];
@@ -86,6 +82,7 @@
       //printf("%d | iHalf : %d, xHalf : %f \n", i, iHalf, xHalf[i]);
    }
    
+   printf("----- adjusting the energy......\n");
    //------------ 3, correction
    TH1F ** p = new TH1F[numDet];
    for( int i = 0; i < numDet; i ++){
@@ -104,7 +101,7 @@
    
    //----------- 4, pause for saving correction parameters
    cAlpha->Update();
-   printf("0 for stop, 1 for save e-correction & Canvas, 2 for continuous : ");
+   printf("0 for stop, 1 for save e-correction & Canvas, 2 for xf - xn correction: ");
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){
@@ -127,6 +124,7 @@
    TLine line(0,0,0,0);
    line.SetLineColor(4);
    
+   printf("----- plotting xf vs xn with energy gate near the peak...\n");
    TH2F ** h = new TH2F[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
@@ -158,6 +156,7 @@
       cAlpha->SaveAs("alpha_xf_xn.pdf");
    }
    
+   printf("----- profile and obtain the fit function...\n");
    //-------- 2, profileX and get the fit function
    double para[numDet][2];
    double xnScale[numDet];
@@ -168,6 +167,7 @@
       xnScale[i] = -para[i][1]; 
    }
    
+   printf("----- correcting...\n");
    //--------- 3, correction
    TH2F ** k = new TH2F[numDet];
    for( int i = 0; i < numDet; i ++){
@@ -191,7 +191,8 @@
    
    //--------- 4, pause for saving correction parameter
    cAlpha->Update();
-   printf("0 for stop, 1 for save xf-xn-correction & Canvas, 2 for continous: ");
+   //printf("0 for stop, 1 for save xf-xn-correction & Canvas, 2 for e - xf+xn correction: ");
+   printf("0 for stop, 1 for save xf-xn-correction & Canvas");
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){   
@@ -208,6 +209,8 @@
       
       cAlpha->SaveAs("alpha_xf_xn_corrected.pdf");
    }
+   
+   return;
    
    //############################################################ for e vs xf+xn correction
    printf("############## e - xf+xn correction \n");

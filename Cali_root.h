@@ -25,6 +25,8 @@ public :
    TTree * newTree;
    TString saveFileName;
    Int_t totnumEntry;
+   int option;
+   
    
    TBenchmark clock;
    Bool_t shown;
@@ -43,11 +45,17 @@ public :
      
    Int_t eventID;
    Float_t eC[24];
-   Float_t energy[24];
+   //Float_t energy[24];
+   Float_t energy;
+   Long64_t energy_t;
    Float_t xfC[24];
    Float_t xnC[24];
    Float_t x[24];
    Float_t rdtC[8];
+   int rdt_m ;
+   int energy_m ; 
+   Float_t eC_t[24];
+   Float_t rdtC_t[8];
    
 
    // Declaration of leaf types
@@ -130,9 +138,14 @@ void Cali_root::Init(TTree *tree)
    
    //===================== custom code
    printf( "========== Coverting root to Calibrated root.\n");
+   printf(" 0 = after alpha source, 1 = final : ");
+   scanf("%d", &option);
    saveFileName = fChain->GetDirectory()->GetName();
+   
    TString prefix;
-   prefix.Form("X_");
+   if(option == 0) prefix.Form("C_");
+   if(option == 1) prefix.Form("X_");
+   
    saveFileName = prefix + saveFileName;
    totnumEntry = tree->GetEntries();
    printf("Converting %s ------> %s , total Entry : %d \n", fChain->GetDirectory()->GetName(), saveFileName.Data(), totnumEntry);
@@ -168,6 +181,7 @@ void Cali_root::Init(TTree *tree)
        printf("... fail\n");
    }
    
+   
    printf("----- loading xf-xn correction.");
    file.open("correction_xf_xn.dat");
    if( file.is_open() ){
@@ -186,55 +200,55 @@ void Cali_root::Init(TTree *tree)
    }
    file.close();
    
-   
-   printf("----- loading energy calibration for same position. \n");
-   for( int i = 0; i < 6; i++){
-      TString filename;
-      filename.Form("e_correction_%d.dat", i);
-      printf("        %s", filename.Data());
-      file.open(filename.Data());
+   if( option == 1 ){
+      printf("----- loading energy calibration for same position. \n");
+      for( int i = 0; i < 6; i++){
+         TString filename;
+         filename.Form("e_correction_%d.dat", i);
+         printf("        %s", filename.Data());
+         file.open(filename.Data());
+         if( file.is_open() ){
+            double a, b;
+            int j = 0;
+            while( file >> a >> b ){
+               c0[i][j] = a;
+               c1[i][j] = b;
+               j = j + 1;
+               if( j >= 4) break;
+            }
+            file >> a;
+            m[i] = a;
+            
+            printf("... done.\n");
+            for(int j = 0; j < 4; j++){ 
+               printf("                %d,  c0 : %8.3f,  c1 : %8.3f, m : %5.2f \n", j, c0[i][j], c1[i][j], m[i]);
+            }
+         }else{
+            printf("... fail.\n");
+         }
+         file.close();
+      }
+      
+      printf("----- loading energy calibration for different position.");
+      file.open("e_correction_diff.dat");
       if( file.is_open() ){
          double a, b;
-         int j = 0;
+         int i = 0;
          while( file >> a >> b ){
-            c0[i][j] = a;
-            c1[i][j] = b;
-            j = j + 1;
-            if( j >= 4) break;
+            j0[i] = a;
+            j1[i] = b;
+            i = i+ 1;
          }
-         file >> a;
-         m[i] = a;
-         
-         printf("... done.\n");
-         for(int j = 0; j < 4; j++){ 
-            printf("                %d,  c0 : %f,  c1 : %f, m : %f \n", j, c0[i][j], c1[i][j], m[i]);
+         file.close();
+         printf("... ok.\n");
+         for(int i = 0; i < 6 ; i++){
+            printf("                  %d, j0: %7.3f, j1: %7.3f \n", i, j0[i], j1[i]);
          }
       }else{
          printf("... fail.\n");
       }
       file.close();
    }
-   
-   printf("----- loading energy calibration for different position.");
-   file.open("e_correction_diff.dat");
-   if( file.is_open() ){
-      double a, b;
-      int i = 0;
-      while( file >> a >> b ){
-         j0[i] = a;
-         j1[i] = b;
-         i = i+ 1;
-      }
-      file.close();
-      printf("... ok.\n");
-      for(int i = 0; i < 6 ; i++){
-         printf("                  %d, j0: %f, j1: %f \n", i, j0[i], j1[i]);
-      }
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
    //===================================================== tree branch
    
    for(int i = 0; i < numDet; i++){
@@ -247,11 +261,19 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    
    newTree->Branch("e" ,  eC, "eC[24]/F");
-   newTree->Branch("energy" ,  energy, "energy[24]/F");
+   newTree->Branch("energy" ,  &energy, "energy/F");
+   newTree->Branch("energy_t" ,  &energy_t, "energy_t/L");
    newTree->Branch("xf", xfC, "xfC[24]/F");
    newTree->Branch("xn", xnC, "xnC[24]/F");
    newTree->Branch("x" ,   x, "x[24]/F");
    newTree->Branch("rdt", rdtC, "rdtC[8]/F");
+   newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
+   newTree->Branch("e_t", eC_t, "e_t[24]/F");
+   newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
+   newTree->Branch("energy_m", &energy_m, "energy_m/I");
+   
+   
+   printf("=========================================================\n");
    
 }
 

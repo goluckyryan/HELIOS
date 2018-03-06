@@ -71,10 +71,23 @@ Bool_t Cali_root::Process(Long64_t entry)
    //#################################################################### initialization
    for(int i = 0; i < numDet; i++){
       eC[i]  = TMath::QuietNaN();
-      energy[i]  = TMath::QuietNaN();
-      xfC[i] = TMath::QuietNaN();
-      xnC[i] = TMath::QuietNaN();
-      x[i]   = TMath::QuietNaN();
+      //energy[i]  = TMath::QuietNaN();
+      xfC[i]   = TMath::QuietNaN();
+      xnC[i]   = TMath::QuietNaN();
+      x[i]     = TMath::QuietNaN();
+      eC_t[i]   = TMath::QuietNaN();
+   }
+   
+   energy    = TMath::QuietNaN();
+   //energy_t  = TMath::QuietNaN();
+   
+   rdt_m = 0;
+   energy_m = 0;
+   
+   for(int i = 0; i < 8 ; i++){
+      rdtC[i] = TMath::QuietNaN();
+      rdtC_t[i] = TMath::QuietNaN();
+      energy_t[i]  = -1000000;
    }
    
    //#################################################################### processing
@@ -93,71 +106,107 @@ Bool_t Cali_root::Process(Long64_t entry)
    //printf("---------%d \n", entry);
    
    //gate on rdt, a kind of recoil detector, total has 8 of them
-   
-   if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
-   
-   //if( rdt[0] > 5000  rdt[1] < 5000 || rdt[2] < 5000 || rdt[3] < 5000 || rdt[4] < 5000 || rdt[5] < 5000 || rdt[6] < 5000 || rdt[6] < 5000  ) return kTRUE; 
+   //if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
    
    for(int i = 0; i < 8; i++){
-      rdtC[i] = rdt[i];
+      if( rdt[i] > 0 ) {
+         rdtC[i] = rdt[i];
+         rdtC_t[i] = rdt_t[i];
+         rdt_m = rdt_m +1;
+      }
+   }
+   
+   bool rdt_energy = false;
+   bool coincident_t = false;
+   
+   if( option == 0 ){
+      rdt_energy = true;
+      coincident_t = true;
+   }else{
+      for( int rID = 0; rID < 8; rID ++){
+         if( rdt[rID] > 5000 ) rdt_energy = true;
+         
+         //for( int i = 0; i < numDet; i++){
+         //   if( e[i] > 0 && -10 < e_t[i] - rdt_t[rID] &&  e_t[i] - rdt_t[rID] < 10) coincident_t = true;
+         //}  
+         coincident_t = true;
+      }
    }
    
    
-   for(int i = 0; i < numDet; i++){
-      
-      for(int rID = 0; rID < 8; rID ++){
+   if(rdt_energy && coincident_t ){
+      for(int i = 0; i < numDet; i++){
+         
          //if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
-         if(  rdt[rID] > 5000){  // recoil energy gate
-            if( e[i] > 0 ) eC[i]  = e[i] ;
-            if( xf[i] > 0) xfC[i] = xf[i] ;
-            if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
+         if( e[i] > 0 ) {
+            eC[i]   = e[i] ;
+            eC_t[i] = e_t[i];
          }
-      }
+         if( xf[i] > 0) xfC[i] = xf[i] ;
+         if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
       
-      // calculate x
-      int detID = i%6;
-      if(xf[i] > 0 && xn[i] > 0) {
-         x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
-         count++;
-      }else{
-         x[i] = TMath::QuietNaN();
-      }
-      
-      // recalculate energy;
-      
-      int posID = (i - i%6)/6;
-      
-      if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(x[i]) ){
-
-         energy[i] = ((m[detID] * x[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
-      }else{
-         energy[i] = TMath::QuietNaN();
-      }
-      
-      if( energy [i] < -3000 ){
-         printf("%15.3f, %2d, %d, %d, m:%f,  c1:%f, c0:%f, j1:%f, j0:%f \n", energy[i], i, detID, posID, m[detID], 
-                                c1[detID][posID], 
-                                c0[detID][posID], j1[detID], j0[detID] );
-      }
-      
-      /*
-      if( e[i] > 0 ){
-         if(xf[i] > 0  && xn[i] > 0 ) x[i] = ((xfC[i]-xnC[i])/eC[i] + 1.)*length/2 + nearPos[detID];
-         //if(xf[i] == 0 && xn[i] > 0 ) x[i] = (1-xnC[i]/eC[i])*length + nearPos[detID];
-         //if(xf[i] > 0 && xn[i] == 0 ) x[i] = (xfC[i]/eC[i])*length + nearPos[detID];
-         //if(xf[i] == 0 && xn[i] == 0) x[i] = TMath::QuietNaN();
-         count ++;
-      }else{
+         // calculate x
+         int detID = i%6;
          if(xf[i] > 0 && xn[i] > 0) {
             x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
             count++;
          }else{
             x[i] = TMath::QuietNaN();
          }
-      }*/
+         
+         // recalculate energy;
+         
+         int posID = (i - i%6)/6;
+         
+         if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(x[i]) ){
+
+            energy = ((m[detID] * x[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
+            energy_m ++; 
+            
+            // calculate coincident time
+            int temp = 10000;
+            for(int rID = 0; rID < 8; rID ++){
+               if( !TMath::IsNaN(rdtC_t[rID]) ){
+                  int a = e_t[i];
+                  int b = rdt_t[rID];
+                  if( TMath::Abs(a - b)  < TMath::Abs(temp)){
+                     temp = e_t[i] - rdt_t[rID];
+                  } 
+                   
+               }
+            }
+            
+            energy_t = temp;
+            
+            //printf("%f, %f \n", energy, energy_t);
+         }
+         
+         //if( energy [i] < -3000 ){
+         //   printf("%15.3f, %2d, %d, %d, m:%f,  c1:%f, c0:%f, j1:%f, j0:%f \n", energy[i], i, detID, posID, m[detID], 
+         //                          c1[detID][posID], 
+         //                          c0[detID][posID], j1[detID], j0[detID] );
+         //}
+         
+         /*
+         if( e[i] > 0 ){
+            if(xf[i] > 0  && xn[i] > 0 ) x[i] = ((xfC[i]-xnC[i])/eC[i] + 1.)*length/2 + nearPos[detID];
+            //if(xf[i] == 0 && xn[i] > 0 ) x[i] = (1-xnC[i]/eC[i])*length + nearPos[detID];
+            //if(xf[i] > 0 && xn[i] == 0 ) x[i] = (xfC[i]/eC[i])*length + nearPos[detID];
+            //if(xf[i] == 0 && xn[i] == 0) x[i] = TMath::QuietNaN();
+            count ++;
+         }else{
+            if(xf[i] > 0 && xn[i] > 0) {
+               x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+               count++;
+            }else{
+               x[i] = TMath::QuietNaN();
+            }
+         }*/
+         
+         //show
+          
+      }
       
-      //show
-       
    }
    
    //#################################################################### Timer  
