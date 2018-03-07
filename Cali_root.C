@@ -79,15 +79,22 @@ Bool_t Cali_root::Process(Long64_t entry)
    }
    
    energy    = TMath::QuietNaN();
-   //energy_t  = TMath::QuietNaN();
+   energy_t  = -100000;
    
    rdt_m = 0;
    energy_m = 0;
+   tac_m = 0;
    
    for(int i = 0; i < 8 ; i++){
       rdtC[i] = TMath::QuietNaN();
       rdtC_t[i] = TMath::QuietNaN();
-      energy_t[i]  = -1000000;
+      //energy_t[i]  = -1000000;
+   }
+   
+   for(int i = 0; i < 6 ; i++){
+      tacC[i] = TMath::QuietNaN();
+      tacC_t[i] = TMath::QuietNaN();
+      dt[i] = -100000;
    }
    
    //#################################################################### processing
@@ -102,17 +109,26 @@ Bool_t Cali_root::Process(Long64_t entry)
    b_TAC->GetEntry(entry,0);
    b_EnergyTimestamp->GetEntry(entry,0);
    b_RDTTimestamp->GetEntry(entry,0);
+   b_TACTimestamp->GetEntry(entry,0);
    
    //printf("---------%d \n", entry);
    
    //gate on rdt, a kind of recoil detector, total has 8 of them
    //if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
    
-   for(int i = 0; i < 8; i++){
-      if( rdt[i] > 0 ) {
-         rdtC[i] = rdt[i];
-         rdtC_t[i] = rdt_t[i];
-         rdt_m = rdt_m +1;
+   if( option == 1){
+      for(int i = 0; i < 8; i++){
+         if( rdt[i] > 0 ) {
+            rdtC[i] = rdt[i];
+            rdtC_t[i] = rdt_t[i];
+            rdt_m = rdt_m +1;
+         }
+      }
+      
+      for(int i = 0; i < 6; i++){
+         tacC[i] = tac[i];
+         tacC_t[i] = tac_t[i];
+         tac_m = tac_m +1;
       }
    }
    
@@ -165,18 +181,24 @@ Bool_t Cali_root::Process(Long64_t entry)
             
             // calculate coincident time
             int temp = 10000;
+            ULong64_t ePicked = -10000000;
             for(int rID = 0; rID < 8; rID ++){
                if( !TMath::IsNaN(rdtC_t[rID]) ){
                   int a = e_t[i];
                   int b = rdt_t[rID];
                   if( TMath::Abs(a - b)  < TMath::Abs(temp)){
                      temp = e_t[i] - rdt_t[rID];
+                     ePicked = e_t[i];
                   } 
                    
                }
             }
             
             energy_t = temp;
+            
+            for(int tID = 0; tID < 6; tID++){
+               dt[tID] = ePicked - tac_t[tID];
+            }
             
             //printf("%f, %f \n", energy, energy_t);
          }

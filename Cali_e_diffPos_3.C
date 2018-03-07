@@ -4,7 +4,7 @@
    //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
    //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
    
-   const char* rootfile="C_H052_Mg25.root"; const char* treeName="tree";
+   const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
    
    const int numDet = 6;
    int eRange[3] = {150, -1000, 1000};
@@ -30,7 +30,7 @@
 
    //TBrowser B ;   
    Int_t Div[2] = {1,1};  //x,y
-   Int_t size[2] = {800,600}; //x,y
+   Int_t size[2] = {800,400}; //x,y
    
    TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
    cScript->Divide(Div[0],Div[1]);
@@ -89,7 +89,7 @@
          m[i] = a;
          
          printf("... done.\n");
-         //printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
+         printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
       }else{
          printf("... fail.\n");
       }
@@ -97,13 +97,26 @@
    }
    
 /**///========================================================= Analysis
-
-   TString name;
-   name.Form("b");
-   TH2F * b = new TH2F(name, name , 200, nearPos[0]-2 , nearPos[5]+length+2 , 200, -100 , 2000);
-   b->SetXTitle("pos(xf,xn)");
-   b->SetYTitle("e");
    
+   TH2F * k = new TH2F("k", "k" ,  400, 100 , 2000, 400, 0, 350);  
+   k->SetXTitle("pos(xf,xn)");
+   k->SetYTitle("e");
+   
+   for( int i = 0; i < 6; i ++){
+      for( int j = 0; j < 4; j ++){
+         TString expression;
+         expression.Form("x[%d]  : e[%d] * %f + %f + %f * x[%d]  >> + k" , i + 6*j , i + 6*j, c1[i][j], c0[i][j], (1.0 - c1[i][j])*m[i], i + 6*j);
+         TString gate;
+         gate.Form("");
+         
+         if( i == 0 && j == 0) tree->Draw(expression, gate , "");
+         tree->Draw(expression, gate , "same");
+      }
+   }
+   
+   k->Draw("colz");
+   
+   /*
    TF1 * line = new TF1("cutLine", "[0] + x* [1]", nearPos[0]-2 , nearPos[5]+length+2);
    line->SetParameter(1, cutSlope);
    line->SetParameter(0, cutIntep[0]);
@@ -115,11 +128,13 @@
    eline->SetParameter(0, -100);
    eline->SetLineColor(4);
 
-   int dummy = 0;
-   do{
-      b->Reset();
-      printf("==== drawing e vs x plot, wait\n");
-      for( int i = 0; i < numDet; i ++){  
+   TString name;
+   name.Form("b");
+   TH2F * b = new TH2F(name, name , 200, nearPos[0]-2 , nearPos[5]+length+2 , 200, -100 , 2000);
+   b->SetXTitle("pos(xf,xn)");
+   b->SetYTitle("e");      printf("==== drawing e vs x plot, wait\n");
+   for( int i = 0; i < 6; i ++){
+      for( int j = 0; j < 4; j++){  
          printf(" %d : %8.3f\n", i, cutIntep[i]);
          TString expression;
          expression.Form("e[%d] *%f:x[%d]>> + b" , i, cutIntep[0]/cutIntep[i] , i );
@@ -127,22 +142,13 @@
          gate.Form("");
          
          tree->Draw(expression, gate , "");
-      }
-      line->Draw("same");
-      eline->Draw("same");
-      
-      cScript->Update();
-      
-      int detID;
-      float newPos;
-      printf(" which detector to adjust and new position? " );
-      scanf("%d, %f", &detID, &newPos);
-      printf(" %d, newPos : %f \n", detID, newPos);
-      if( detID > 5) break;
-      cutIntep[detID] = newPos;
-      
-   }while(detID <= 5);
+         }
+   }
+   line->Draw("same");
+   eline->Draw("same");
    
+   cScript->Update();
+     
 
    // pause
    cScript->Update();

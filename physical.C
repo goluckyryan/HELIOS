@@ -129,13 +129,6 @@
       }
    }
    
-   /*
-   TH2F * g1 = new TH2F("g1", "g1" , 400, -2000, 1500);
-   k->SetXTitle("Ex [a.u.]");
-   expression.Form("energy >> +k");        
-   tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
-   */   
-   
    cScript->cd(2);
    TSpectrum * spec = new TSpectrum(20);
    int nPeaks = spec->Search(k, 1 ,"", 0.01);

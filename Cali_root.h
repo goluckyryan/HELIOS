@@ -45,19 +45,22 @@ public :
      
    Int_t eventID;
    Float_t eC[24];
-   //Float_t energy[24];
    Float_t energy;
-   Long64_t energy_t;
+   Int_t energy_t;
    Float_t xfC[24];
    Float_t xnC[24];
    Float_t x[24];
    Float_t rdtC[8];
    int rdt_m ;
+   int tac_m;
    int energy_m ; 
    Float_t eC_t[24];
    Float_t rdtC_t[8];
+   Float_t tacC[6];
+   Float_t tacC_t[6];
+   Int_t dt[6];
    
-
+   
    // Declaration of leaf types
    Float_t         e[100];
    ULong64_t       e_t[100];
@@ -262,7 +265,7 @@ void Cali_root::Init(TTree *tree)
    
    newTree->Branch("e" ,  eC, "eC[24]/F");
    newTree->Branch("energy" ,  &energy, "energy/F");
-   newTree->Branch("energy_t" ,  &energy_t, "energy_t/L");
+   newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");
    newTree->Branch("xf", xfC, "xfC[24]/F");
    newTree->Branch("xn", xnC, "xnC[24]/F");
    newTree->Branch("x" ,   x, "x[24]/F");
@@ -271,6 +274,11 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("e_t", eC_t, "e_t[24]/F");
    newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
    newTree->Branch("energy_m", &energy_m, "energy_m/I");
+   newTree->Branch("tac_m", &tac_m, "tac_m/I");
+   newTree->Branch("tac", tacC, "tacC[6]/F");
+   newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
+   newTree->Branch("dt", dt, "dt[6]/I");
+   
    
    
    printf("=========================================================\n");
