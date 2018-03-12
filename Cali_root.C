@@ -200,8 +200,14 @@ Bool_t Cali_root::Process(Long64_t entry)
                dt[tID] = ePicked - tac_t[tID];
             }
             
+            // correction to real position
+            x[i] = x[i] - (nearPos[5] + length) + posToTarget;
+            
             //printf("%f, %f \n", energy, energy_t);
          }
+         
+
+         
          
          //if( energy [i] < -3000 ){
          //   printf("%15.3f, %2d, %d, %d, m:%f,  c1:%f, c0:%f, j1:%f, j0:%f \n", energy[i], i, detID, posID, m[detID], 

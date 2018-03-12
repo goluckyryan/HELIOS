@@ -35,6 +35,7 @@ public :
    int numDet;
    Double_t nearPos[6];
    Double_t length;
+   Double_t posToTarget;
    Double_t eCorr[24];
    Double_t xnCorr[24];
    double c1[6][4];
@@ -169,17 +170,20 @@ void Cali_root::Init(TTree *tree)
       double a;
       int i = 0;
       while( file >> a ){
-         if( i >= 7) break;
+         if( i <6 ) nearPos[i] = a;
+         if( i > 8) break;
          if( i == 6) length = a;
-         nearPos[i] = a;
+         if( i == 7) posToTarget = a;
          i = i + 1;
       }
       file.close();
       printf("... done.\n");
+      
       for(int i = 0; i < 5 ; i++){
+         //nearPos[i] = nearPos[i] + posToTarget;
          printf("%6.2f mm, ", nearPos[i]);
       }
-      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
+      printf("%6.2f mm || length : %6.2f mm || startPos : %8.3f\n", nearPos[5], length, posToTarget);
    }else{
        printf("... fail\n");
    }
