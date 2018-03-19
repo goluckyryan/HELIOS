@@ -32,18 +32,21 @@ public :
    Bool_t shown;
    Int_t count;
    
+   //correction parameters
    int numDet;
    Double_t nearPos[6];
    Double_t length;
    Double_t posToTarget;
-   Double_t eCorr[24];
-   Double_t xnCorr[24];
-   double c1[6][4];
+   Double_t xnCorr[24]; // xn correction
+   double c1[6][4]; // same position e_correction
    double c0[6][4];
-   double m[6]  ;
-   double j0[6];
-   double j1[6];
+   double m[6]  ;   
+   double j0[6]; // different position e_correction 
+   double j1[6]; 
+   double cut[24]; // tac cut 
+   double tc[24][5]; // tac correction parameter
      
+   //tree  
    Int_t eventID;
    Float_t eC[24];
    Float_t energy;
@@ -51,6 +54,7 @@ public :
    Float_t xfC[24];
    Float_t xnC[24];
    Float_t x[24];
+   Float_t z[24]; // unadjusted position, range (-1,1)
    Float_t rdtC[8];
    int rdt_m ;
    int tac_m;
@@ -60,6 +64,9 @@ public :
    Float_t tacC[6];
    Float_t tacC_t[6];
    Int_t dt[6];
+   int det;
+   Float_t tt; // corrected tac[4];
+   Float_t ttt; // next corrected tac[4];
    
    
    // Declaration of leaf types
@@ -256,6 +263,56 @@ void Cali_root::Init(TTree *tree)
       }
       file.close();
    }
+   
+   cut[0] = 2500;
+   cut[1] = 2000;
+   cut[2] = 2000;
+   cut[3] = 2870;
+   cut[4] = 3000;
+   cut[5] = 2281;
+   cut[6] = 2500;
+   cut[7] = 2000;
+   cut[8] = 2400;
+   cut[9] = 2000;
+   cut[10] = 2000;
+   cut[11] = 1000;
+   cut[12] = 2500;
+   cut[13] = 2500;
+   cut[14] = 2500;
+   cut[15] = 2300;
+   cut[16] = 1800;
+   cut[17] = 2000;
+   cut[18] = 1500;
+   cut[19] = 2200;
+   cut[20] = 2000;
+   cut[21] = 2000;
+   cut[22] = 2000;
+   cut[23] = 1800;
+   
+   printf("----- loading tac calibration.");
+   file.open("tac_correction.dat");
+   if( file.is_open() ){
+      double q0, q1, q2, q3, q4;
+      int j = 0;
+      while( file >> q0 >> q1 >> q2 >> q3 >> q4 ){
+         tc[j][0] = q0;
+         tc[j][1] = q1;
+         tc[j][2] = q2;
+         tc[j][3] = q3;
+         tc[j][4] = q4;
+         j = j + 1;
+         if( j >= 24) break;
+      }
+      printf("... done.\n");
+      for(int j = 0; j < 24; j++){ 
+         printf("                %d,  c0 : %8.3f,  c1 : %8.3f, c2 : %5.2f,  c3 : %8.3f, c4 : %5.2f \n", j, tc[j][0], tc[j][1], tc[j][2], tc[j][3], tc[j][4]);
+      }
+   }else{
+      printf("... fail.\n");
+   }
+   file.close();
+
+   
    //===================================================== tree branch
    
    for(int i = 0; i < numDet; i++){
@@ -273,6 +330,7 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("xf", xfC, "xfC[24]/F");
    newTree->Branch("xn", xnC, "xnC[24]/F");
    newTree->Branch("x" ,   x, "x[24]/F");
+   newTree->Branch("z" ,   z, "z[24]/F");
    newTree->Branch("rdt", rdtC, "rdtC[8]/F");
    newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
    newTree->Branch("e_t", eC_t, "e_t[24]/F");
@@ -282,8 +340,9 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("tac", tacC, "tacC[6]/F");
    newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
    newTree->Branch("dt", dt, "dt[6]/I");
-   
-   
+   newTree->Branch("det", &det, "det/I");
+   newTree->Branch("tt", &tt, "tt/F");
+   newTree->Branch("ttt", &ttt, "ttt/F");
    
    printf("=========================================================\n");
    

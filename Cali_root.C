@@ -70,16 +70,20 @@ Bool_t Cali_root::Process(Long64_t entry)
    
    //#################################################################### initialization
    for(int i = 0; i < numDet; i++){
-      eC[i]  = TMath::QuietNaN();
-      //energy[i]  = TMath::QuietNaN();
+      eC[i]    = TMath::QuietNaN();
       xfC[i]   = TMath::QuietNaN();
       xnC[i]   = TMath::QuietNaN();
       x[i]     = TMath::QuietNaN();
-      eC_t[i]   = TMath::QuietNaN();
+      z[i]     = TMath::QuietNaN();
+      eC_t[i]  = TMath::QuietNaN();
    }
    
    energy    = TMath::QuietNaN();
    energy_t  = -100000;
+   det = -4;
+   
+   tt  = TMath::QuietNaN();
+   ttt = TMath::QuietNaN();
    
    rdt_m = 0;
    energy_m = 0;
@@ -141,7 +145,6 @@ Bool_t Cali_root::Process(Long64_t entry)
    }else{
       for( int rID = 0; rID < 8; rID ++){
          if( rdt[rID] > 5000 ) rdt_energy = true;
-         
          //for( int i = 0; i < numDet; i++){
          //   if( e[i] > 0 && -10 < e_t[i] - rdt_t[rID] &&  e_t[i] - rdt_t[rID] < 10) coincident_t = true;
          //}  
@@ -152,7 +155,6 @@ Bool_t Cali_root::Process(Long64_t entry)
    
    if(rdt_energy && coincident_t ){
       for(int i = 0; i < numDet; i++){
-         
          //if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
          if( e[i] > 0 ) {
             eC[i]   = e[i] ;
@@ -160,12 +162,30 @@ Bool_t Cali_root::Process(Long64_t entry)
          }
          if( xf[i] > 0) xfC[i] = xf[i] ;
          if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
+         
+         if( tac[4] > 2000 && xf[i] !=0 && xn[i] !=0 ) {
+            z[i] = (xf[i] - xn[i])/(xf[i] + xn[i]);
+            tt = tac[4] - 650 * z[i]*z[i]; 
+            if( tt < cut[i]){
+               tt += 1250;
+            }
+            
+            //next correction
+            if( i == 3 || i == 5 || i == 9 || i == 10 || i == 16 || i == 20 || i == 21 || i == 23) {
+               ttt = tt - tc[i][1] * z[i] - tc[i][2]*TMath::Power(z[i],2) - tc[i][3]*TMath::Power(z[i],3) - tc[i][4]*TMath::Power(z[i],4);
+            }else{
+               ttt = tt;
+            }
+            
+            
+         }  
       
          // calculate x
          int detID = i%6;
          if(xf[i] > 0 && xn[i] > 0) {
             x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
             count++;
+            det = i;
          }else{
             x[i] = TMath::QuietNaN();
          }
@@ -187,7 +207,7 @@ Bool_t Cali_root::Process(Long64_t entry)
                   int a = e_t[i];
                   int b = rdt_t[rID];
                   if( TMath::Abs(a - b)  < TMath::Abs(temp)){
-                     temp = e_t[i] - rdt_t[rID];
+                     temp    = e_t[i] - rdt_t[rID];
                      ePicked = e_t[i];
                   } 
                    
@@ -202,6 +222,9 @@ Bool_t Cali_root::Process(Long64_t entry)
             
             // correction to real position
             x[i] = x[i] - (nearPos[5] + length) + posToTarget;
+            
+            if( x[i]> 0) printf("i:%d, xfC:%f, xnC:%f, x:%f \n", i, xfC[i], xnC[i], x[i]);
+         
             
             //printf("%f, %f \n", energy, energy_t);
          }

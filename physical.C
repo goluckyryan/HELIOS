@@ -119,7 +119,7 @@
    expression.Form("energy >> +k");        
    tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
    
-   TH2F * h = new TH2F("h", "h" , 400, -2000, 1500, 400, 0, 350);
+   TH2F * h = new TH2F("h", "h" , 400, -2000, 1500, 400, -600, -200);
    h->SetXTitle("Ex [a.u.]");
    for( int i = 0 ; i < 6 ; i++){
       for(int j = 0; j < 4 ; j++){
@@ -179,8 +179,22 @@
    tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
    
    cScript->cd(1);
-   z->Draw();
+   h->Draw("colz");
+   
    cScript->cd(2);
-   k->Draw();
+   //k->Draw();
+   TH2F * p = new TH2F("p", "p" , 400, -2000, 1500, 400, -600, -200);
+   p->SetXTitle("Ex [a.u.]");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+   
+         expression.Form("x[%d]: energy >> + p", i + 6*j , i +6*j);        
+         tree->Draw(expression, "TMath::Abs(energy_t)<20 && 8 > tac[0] && tac[0] > -4" , "");
+      }
+   }
+   
+   p->Draw("colz");
+   
+   
    
 }
