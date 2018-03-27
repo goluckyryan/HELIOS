@@ -33,122 +33,16 @@
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load files
-   double nearPos[6];
-   double length;
-   printf("----- loading sensor position.");
-   ifstream file;
-   file.open("nearPos.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= 7) break;
-         if( i == 6) length = a;
-         nearPos[i] = a;
-         i = i + 1;
-      }
-      file.close();
-      printf("... done.\n");
-      for(int i = 0; i < 5 ; i++){
-         printf("%6.2f mm, ", nearPos[i]);
-      }
-      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
-   }else{
-       printf("... fail\n");
-   }
-   
-   double xnCorr[24];
-   printf("----- loading xf-xn correction.");
-   file.open("correction_xf_xn.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= numDet) break;
-         xnCorr[i] = a;
-         //xnCorr[i] = 1;
-         i = i + 1;
-      }
-      
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   double c1[6][4];
-   double c0[6][4];
-   double m[6]  ;
-   printf("----- loading energy calibration for same position. \n");
-   for( int i = 0; i < 6; i++){
-      TString filename;
-      filename.Form("e_correction_%d.dat", i);
-      printf("        %s", filename.Data());
-      file.open(filename.Data());
-      if( file.is_open() ){
-         double a, b;
-         int j = 0;
-         while( file >> a >> b ){
-            c0[i][j] = a;
-            c1[i][j] = b;
-            j = j + 1;
-            if( j >= 4) break;
-         }
-         file >> a;
-         m[i] = a;
-         
-         printf("... done.\n");
-         //printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
-      }else{
-         printf("... fail.\n");
-      }
-      file.close();
-   }
-   
-   double p0[6];
-   double p1[6];
-   printf("----- loading energy calibration for different position.");
-   file.open("e_correction_diff.dat");
-   if( file.is_open() ){
-      double a, b;
-      int i = 0;
-      while( file >> a >> b ){
-         p0[i] = a;
-         p1[i] = b;
-         i = i+ 1;
-      }
-      file.close();
-      printf("... ok.\n");
-      //for(int i = 0; i < 6 ; i++){
-      //   printf("                    p0: %f, p1: %f \n", p0[i], p1[i]);
-      //}
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
+
    
 /**///========================================================= Analysis
    
-   
-   TH2F ** k = new TH2F*[24];
-   //TProfile ** px = new TProfile*[24];
-   
-   for( int i = 0; i < 24; i++){
-      TString name;
-      name.Form("k%d", i);
-      k[i] = new TH2F(name, name, 300, -1, 1, 300, 1500, 4500);
-      TString expression;
-      //expression.Form("tac[4]:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> k%d", i, i, i, i, i);
-      expression.Form("tt:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> k%d", i, i, i, i, i);
-      //expression.Form("tac[4]>2400?tac[4]:tac[4]+1250:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> k%d", i, i, i, i, i);
-            
-      TString gate;
-      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
-      
-      cScript->cd(i+1);
-      tree->Draw(expression, gate, "");
-   
-   }
+   TString gate_et = "&& TMath::Abs(energy_t)<20";
+//   TString gate_e = "&& ( TMath::Abs(energy+1059)<50 || TMath::Abs(energy + 744) < 50 || TMath::Abs(energy + 464)<50 || TMath::Abs(energy + 351)<50 || TMath::Abs(energy - 174 )<50)"; 
+   TString gate_e = "&& ( TMath::Abs(energy+1059)<50 || TMath::Abs(energy + 744) < 50 || TMath::Abs(energy + 464)<50 || TMath::Abs(energy + 351)<50)"; 
+
+//   TString gate_e = "&& ( TMath::Abs(energy + 744) < 50)"; 
+
    
    double cut[24];
    cut[0] = 2500;
@@ -176,17 +70,71 @@
    cut[22] = 2000;
    cut[23] = 1800;
    
+   int polDeg[24];
+   for(int i = 0; i < 24; i++){
+      polDeg[i] = 1;
+   }
+   
+   
+                                   polDeg[3]  = 6;                 polDeg[5]  = 3;
+                   polDeg[8]  = 6; polDeg[9]  = 6; polDeg[10] = 8;
+   polDeg[13] = 6; polDeg[14] = 8; polDeg[15] = 5; polDeg[16] = 4; polDeg[17] = 4;
+                   polDeg[20] = 5; polDeg[21] = 6; polDeg[22] = 4; polDeg[23] = 4;
+   
+   
+   
+   // find Max polDeg
+   int maxPolDeg = 0;
+   for(int i = 0; i < 24; i++){
+      if( polDeg[i] > maxPolDeg ) maxPolDeg = polDeg[i];
+   }
+   
+   printf("max Pol deg : %d \n", maxPolDeg);
+   
    TH2F ** q = new TH2F*[24];
    TProfile ** px = new TProfile*[24];
    
-   double a0[24], a1[24], a2[24], a3[24], a4[24];
+   double tc[24][maxPolDeg + 1];
+   for( int i = 0; i < 24; i++){
+      for(int j = 0; j <= maxPolDeg; j++){
+         tc[i][j] = 0.;
+      }
+   }
    
-   TF1 * fit = new TF1("fit", "pol4", -1,1);
+   TH1F ** k = new TH1F*[24];
+   double mean[24];
    
    for( int i = 0; i < 24; i++){
       TString name;
+      name.Form("k%d", i);
+      k[i] = new TH1F(name, name, 300, 1500, 4500);
+      TString expression;
+      expression.Form("tt>> k%d", i, i);
+            
+      TString gate;
+      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
+      
+      cScript->cd(i+1);
+      tree->Draw(expression, gate, "");
+      
+      mean[i] = k[i]->GetMean();
+      printf("%d,  mean: %f \n", i, mean[i]);
+      
+   } 
+       
+   
+   for( int i = 0; i < 24; i++){
+      printf("---------------- %d\n", i);
+      
+      TString polyName;
+      polyName.Form("pol%d", polDeg[i]);
+   
+      TF1 * fit = new TF1("fit", polyName, -1,1);
+      
+      TString name;
       name.Form("q%d", i);
-      q[i] = new TH2F(name, name, 300, -1, 1, 300, 1500, 4500);
+      
+      q[i] = new TH2F(name, name, 50, -1, 1, 50, 1500, 4500);
       TString expression;
       expression.Form("tt:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> q%d", i, i, i, i, i);
             
@@ -194,19 +142,20 @@
       gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
       
       cScript->cd(i+1);
-      tree->Draw(expression, gate, "");
-
-      name.Form("k%dpx", i);
+      tree->Draw(expression, gate + gate_e + gate_et, "");
+      //tree->Draw(expression, gate, "");
+         
+      name.Form("q%dpx", i);
       px[i] = new TProfile(name, name, 300, -1,1);
       q[i]->ProfileX(name);
       px[i]->Draw("same");
+
       px[i]->Fit("fit", "q");
-      
-      a0[i] = fit->GetParameter(0);
-      a1[i] = fit->GetParameter(1);
-      a2[i] = fit->GetParameter(2);
-      a3[i] = fit->GetParameter(3);
-      a4[i] = fit->GetParameter(4);
+
+      for( int j = 0; j <= polDeg[i]; j ++){
+         tc[i][j] = fit->GetParameter(j);
+         printf("        (%d,%d), %f \n", i, j, tc[i][j]);
+      }
       
    }
    
@@ -217,13 +166,30 @@
    if( dummy == 0 ) return;
    if( dummy == 1 ){
       FILE * paraOut;
-      TString filename;
-      filename.Form("tac_correction.dat", i);
-      paraOut = fopen (filename.Data(), "w+");
       
-      printf("=========== save parameters to %s \n", filename.Data());
+      paraOut = fopen ("tac_correction_mean.dat", "w+");
+      printf("=========== save mean parameters to %s \n", "tac_correction_mean.dat");
       for( int i = 0; i < 24; i++){
-         fprintf(paraOut, "%9.6f  %9.6f %9.6f  %9.6f %9.6f\n", a0[i], a1[i], a2[i], a3[i], a4[i]);
+         fprintf(paraOut, "%20.8f\n", mean[i]);
+      }
+      fflush(paraOut);
+      fclose(paraOut);
+      
+      paraOut = fopen ("tac_correction_deg.dat", "w+");
+      printf("=========== save deg parameters to %s \n", "tac_correction_deg.dat");
+      for( int i = 0; i < 24; i++){
+         fprintf(paraOut, "%d\n", polDeg[i]);
+      }
+      fflush(paraOut);
+      fclose(paraOut);
+      
+      paraOut = fopen ("tac_correction.dat", "w+");
+      printf("=========== save parameters to %s \n", "tac_correction.dat");
+      for( int i = 0; i < 24; i++){
+         for(int j = 0; j <= polDeg[i]; j++){
+            fprintf(paraOut, "%20.6f", tc[i][j]);
+         }
+         fprintf(paraOut, "\n");
       }
       
       fflush(paraOut);

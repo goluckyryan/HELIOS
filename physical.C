@@ -111,28 +111,61 @@
    
 /**///========================================================= Analysis
    
+   double tcut[24][2];
+   tcut[0][0] = -200 ; tcut[0][1] = 400 ;
+   tcut[1][0] = -200 ; tcut[1][1] = 400 ;
+   tcut[2][0] = -200 ; tcut[2][1] = 400 ;
+   //tcut[3][0] = -100 ; tcut[3][1] = 400 ;
+   tcut[3][0] = -600 ; tcut[3][1] = 400 ;
+   tcut[4][0] =  100 ; tcut[4][1] = 500 ;
+   tcut[5][0] = -400 ; tcut[5][1] = 400 ;
+   
+   tcut[6][0] = -200 ; tcut[6][1] = 400 ;
+   tcut[7][0] = -200 ; tcut[7][1] = 400 ;
+   tcut[8][0] = -200 ; tcut[8][1] = 400 ;
+   //tcut[9][0] =    0 ; tcut[9][1] = 500 ;
+   tcut[9][0] =  -500 ; tcut[9][1] = 500 ;
+   tcut[10][0] =  100 ; tcut[10][1] = 500 ;
+   tcut[11][0] = -200 ; tcut[11][1] = -200 ;
+   
+   tcut[12][0] = -300 ; tcut[12][1] = 400 ;
+   tcut[13][0] = -300 ; tcut[13][1] = 400 ;
+   tcut[14][0] = -200 ; tcut[14][1] = 400 ;
+   tcut[15][0] = -200 ; tcut[15][1] = 400 ;
+   tcut[16][0] =  100 ; tcut[16][1] = 500 ;
+   tcut[17][0] =  100 ; tcut[17][1] = 800 ;
+   
+   tcut[18][0] = -200 ; tcut[18][1] = 400 ;
+   tcut[19][0] = -300 ; tcut[19][1] = 400 ;
+   tcut[20][0] = -200 ; tcut[20][1] = 600 ;
+   //tcut[21][0] =   50 ; tcut[21][1] = 600 ;
+   tcut[21][0] = -300 ; tcut[21][1] = 600 ;
+   tcut[22][0] =   50 ; tcut[22][1] = 500 ;
+   tcut[23][0] =  200 ; tcut[23][1] = 700 ;
+   
    printf("========== plotting final spectrum \n");
    
-   TH1F * k = new TH1F("k", "k" , 400, -2000, 1500);
-   k->SetXTitle("Ex [a.u.]");
-   TString expression;
-   expression.Form("energy >> +k");        
-   tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
+   TString name, expression, gate;
    
-   TH2F * h = new TH2F("h", "h" , 400, -2000, 1500, 400, -600, -200);
-   h->SetXTitle("Ex [a.u.]");
+   TH1F * spec = new TH1F("spec", "specG" , 400, -2000, 1500);
+   spec->SetXTitle("Ex [a.u.]");
    for( int i = 0 ; i < 6 ; i++){
       for(int j = 0; j < 4 ; j++){
-   
-         expression.Form("x[%d]: energy >> + h", i + 6*j , i +6*j);        
-         tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
+         
+         if( i == 5 ) continue;
+         expression.Form("energy >> + spec");
+         
+         int id = i + 6*j ;
+         gate.Form("det == %d && (%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000 && TMath::Abs(energy_t)<20 ", id, tcut[id][1], tcut[id][0] );
+                
+         tree->Draw(expression, gate , "");
       }
    }
    
    cScript->cd(2);
-   TSpectrum * spec = new TSpectrum(20);
-   int nPeaks = spec->Search(k, 1 ,"", 0.01);
-   float * xpos = spec->GetPositionX();
+   TSpectrum * specPeak = new TSpectrum(20);
+   int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
+   float * xpos = specPeak->GetPositionX();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );  
@@ -143,25 +176,24 @@
       energy.push_back(xpos[inX[j]]);
    }
    
-   //TH1 *hb = spec->Background
-   
-   // fitting using gaussians
-   
-   
    vector<double> knownE;
    knownE.push_back(0);
    knownE.push_back(1808.74);
    knownE.push_back(2938.33);
    knownE.push_back(3941.57);
    knownE.push_back(4318.89);
-   knownE.push_back(4896);
+   knownE.push_back(4901);
    knownE.push_back(5291);
+   knownE.push_back(5476);
+   knownE.push_back(5691);
+   knownE.push_back(6125);
+   knownE.push_back(7099);
    
    // convert to real energy 
    int numPeak = knownE.size();
    TGraph * ga = new TGraph(numPeak, &energy[0], &knownE[0] );
    ga->Draw("*ap");
-   ga->Fit("pol1", "q");
+   ga->Fit("pol1", "");
    double eC0 = pol1->GetParameter(0);
    double eC1 = pol1->GetParameter(1);
    printf("====  eC0:%8.3f, eC1:%8.3f \n", eC0, eC1);
@@ -175,25 +207,25 @@
    
    TH1F * z = new TH1F("z", "z" , 500, -500, 10000);
    z->SetXTitle("Ex [keV]");
-   expression.Form("energy*%f + %f >> +z", i + 6*j, eC1, eC0);
-   tree->Draw(expression, "TMath::Abs(energy_t)<20" , "");
-   
-   cScript->cd(1);
-   h->Draw("colz");
-   
-   cScript->cd(2);
-   //k->Draw();
-   TH2F * p = new TH2F("p", "p" , 400, -2000, 1500, 400, -600, -200);
-   p->SetXTitle("Ex [a.u.]");
    for( int i = 0 ; i < 6 ; i++){
       for(int j = 0; j < 4 ; j++){
-   
-         expression.Form("x[%d]: energy >> + p", i + 6*j , i +6*j);        
-         tree->Draw(expression, "TMath::Abs(energy_t)<20 && 8 > tac[0] && tac[0] > -4" , "");
+         
+         if( i == 5 ) continue;
+         expression.Form("energy*%f + %f >> + z", eC1, eC0);
+         
+         int id = i + 6*j ;
+         gate.Form("det == %d && (%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000 && TMath::Abs(energy_t)<20", id, tcut[id][1], tcut[id][0] );
+                
+         tree->Draw(expression, gate , "");
       }
    }
    
-   p->Draw("colz");
+   
+   cScript->cd(1);
+   spec->Draw();
+   
+   cScript->cd(2);
+   z->Draw();
    
    
    

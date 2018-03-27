@@ -12,6 +12,11 @@
 #include <TChain.h>
 #include <TFile.h>
 #include <TSelector.h>
+#include <TMath.h>
+#include <TBenchmark.h>
+#include <TF1.h>
+#include <string>
+#include <fstream>
 
 // Header file for the classes stored in the TTree if any.
 
@@ -45,6 +50,9 @@ public :
    double j1[6]; 
    double cut[24]; // tac cut 
    double tc[24][5]; // tac correction parameter
+   double mean[24]; // tt mean
+   int polDeg[24]; // final correction , 0 for no correction, n for degree of polynormial.
+   TF1 ** fit;
      
    //tree  
    Int_t eventID;
@@ -67,6 +75,7 @@ public :
    int det;
    Float_t tt; // corrected tac[4];
    Float_t ttt; // next corrected tac[4];
+   Float_t t4; // ttt correction with energy 
    
    
    // Declaration of leaf types
@@ -289,29 +298,87 @@ void Cali_root::Init(TTree *tree)
    cut[22] = 2000;
    cut[23] = 1800;
    
-   printf("----- loading tac calibration.");
-   file.open("tac_correction.dat");
+   printf("----- loading tac (mean) calibration.");
+   file.open("tac_correction_mean.dat");
    if( file.is_open() ){
-      double q0, q1, q2, q3, q4;
-      int j = 0;
-      while( file >> q0 >> q1 >> q2 >> q3 >> q4 ){
-         tc[j][0] = q0;
-         tc[j][1] = q1;
-         tc[j][2] = q2;
-         tc[j][3] = q3;
-         tc[j][4] = q4;
-         j = j + 1;
-         if( j >= 24) break;
+      double a;
+      int i = 0;
+      while( file >> a ){
+         if( i > 24) break;
+         mean[i] = a;
+         i = i + 1;
       }
       printf("... done.\n");
-      for(int j = 0; j < 24; j++){ 
-         printf("                %d,  c0 : %8.3f,  c1 : %8.3f, c2 : %5.2f,  c3 : %8.3f, c4 : %5.2f \n", j, tc[j][0], tc[j][1], tc[j][2], tc[j][3], tc[j][4]);
-      }
    }else{
       printf("... fail.\n");
    }
    file.close();
-
+   
+   printf("----- loading tac (deg) calibration.");
+   file.open("tac_correction_deg.dat");
+   if( file.is_open() ){
+      double a;
+      int i = 0;
+      while( file >> a ){
+         if( i > 24) break;
+         polDeg[i] = a;
+         i = i + 1;
+      }
+      printf("... done.\n");
+   }else{
+      printf("... fail.\n");
+   }
+   file.close();
+   
+   printf("----- loading tac calibration.");
+   file.open("tac_correction.dat");
+   
+   fit = new TF1*[24];
+   
+   if( file.is_open() ){
+      for( int i = 0; i < 24; i++){
+         char  line[1000];
+         file.getline(line, 1000, '\n');
+         string sLine(line);
+         TString name;
+         name.Form("fit%d", i);
+         
+         if( polDeg[i] > 1){
+            if( sLine.size() < 20 * (polDeg[i]+1) ) {
+               printf(" error ! missing parameter for fit-%d \n", i);
+               continue;
+            }
+            
+            TString polyName;
+            polyName.Form("pol%d", polDeg[i]);
+            fit[i] = new TF1(name, polyName, -1, 1);
+            
+            for( int j = 0; j <= polDeg[i] ; j++){
+               double aa = atof(sLine.substr(20*j+1, 20).c_str());
+               //printf("(%d, %d), %f \n", i, j, aa);
+               if( j == 0) {
+                  fit[i]->SetParameter(j, 0); 
+               }else{
+                  fit[i]->SetParameter(j, aa);
+               }
+            }
+            
+         }else{
+            fit[i] = new TF1(name, "0");
+         }
+      
+      }
+      
+      printf("... done.\n");
+      
+      //for(int i = 0; i < 24; i++){
+      //   fit[i]->Print();
+      //}
+      
+   }else{
+      printf("... fail.\n");
+   }
+   file.close();
    
    //===================================================== tree branch
    
@@ -343,6 +410,7 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("det", &det, "det/I");
    newTree->Branch("tt", &tt, "tt/F");
    newTree->Branch("ttt", &ttt, "ttt/F");
+   newTree->Branch("t4", &t4, "t4/F");
    
    printf("=========================================================\n");
    

@@ -127,104 +127,217 @@
    }
    file.close();
    
-/**///========================================================= Analysis
+   double mean[24];
+   printf("----- loading tac (mean) calibration.");
+   file.open("tac_correction_mean.dat");
+   if( file.is_open() ){
+      double a;
+      int i = 0;
+      while( file >> a ){
+         if( i > 24) break;
+         mean[i] = a;
+         i = i + 1;
+      }
+      printf("... done.\n");
+   }else{
+      printf("... fail.\n");
+   }
+   file.close();
    
-   /*
-   TH2F ** k = new TH2F*[24];
-   //TProfile ** px = new TProfile*[24];
+/**///========================================================= Analysis
+   TString gate_et = "&& TMath::Abs(energy_t)<20";
+   TString gate_e = "&& ( TMath::Abs(energy+1059)<50 || TMath::Abs(energy + 744) < 50 || TMath::Abs(energy + 464)<50 || TMath::Abs(energy + 351)<50)"; 
+
+  
+   double tcut[24][2];
+   tcut[0][0] = -200 ; tcut[0][1] = 400 ;
+   tcut[1][0] = -200 ; tcut[1][1] = 400 ;
+   tcut[2][0] = -200 ; tcut[2][1] = 400 ;
+   //tcut[3][0] = -100 ; tcut[3][1] = 400 ;
+   tcut[3][0] = -600 ; tcut[3][1] = 400 ;
+   tcut[4][0] =  100 ; tcut[4][1] = 500 ;
+   tcut[5][0] = -400 ; tcut[5][1] = 400 ;
+   
+   tcut[6][0] = -200 ; tcut[6][1] = 400 ;
+   tcut[7][0] = -200 ; tcut[7][1] = 400 ;
+   tcut[8][0] = -200 ; tcut[8][1] = 400 ;
+   //tcut[9][0] =    0 ; tcut[9][1] = 500 ;
+   tcut[9][0] =  -500 ; tcut[9][1] = 500 ;
+   tcut[10][0] =  100 ; tcut[10][1] = 500 ;
+   tcut[11][0] = -200 ; tcut[11][1] = -200 ;
+   
+   tcut[12][0] = -300 ; tcut[12][1] = 400 ;
+   tcut[13][0] = -300 ; tcut[13][1] = 400 ;
+   tcut[14][0] = -200 ; tcut[14][1] = 400 ;
+   tcut[15][0] = -200 ; tcut[15][1] = 400 ;
+   tcut[16][0] =  100 ; tcut[16][1] = 500 ;
+   tcut[17][0] =  100 ; tcut[17][1] = 800 ;
+   
+   tcut[18][0] = -200 ; tcut[18][1] = 400 ;
+   tcut[19][0] = -300 ; tcut[19][1] = 400 ;
+   tcut[20][0] = -200 ; tcut[20][1] = 600 ;
+   //tcut[21][0] =   50 ; tcut[21][1] = 600 ;
+   tcut[21][0] = -300 ; tcut[21][1] = 600 ;
+   tcut[22][0] =   50 ; tcut[22][1] = 500 ;
+   tcut[23][0] =  200 ; tcut[23][1] = 700 ;
+   
+   TString name, expression, gate;
+   
+   
+   TH1F ** h = new TH1F*[24];
    
    for( int i = 0; i < 24; i++){
-      TString name;
-      name.Form("k%d", i);
-      k[i] = new TH2F(name, name, 300, -1, 1, 300, 1500, 4500);
-      TString expression;
-      //expression.Form("tac[4]:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> k%d", i, i, i, i, i);
-      expression.Form("tt:z[%d] >> k%d", i, i);
-      //expression.Form("tac[4]>2400?tac[4]:tac[4]+1250:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> k%d", i, i, i, i, i);
-            
-      TString gate;
-      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
+      name.Form("h%d", i);
+      h[i] = new TH1F(name, name, 150, -2000, 1500); 
+      h[i]->SetXTitle("Ex [a.u]");
+      //h[i]->SetYTitle("t4 [15 ch/ns]");
+      expression.Form("energy >> h%d", i);
+      
+      //expression.Form("ttt + 0.152535 * energy + 0.000 172029 * energy * energy + 7.045e-8 * energy * energy * energy:energy >> h%d", i);
+      
+      //expression.Form("tt + 0.155161 * energy + 0.00014525 * energy * energy + 4.99e-8 * energy * energy * energy:energy >> h%d", i);
+      
+      
+      gate.Form("det == %d && !(%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000 && TMath::Abs(energy_t)<20", i, tcut[i][1], tcut[i][0] );
       
       cScript->cd(i+1);
-      tree->Draw(expression, gate, "");
+      tree->Draw(expression, gate, "colz");
    
+   }
+   
+   /**/
+   
+   TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, 500, 800);   
+   cAux->Divide(1,3);
+   for( int i = 1; i <= 3 ; i++){
+      cAux->cd(i)->SetGrid();
+   }
+   
+   cAux->cd(1);
+   
+   
+   TH1F * spec = new TH1F("spec", "spec" , 400, -2000, 1500);
+   spec->SetXTitle("Ex [a.u.]");
+   expression.Form("energy >> spec");        
+   tree->Draw(expression, "TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4) < 1000" , "");
+   
+   cAux->cd(2);
+   TH1F * specG = new TH1F("specG", "specG" , 400, -2000, 1500);
+   specG->SetXTitle("Ex [a.u.]");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+         
+         if( i == 5 ) continue;
+         expression.Form("energy >> + specG");
+         
+         int id = i + 6*j ;
+         gate.Form("det == %d && (%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000", id, tcut[id][1], tcut[id][0] );
+                
+         tree->Draw(expression, gate , "");
+      }
+   }
+
+   
+   cAux->cd(3);
+   /*
+   TH1F * specGb = new TH1F("specGb", "specGb" , 400, -2000, 1500);
+   specGb->SetXTitle("Ex [a.u.]");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+         
+         if( i == 5 ) continue;
+         expression.Form("energy >> + specGb");
+         
+         int id = i + 6*j ;
+         gate.Form("det == %d && !(%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000", id, tcut[id][1], tcut[id][0] );
+                
+         tree->Draw(expression, gate , "");
+      }
    }
    */
    
-   TString gate_e = "TMath::Abs(energy_t)<20 && ( TMath::Abs(energy + 744) < 50 || TMath::Abs(energy + 464)<250 || TMath::Abs(energy + 351)<250)"; 
-   
-   TH2F ** q = new TH2F*[24];
-   
-   for( int i = 0; i < 24; i++){
-      TString name;
-      name.Form("q%d", i);
-      q[i] = new TH2F(name, name, 300, -1, 1, 300, 1500, 4500);
-      TString expression;
-      expression.Form("tt:z[%d] >> q%d", i, i);
+   TH1F * specG2 = new TH1F("specG2", "specG2" , 400, -2000, 1500);
+   specG2->SetXTitle("Ex [a.u.]");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+         
+         if( i == 5 ) continue;
+         expression.Form("energy >> + specG2");
+         if( i >= 3){
             
-      TString gate;
-      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
-      
-      cScript->cd(i+1);
-      tree->Draw(expression, gate, "");
-      
+            gate.Form("-200 > x[%d] && x[%d] > -600 && TMath::Abs(energy_t)<20 && det == %d && ttt > 0", i + 6*j, i + 6*j, i + 6*j);
+            
+            if( i == 3 && (j == 1 || j == 3) ) {
+               gate.Form("-200 > x[%d] && x[%d] > -600 && TMath::Abs(energy_t)<20 && det == %d && ttt > -100", i + 6*j, i + 6*j, i + 6*j);
+            }
+            
+         }else{
+            gate.Form("-200 > x[%d] && x[%d] > -600 && TMath::Abs(energy_t)<20", i + 6*j, i + 6*j);
+         }        
+         tree->Draw(expression, gate , "");
+      }
    }
    
-   TH2F ** qg = new TH2F*[24];
-   
-   for( int i = 0; i < 24; i++){
-      TString name;
-      name.Form("qg%d", i);
-      qg[i] = new TH2F(name, name, 300, -1, 1, 300, 1500, 4500);
-      TString expression;
-      expression.Form("tt:z[%d] >> qg%d", i, i);
-            
-      TString gate;
-      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0 &", i, i, i);
-      
-      cScript->cd(i+1);
-      tree->Draw(expression, gate + gate_e, "");
-      
-   }
+   /**/
    
    /*
-   double mean[24];
-   TH1F ** y = new TH1F*[24];
-   
-   for( int i = 0; i < 24; i++){
-      mean[i] = q[i]->GetMean(2);
-      TString name;
-      name.Form("y%d", i);
-      y[i] = new TH1F(name, name, 300, -1500, 1500);
-      TString expression;
-      expression.Form("ttt-%f>> y%d", mean[i], i);
-            
-      TString gate;
-      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
-      
-      cScript->cd(i+1);
-      tree->Draw(expression, gate, "");
-      
+   TH2F * spec = new TH2F("spec", "spec" , 400, -2000, 1500, 300, -600, -200);
+   spec->SetXTitle("Ex [a.u.]");
+   spec->SetYTitle("z [mm]");
+   for(int i = 0; i < 24; i++){
+      if( i%6 == 5) continue;
+      expression.Form("x[%d]: energy >> + spec", i);        
+      tree->Draw(expression, "TMath::Abs(energy_t)<20 && TMath::Abs(t4) < 1000" , "");
    }
    
-   TH1F ** yg = new TH1F*[24];
+   spec->Draw("colz");
    
-   for( int i = 0; i < 24; i++){
-      TString name;
-      name.Form("yg%d", i);
-      yg[i] = new TH1F(name, name, 300, -1500, 1500);
-      yg[i]->SetLineColor(6);
-      TString expression;
-      expression.Form("ttt-%f>> yg%d", mean[i], i);
-            
-      TString gate;
-      gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0 && TMath::Abs(energy_t)<20 && (TMath::Abs(energy+351)<50 || TMath::Abs(energy+744)<50)", i, i, i);
-      
-      cScript->cd(i+1);
-      tree->Draw(expression, gate, "same");
-      
+   cAux->cd(2);
+   TH2F * specG = new TH2F("specG", "specG" , 400, -2000, 1500, 300, -600, -200);
+   specG->SetXTitle("Ex [a.u.]");
+   specG->SetYTitle("z [mm]");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+         
+         if( i == 5 ) continue;
+         
+         int id = i + 6*j ;
+         expression.Form("x[%d]:energy >> + specG", id);
+         
+         gate.Form("det == %d && !(%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000 && TMath::Abs(energy_t)<20", id, tcut[id][1], tcut[id][0] );
+                
+         tree->Draw(expression, gate , "");
+      }
    }
+
+   specG->Draw("colz");
+   
+   cAux->cd(3);
+   TH2F * specG2 = new TH2F("specG2", "specG2" , 400, -2000, 1500, 300, -600, -200);
+   specG2->SetXTitle("Ex [a.u.]");
+   specG2->SetYTitle("z [mm]");
+   for( int i = 0 ; i < 6 ; i++){
+      for(int j = 0; j < 4 ; j++){
+         
+         if( i == 5 ) continue;
+         int id = i + 6*j;
+         expression.Form("x[%d]:energy >> + specG2", id);
+         if( i >= 3){
+            
+            gate.Form("-200 > x[%d] && x[%d] > -600 && TMath::Abs(energy_t)<20 && det == %d && !(ttt > 0)", i + 6*j, i + 6*j, i + 6*j);
+            
+            if( i == 3 && (j == 1 || j == 3) ) {
+               gate.Form("-200 > x[%d] && x[%d] > -600 && TMath::Abs(energy_t)<20 && det == %d && !(ttt > -100)", i + 6*j, i + 6*j, i + 6*j);
+            }
+            
+         }else{
+            gate.Form("0 && -200 > x[%d] && x[%d] > -600 && TMath::Abs(energy_t)<20", i + 6*j, i + 6*j);
+         }        
+         tree->Draw(expression, gate , "");
+      }
+   }
+   
+   specG2->Draw("colz");
    /**/
-  
 }
 

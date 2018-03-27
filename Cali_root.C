@@ -84,6 +84,7 @@ Bool_t Cali_root::Process(Long64_t entry)
    
    tt  = TMath::QuietNaN();
    ttt = TMath::QuietNaN();
+   t4  = TMath::QuietNaN();
    
    rdt_m = 0;
    energy_m = 0;
@@ -171,10 +172,14 @@ Bool_t Cali_root::Process(Long64_t entry)
             }
             
             //next correction
-            if( i == 3 || i == 5 || i == 9 || i == 10 || i == 16 || i == 20 || i == 21 || i == 23) {
-               ttt = tt - tc[i][1] * z[i] - tc[i][2]*TMath::Power(z[i],2) - tc[i][3]*TMath::Power(z[i],3) - tc[i][4]*TMath::Power(z[i],4);
+            if( polDeg[i] > 1 ) {
+               //ttt = tt - tc[i][1] * z[i] - tc[i][2]*TMath::Power(z[i],2) - tc[i][3]*TMath::Power(z[i],3) - tc[i][4]*TMath::Power(z[i],4);
+               double zzz = z[i];
+               double value = fit[i]->Eval(zzz);
+               
+               ttt = tt - value - mean[i];
             }else{
-               ttt = tt;
+               ttt = tt - mean[i];
             }
             
             
@@ -225,6 +230,8 @@ Bool_t Cali_root::Process(Long64_t entry)
             
             if( x[i]> 0) printf("i:%d, xfC:%f, xnC:%f, x:%f \n", i, xfC[i], xnC[i], x[i]);
          
+            // correction of ttt with energy
+            t4 = ttt + 0.165 * energy + 0.000188935 * energy * energy + 7.87558e-8 * TMath::Power(energy,3);
             
             //printf("%f, %f \n", energy, energy_t);
          }
