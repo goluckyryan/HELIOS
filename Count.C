@@ -1,5 +1,7 @@
 {   
 
+   gROOT->ProcessLine(".L fpeaks.C");
+
 /**///======================================================== initial input
    
    //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
@@ -156,25 +158,119 @@
    gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
    
-   tree->Draw("Ex>>spec ", gate , "");
-   
+   tree->Draw("Ex>>spec ", gate, "");
+  
    spec ->Draw();
-   specB->Draw("same");
    
    TSpectrum * peak = new TSpectrum(20);
-   peak->Search(spec, 1, "goff", 0.05);
+   peak->Search(spec, 1, "", 0.05);
    TH1F * h1 = peak->Background(spec,10);
    //h1->Sumw2();
    
    TH1F * specS = (TH1F*) spec->Clone();
    specS->SetName("specS");
    specS->Add(h1, -1.);
-   specS->Draw();
    specS->Sumw2();
+   specS->Draw();
+   // Fitting 
    
-   //TH1F * specSE = (TH1F*) specS->Clone();
-   //specSE->Sumw2();
-   //specSE->Draw("same");
+   int  nPeaks  = peak->Search(specS, 1, "", 0.05);
+   float * xpos = peak->GetPositionX();
+   float * ypos = peak->GetPositionY();
+   
+   int * inX = new int[nPeaks];
+   TMath::Sort(nPeaks, xpos, inX, 0 );
+   vector<double> energy, height;
+   for( int j = 0; j < nPeaks; j++){
+      energy.push_back(xpos[inX[j]]);
+      height.push_back(ypos[inX[j]]);
+   }
+   
+   int nEPeaks = 0;
+   
+   double para[3 * (nPeaks + nEPeaks)]; 
+   for(int i = 0; i < nPeaks ; i++){
+      para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
+      para[3*i+1] = energy[i];
+      para[3*i+2] = 0.05;
+   }
+   
+   for( int i = nPeaks ; i < nPeaks + nEPeaks; i++){
+      para[3*i+0] = 20.; 
+      para[3*i+0] = 3.5; 
+      para[3*i+0] = 0.05;
+   }
+   
+   //nPeaks = 16;
+   TF1 * fit = new TF1("fit",fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
+   fit->SetParameters(para);
+   fit->SetNpx(1000);
+   
+   //fit->Draw("same");   
+   specS->Fit("fit", "q");
+   
+   double* paraE = fit->GetParErrors();
+   double* paraA = fit->GetParameters();
+   
+   double bw = specS->GetBinWidth(1);
+   
+   double ExPos[nPeaks];
+   
+   for(int i = 0; i < nPeaks + nEPeaks; i++){
+      ExPos[i] = paraA[3*i+1];
+   }
+   //sort ExPos
+
+   
+   for(int i = 0; i < nPeaks + nEPeaks; i++){
+      ExPos[i] = paraA[3*i+1];
+      printf("%2d , count: %8.0f(%3.0f), mean: %8.4f(%8.4f), sigma: %8.4f(%8.4f) \n", 
+              i, 
+              paraA[3*i] / bw,   paraE[3*i] /bw, 
+              paraA[3*i+1], paraE[3*i+1],
+              paraA[3*i+2], paraE[3*i+2]);
+   }
+   
+   printf("============================= 2 sigma\n");
+   for(int i = 0; i < nPeaks + nEPeaks; i++){
+      printf("%2d , Ex: (%8.4f, %8.4f) \n", 
+              i,  
+              paraA[3*i+1] - 2*paraA[3*i+2],
+              paraA[3*i+1] + 2*paraA[3*i+2]);
+   }
+   
+   
+   // theta CM distribution
+   
+   int Div2[2] = {5,3};  //x,y
+   int size2[2] = {300,300}; //x,y
+   TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, size2[0]*Div2[0], size2[1]*Div2[1]);
+   cAux->Divide(Div2[0],Div2[1]);
+   for( int i = 1; i <= Div2[0]*Div2[1] ; i++){
+      cAux->cd(i)->SetGrid();
+   }
+   
+   TH1F ** dist = new TH1F*[nPeaks];
+   TString expression, name, title,  gate_e;
+   for(int i = 0; i < nPeaks + nEPeaks; i++){
+      
+      name.Form("dist%d", i);
+      title.Form("Ex = %f +- 0.1", paraA[3*i+1]);
+      dist[i] = new TH1F(name, title, 45, 0, 45);
+      dist[i]->SetXTitle("theta_CM [deg]");
+      dist[i]->SetYTitle("count / 1 deg");
+      
+      expression.Form("thetaCM >> dist%d", i);
+      gate_e.Form("&& thetaCM != 0 && TMath::Abs(Ex - %f) < 0.1", paraA[3*i+1]);
+      cAux->cd(i+1);
+      
+      tree->Draw(expression, gate + gate_e);
+      
+   }
+   
+   cAux->cd(15);
+   tree->Draw("thetaCM:Ex", gate + " && thetaCM != 0", "colz");
+   
    
 }
 

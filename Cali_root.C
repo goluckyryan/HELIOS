@@ -86,6 +86,10 @@ Bool_t Cali_root::Process(Long64_t entry)
    ttt = TMath::QuietNaN();
    t4  = TMath::QuietNaN();
    
+   Ex  = TMath::QuietNaN();
+   thetaCM  = TMath::QuietNaN();
+   good = 0;
+   
    rdt_m = 0;
    energy_m = 0;
    tac_m = 0;
@@ -233,7 +237,20 @@ Bool_t Cali_root::Process(Long64_t entry)
             // correction of ttt with energy
             t4 = ttt + 0.165 * energy + 0.000188935 * energy * energy + 7.87558e-8 * TMath::Power(energy,3);
             
-            //printf("%f, %f \n", energy, energy_t);
+            //thetaCM
+            Ex = 5574.52 + 3.59226 * energy;
+            Ex = Ex/1000.;
+            double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
+            double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
+            double costhetaCM = p0 + p1 * x[i];  
+            
+            thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
+            
+            
+            //check for good event
+            
+            if( tcut[i][1] > t4 && t4 > tcut[i][0] && TMath::Abs(energy_t)<20 ) good = 1;
+            
          }
          
 

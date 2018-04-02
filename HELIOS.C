@@ -65,7 +65,7 @@ void HELIOS(){
    printf(" Ex Sigma = %f \n", ExSigma);
 
    const double c = 299.792458;
-   const int numEvent = 2000000;
+   const int numEvent = 5000000;
 
    int Zb = 1;
    int ZB = 12;
@@ -88,13 +88,16 @@ void HELIOS(){
    ExKnown.push_back(4.33252);
 //   ExKnown.push_back(4.83513);
    ExKnown.push_back(4.97230);
-//   ExKnown.push_back(5.29174);
+   ExKnown.push_back(5.29174);
    ExKnown.push_back(5.47605);
+   ExKnown.push_back(5.69108);
 //   ExKnown.push_back(5.71591);
-//   ExKnown.push_back(6.12547);
+   ExKnown.push_back(6.12547);
 //   ExKnown.push_back(6.2562);
-//   ExKnown.push_back(7.0619);
-   ExKnown.push_back(7.2000);
+   ExKnown.push_back(7.0619);
+   ExKnown.push_back(7.428);
+   ExKnown.push_back(8.1);
+   ExKnown.push_back(8.5);
       
    //====================== build tree
    TFile * saveFile = new TFile("test.root", "recreate");
@@ -178,9 +181,11 @@ void HELIOS(){
          //phiCM = 2*TMath::Pi() * gRandom->Rndm();
          phiCM = 0.;
          ExID = gRandom->Integer(ExKnown.size());
-         Ex = ExKnown[ExID] + gRandom->Gaus(0, ExSigma);
+         Ex = ExKnown[ExID]; 
       
          TLorentzVector * P = Reaction(mA, ma, mb, mB + Ex, T, thetaCM , phiCM);
+         
+         Ex += gRandom->Gaus(0, ExSigma); // add energy resolution
          
          theta = P[0].Theta(); // Lab theta
          rho   = P[0].Pt() / Bfield / Zb / c * 1000.; // mm
@@ -232,7 +237,7 @@ void HELIOS(){
                for( int ID = 0; ID < 6; ID ++){
                   if( pos[ID]-l < z && z < pos[ID] ) {
                      redoFlag = false;
-                     detID = ID;
+                     detID = 5-ID;
                   } 
                }
                //z += gRandom->Gaus(0, 0.002); // add position resolution   

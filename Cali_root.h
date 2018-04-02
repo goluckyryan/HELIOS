@@ -53,6 +53,7 @@ public :
    double mean[24]; // tt mean
    int polDeg[24]; // final correction , 0 for no correction, n for degree of polynormial.
    TF1 ** fit;
+   double tcut[24][2]; // t4 cut for "good event"
      
    //tree  
    Int_t eventID;
@@ -76,6 +77,10 @@ public :
    Float_t tt; // corrected tac[4];
    Float_t ttt; // next corrected tac[4];
    Float_t t4; // ttt correction with energy 
+   Float_t thetaCM;
+   Float_t Ex;
+   int good; // good event = 1, else = 0;
+   
    
    
    // Declaration of leaf types
@@ -380,6 +385,35 @@ void Cali_root::Init(TTree *tree)
    }
    file.close();
    
+   
+   tcut[0][0] = -200 ; tcut[0][1] = 400 ;
+   tcut[1][0] = -200 ; tcut[1][1] = 400 ;
+   tcut[2][0] = -200 ; tcut[2][1] = 400 ;
+   tcut[3][0] = -600 ; tcut[3][1] = 400 ;
+   tcut[4][0] =  100 ; tcut[4][1] = 500 ;
+   tcut[5][0] = -400 ; tcut[5][1] = 400 ;
+   
+   tcut[6][0] = -200 ; tcut[6][1] = 400 ;
+   tcut[7][0] = -200 ; tcut[7][1] = 400 ;
+   tcut[8][0] = -200 ; tcut[8][1] = 400 ;
+   tcut[9][0] =  -500 ; tcut[9][1] = 500 ;
+   tcut[10][0] =  100 ; tcut[10][1] = 500 ;
+   tcut[11][0] = -200 ; tcut[11][1] = -200 ;
+   
+   tcut[12][0] = -300 ; tcut[12][1] = 400 ;
+   tcut[13][0] = -300 ; tcut[13][1] = 400 ;
+   tcut[14][0] = -200 ; tcut[14][1] = 400 ;
+   tcut[15][0] = -200 ; tcut[15][1] = 400 ;
+   tcut[16][0] =  100 ; tcut[16][1] = 500 ;
+   tcut[17][0] =  100 ; tcut[17][1] = 800 ;
+   
+   tcut[18][0] = -200 ; tcut[18][1] = 400 ;
+   tcut[19][0] = -300 ; tcut[19][1] = 400 ;
+   tcut[20][0] = -200 ; tcut[20][1] = 600 ;
+   tcut[21][0] = -300 ; tcut[21][1] = 600 ;
+   tcut[22][0] =   50 ; tcut[22][1] = 500 ;
+   tcut[23][0] =  200 ; tcut[23][1] = 700 ;
+   
    //===================================================== tree branch
    
    for(int i = 0; i < numDet; i++){
@@ -408,9 +442,12 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
    newTree->Branch("dt", dt, "dt[6]/I");
    newTree->Branch("det", &det, "det/I");
-   newTree->Branch("tt", &tt, "tt/F");
-   newTree->Branch("ttt", &ttt, "ttt/F");
+   //newTree->Branch("tt", &tt, "tt/F");
+   //newTree->Branch("ttt", &ttt, "ttt/F");
    newTree->Branch("t4", &t4, "t4/F");
+   newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+   newTree->Branch("Ex", &Ex, "Ex/F");
+   newTree->Branch("good", &good, "good/I");
    
    printf("=========================================================\n");
    
