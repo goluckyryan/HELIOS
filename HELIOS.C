@@ -181,7 +181,8 @@ void HELIOS(){
          //phiCM = 2*TMath::Pi() * gRandom->Rndm();
          phiCM = 0.;
          ExID = gRandom->Integer(ExKnown.size());
-         Ex = ExKnown[ExID]; 
+         //Ex = ExKnown[ExID]; 
+         Ex = 8 * gRandom->Rndm(); 
       
          TLorentzVector * P = Reaction(mA, ma, mb, mB + Ex, T, thetaCM , phiCM);
          
@@ -195,6 +196,7 @@ void HELIOS(){
          tR     = posRecoil / (P[1].Beta() * TMath::Cos(thetaR) * c ); // nano-second
          eR     = P[1].E() - mB;
          
+         //set gate on the obital size, and must be scattered backward 
          if( bore > 2*rho &&  rho > a/2. && theta > TMath::PiOver2() ){ 
 
             double    vt0 = P[0].Beta() * TMath::Sin(theta) * c ; // mm / nano-second  

@@ -55,7 +55,7 @@
    for(int ExID = 0; ExID < numEx ; ExID ++){
       
       TString gate;
-      gate.Form("tag == 2 && rho > 100 &&  ExID == %d", ExID);
+      gate.Form("tag == 2 && rho > 40 &&  ExID == %d", ExID);
       
       tree->Draw("TMath::Cos(thetaCM):z >> k", gate, "")   ;
       

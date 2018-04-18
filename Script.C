@@ -6,8 +6,6 @@
    //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
    const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
    
-   const int numDet = 4;
-   
 /**///========================================================  load tree
 
    TFile *f0 = new TFile (rootfile, "read"); 
@@ -65,7 +63,7 @@
       double a;
       int i = 0;
       while( file >> a ){
-         if( i >= numDet) break;
+         if( i >= 4) break;
          xnCorr[i] = a;
          //xnCorr[i] = 1;
          i = i + 1;
@@ -146,35 +144,14 @@
    file.close();
    
 /**///========================================================= Analysis
-
-   TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
-
-   spec ->SetXTitle("Ex [MeV]");
    
    TString gate, gateB;
    
-   gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
+   //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
+   gate  = "good == 1 && TMath::Abs(t4)<1000";
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
    
-   tree->Draw("Ex>>spec ", gate , "");
-   
-   spec ->Draw();
-   specB->Draw("same");
-   
-   TSpectrum * peak = new TSpectrum(20);
-   peak->Search(spec, 1, "goff", 0.05);
-   TH1F * h1 = peak->Background(spec,10);
-   //h1->Sumw2();
-   
-   TH1F * specS = (TH1F*) spec->Clone();
-   specS->SetName("specS");
-   specS->Add(h1, -1.);
-   specS->Draw();
-   specS->Sumw2();
-   
-   //TH1F * specSE = (TH1F*) specS->Clone();
-   //specSE->Sumw2();
-   //specSE->Draw("same");
+   tree->Draw("thetaCM : x >>j(400,-600, -200, 400, 0, 50) ", gate , "");
    
 }
 

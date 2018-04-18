@@ -1,4 +1,4 @@
-int nPeaks = 8;
+int nPeaks = 16;
 
 Double_t fpeaks(Double_t *x, Double_t *par) {
    Double_t result = 0;

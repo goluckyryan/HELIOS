@@ -1,6 +1,20 @@
-{   
+int nPeaks = 16;
 
-   gROOT->ProcessLine(".L fpeaks.C");
+TString gate, gateB, gate_cm;
+
+Double_t fpeaks(Double_t *x, Double_t *par) {
+   Double_t result = 0;
+   for (Int_t p=0;p<nPeaks;p++) {
+      Double_t norm  = par[3*p+0];
+      Double_t mean  = par[3*p+1];
+      Double_t sigma = par[3*p+2];
+      result += norm * TMath::Gaus(x[0],mean,sigma, 1);
+   }
+   return result;
+}
+
+
+void Count(int detID){   
 
 /**///======================================================== initial input
    
@@ -30,151 +44,48 @@
    cScript->cd(1);
 
    gStyle->SetOptStat(1111111);
-   gStyle->SetStatY(1.0);
+   gStyle->SetStatY(0.8);
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load files
-   double nearPos[6];
-   double length;
-   printf("----- loading sensor position.");
-   ifstream file;
-   file.open("nearPos.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= 7) break;
-         if( i == 6) length = a;
-         nearPos[i] = a;
-         i = i + 1;
-      }
-      file.close();
-      printf("... done.\n");
-      for(int i = 0; i < 5 ; i++){
-         printf("%6.2f mm, ", nearPos[i]);
-      }
-      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
-   }else{
-       printf("... fail\n");
-   }
-   
-   double xnCorr[24];
-   printf("----- loading xf-xn correction.");
-   file.open("correction_xf_xn.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= numDet) break;
-         xnCorr[i] = a;
-         //xnCorr[i] = 1;
-         i = i + 1;
-      }
-      
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   double c1[6][4];
-   double c0[6][4];
-   double m[6]  ;
-   printf("----- loading energy calibration for same position. \n");
-   for( int i = 0; i < 6; i++){
-      TString filename;
-      filename.Form("e_correction_%d.dat", i);
-      printf("        %s", filename.Data());
-      file.open(filename.Data());
-      if( file.is_open() ){
-         double a, b;
-         int j = 0;
-         while( file >> a >> b ){
-            c0[i][j] = a;
-            c1[i][j] = b;
-            j = j + 1;
-            if( j >= 4) break;
-         }
-         file >> a;
-         m[i] = a;
-         
-         printf("... done.\n");
-         //printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
-      }else{
-         printf("... fail.\n");
-      }
-      file.close();
-   }
-   
-   double p0[6];
-   double p1[6];
-   printf("----- loading energy calibration for different position.");
-   file.open("e_correction_diff.dat");
-   if( file.is_open() ){
-      double a, b;
-      int i = 0;
-      while( file >> a >> b ){
-         p0[i] = a;
-         p1[i] = b;
-         i = i+ 1;
-      }
-      file.close();
-      printf("... ok.\n");
-      //for(int i = 0; i < 6 ; i++){
-      //   printf("                    p0: %f, p1: %f \n", p0[i], p1[i]);
-      //}
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   double mean[24];
-   printf("----- loading tac (mean) calibration.");
-   file.open("tac_correction_mean.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i > 24) break;
-         mean[i] = a;
-         i = i + 1;
-      }
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
+
 /**///========================================================= Analysis
 
    TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
 
    spec ->SetXTitle("Ex [MeV]");
    
-   TString gate, gateB;
+   TString gate, gateB, gate_cm;
    
-   gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
+   //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
+   gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+   
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
+   gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
    
-   tree->Draw("Ex>>spec ", gate, "");
+   tree->Draw("Ex>>spec ", gate + gate_cm, "");
   
    spec ->Draw();
    
    TSpectrum * peak = new TSpectrum(20);
    peak->Search(spec, 1, "", 0.05);
-   TH1F * h1 = peak->Background(spec,10);
+   TH1 * h1 = peak->Background(spec,10);
    //h1->Sumw2();
    
    TH1F * specS = (TH1F*) spec->Clone();
+   TString title;
+   title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+   specS->SetTitle(title + gate_cm);
    specS->SetName("specS");
    specS->Add(h1, -1.);
    specS->Sumw2();
    specS->Draw();
-   // Fitting 
    
-   int  nPeaks  = peak->Search(specS, 1, "", 0.05);
+   
+   //========== Fitting 
+   nPeaks  = peak->Search(specS, 1, "", 0.05);
    float * xpos = peak->GetPositionX();
    float * ypos = peak->GetPositionY();
    
@@ -188,11 +99,13 @@
    
    int nEPeaks = 0;
    
-   double para[3 * (nPeaks + nEPeaks)]; 
+   const int  n = 3 * (nPeaks + nEPeaks);
+   double * para = new double[n]; 
    for(int i = 0; i < nPeaks ; i++){
       para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
       para[3*i+1] = energy[i];
       para[3*i+2] = 0.05;
+      //printf("%2d, %f \n", i, para[3*i+1]);
    }
    
    for( int i = nPeaks ; i < nPeaks + nEPeaks; i++){
@@ -201,20 +114,21 @@
       para[3*i+0] = 0.05;
    }
    
-   //nPeaks = 16;
-   TF1 * fit = new TF1("fit",fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
-   fit->SetParameters(para);
-   fit->SetNpx(1000);
    
+   //nPeaks = 16;
+   TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
+   fit->SetNpx(1000);
+   fit->SetParameters(para);
    //fit->Draw("same");   
    specS->Fit("fit", "q");
    
-   double* paraE = fit->GetParErrors();
-   double* paraA = fit->GetParameters();
+   
+   const Double_t* paraE = fit->GetParErrors();
+   const Double_t* paraA = fit->GetParameters();
    
    double bw = specS->GetBinWidth(1);
    
-   double ExPos[nPeaks];
+   double * ExPos = new double[nPeaks];
    
    for(int i = 0; i < nPeaks + nEPeaks; i++){
       ExPos[i] = paraA[3*i+1];
@@ -231,6 +145,7 @@
               paraA[3*i+2], paraE[3*i+2]);
    }
    
+   /*
    printf("============================= 2 sigma\n");
    for(int i = 0; i < nPeaks + nEPeaks; i++){
       printf("%2d , Ex: (%8.4f, %8.4f) \n", 
@@ -241,7 +156,7 @@
    
    
    // theta CM distribution
-   
+   /*
    int Div2[2] = {5,3};  //x,y
    int size2[2] = {300,300}; //x,y
    TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, size2[0]*Div2[0], size2[1]*Div2[1]);
@@ -271,6 +186,6 @@
    cAux->cd(15);
    tree->Draw("thetaCM:Ex", gate + " && thetaCM != 0", "colz");
    
-   
+   */
 }
 
