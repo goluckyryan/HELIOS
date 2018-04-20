@@ -145,13 +145,14 @@
    
 /**///========================================================= Analysis
    
-   TString gate, gateB;
+   TString expression, gate, gateB;
    
    //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
    gate  = "good == 1 && TMath::Abs(t4)<1000";
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
    
-   tree->Draw("thetaCM : x >>j(400,-600, -200, 400, 0, 50) ", gate , "");
+   expression = "thetaCM : x >>j(400,-600, -200, 400, 0, 50) ";
+   tree->Draw(expression, gate , "");
    
 }
 

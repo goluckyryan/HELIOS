@@ -182,7 +182,7 @@ void HELIOS(){
          phiCM = 0.;
          ExID = gRandom->Integer(ExKnown.size());
          //Ex = ExKnown[ExID]; 
-         Ex = 8 * gRandom->Rndm(); 
+         Ex = 10 * gRandom->Rndm(); 
       
          TLorentzVector * P = Reaction(mA, ma, mb, mB + Ex, T, thetaCM , phiCM);
          

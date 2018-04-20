@@ -69,7 +69,7 @@ void Count(int detID){
   
    spec ->Draw();
    
-   TSpectrum * peak = new TSpectrum(20);
+   TSpectrum * peak = new TSpectrum(50);
    peak->Search(spec, 1, "", 0.05);
    TH1 * h1 = peak->Background(spec,10);
    //h1->Sumw2();
