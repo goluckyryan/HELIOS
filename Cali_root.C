@@ -169,8 +169,8 @@ Bool_t Cali_root::Process(Long64_t entry)
          if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
          
          if( tac[4] > 2000 && xf[i] !=0 && xn[i] !=0 ) {
-            z[i] = (xf[i] - xn[i])/(xf[i] + xn[i]);
-            tt = tac[4] - 650 * z[i]*z[i]; 
+            x[i] = (xf[i] - xn[i])/(xf[i] + xn[i]);
+            tt = tac[4] - 650 * x[i]*x[i]; 
             if( tt < cut[i]){
                tt += 1250;
             }
@@ -178,8 +178,8 @@ Bool_t Cali_root::Process(Long64_t entry)
             //next correction
             if( polDeg[i] > 1 ) {
                //ttt = tt - tc[i][1] * z[i] - tc[i][2]*TMath::Power(z[i],2) - tc[i][3]*TMath::Power(z[i],3) - tc[i][4]*TMath::Power(z[i],4);
-               double zzz = z[i];
-               double value = fit[i]->Eval(zzz);
+               double xxx = x[i];
+               double value = fit[i]->Eval(xxx);
                
                ttt = tt - value - mean[i];
             }else{
@@ -192,20 +192,20 @@ Bool_t Cali_root::Process(Long64_t entry)
          // calculate x
          int detID = i%6;
          if(xf[i] > 0 && xn[i] > 0) {
-            x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+            z[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
             count++;
             det = i;
          }else{
-            x[i] = TMath::QuietNaN();
+            z[i] = TMath::QuietNaN();
          }
          
          // recalculate energy;
          
          int posID = (i - i%6)/6;
          
-         if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(x[i]) ){
+         if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(z[i]) ){
 
-            energy = ((m[detID] * x[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
+            energy = ((m[detID] * z[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
             energy_m ++; 
             
             // calculate coincident time
@@ -230,9 +230,9 @@ Bool_t Cali_root::Process(Long64_t entry)
             }
             
             // correction to real position
-            x[i] = x[i] - (nearPos[5] + length) + posToTarget;
+            z[i] = z[i] - (nearPos[5] + length) + posToTarget;
             
-            if( x[i]> 0) printf("i:%d, xfC:%f, xnC:%f, x:%f \n", i, xfC[i], xnC[i], x[i]);
+            if( z[i]> 0) printf("i:%d, xfC:%f, xnC:%f, x:%f \n", i, xfC[i], xnC[i], z[i]);
          
             // correction of ttt with energy
             t4 = ttt + 0.165 * energy + 0.000188935 * energy * energy + 7.87558e-8 * TMath::Power(energy,3);
@@ -242,7 +242,7 @@ Bool_t Cali_root::Process(Long64_t entry)
             Ex = Ex/1000.;
             double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
             double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
-            double costhetaCM = p0 + p1 * x[i];  
+            double costhetaCM = p0 + p1 * z[i];  
             
             thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
             

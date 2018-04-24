@@ -62,8 +62,8 @@ public :
    Int_t energy_t;
    Float_t xfC[24];
    Float_t xnC[24];
-   Float_t x[24];
-   Float_t z[24]; // unadjusted position, range (-1,1)
+   Float_t x[24]; // unadjusted position, range (-1,1)
+   Float_t z[24]; 
    Float_t rdtC[8];
    int rdt_m ;
    int tac_m;

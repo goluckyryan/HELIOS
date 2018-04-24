@@ -65,7 +65,7 @@ void HELIOS(){
    printf(" Ex Sigma = %f \n", ExSigma);
 
    const double c = 299.792458;
-   const int numEvent = 5000000;
+   const int numEvent = 1000000;
 
    int Zb = 1;
    int ZB = 12;
@@ -186,6 +186,8 @@ void HELIOS(){
       
          TLorentzVector * P = Reaction(mA, ma, mb, mB + Ex, T, thetaCM , phiCM);
          
+         thetaCM = thetaCM * TMath::RadToDeg();
+         
          Ex += gRandom->Gaus(0, ExSigma); // add energy resolution
          
          theta = P[0].Theta(); // Lab theta
@@ -242,6 +244,7 @@ void HELIOS(){
                      detID = 5-ID;
                   } 
                }
+               
                //z += gRandom->Gaus(0, 0.002); // add position resolution   
                
                //printf("-------detID: %d,  z:%f, dphi: %f , redo : %d\n", detID, z, dphi, redoFlag);
