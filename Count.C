@@ -14,7 +14,7 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 }
 
 
-void Count(int detID){   
+void Count(int detID, double threshold = 0.1){   
 
 /**///======================================================== initial input
    
@@ -33,15 +33,15 @@ void Count(int detID){
 /**///======================================================== Browser or Canvas
 
    //TBrowser B ;   
-   Int_t Div[2] = {1,1};  //x,y
-   Int_t size[2] = {800,600}; //x,y
+   Int_t Div[2] = {1,2};  //x,y
+   Int_t size[2] = {800,300}; //x,y
    
-   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
-   cScript->Divide(Div[0],Div[1]);
+   TCanvas * cCount = new TCanvas("cCount", "cCount", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   cCount->Divide(Div[0],Div[1]);
    for( int i = 1; i <= Div[0]*Div[1] ; i++){
-      cScript->cd(i)->SetGrid();
+      cCount->cd(i)->SetGrid();
    }
-   cScript->cd(1);
+   cCount->cd(1);
 
    gStyle->SetOptStat(1111111);
    gStyle->SetStatY(0.8);
@@ -67,13 +67,17 @@ void Count(int detID){
    
    tree->Draw("Ex>>spec ", gate + gate_cm, "");
   
+   cCount->cd(1);
    spec ->Draw();
    
+   
    TSpectrum * peak = new TSpectrum(50);
-   peak->Search(spec, 1, "", 0.05);
+   peak->Search(spec, 1, "", threshold);
    TH1 * h1 = peak->Background(spec,10);
    //h1->Sumw2();
+   h1->Draw("same");
    
+   cCount->cd(2);
    TH1F * specS = (TH1F*) spec->Clone();
    TString title;
    title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
@@ -85,7 +89,8 @@ void Count(int detID){
    
    
    //========== Fitting 
-   nPeaks  = peak->Search(specS, 1, "", 0.05);
+   nPeaks  = peak->Search(specS, 1, "", threshold);
+   printf("======== found %d peaks \n", nPeaks);
    float * xpos = peak->GetPositionX();
    float * ypos = peak->GetPositionY();
    
@@ -97,9 +102,10 @@ void Count(int detID){
       height.push_back(ypos[inX[j]]);
    }
    
-   int nEPeaks = 0;
+   //int nEPeaks = 0;
    
-   const int  n = 3 * (nPeaks + nEPeaks);
+   //const int  n = 3 * (nPeaks + nEPeaks);
+   const int  n = 3 * nPeaks;
    double * para = new double[n]; 
    for(int i = 0; i < nPeaks ; i++){
       para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
@@ -108,15 +114,16 @@ void Count(int detID){
       //printf("%2d, %f \n", i, para[3*i+1]);
    }
    
-   for( int i = nPeaks ; i < nPeaks + nEPeaks; i++){
-      para[3*i+0] = 20.; 
-      para[3*i+0] = 3.5; 
-      para[3*i+0] = 0.05;
-   }
+   //for( int i = nPeaks ; i < nPeaks + nEPeaks; i++){
+   //   para[3*i+0] = 20.; 
+   //   para[3*i+0] = 3.5; 
+   //   para[3*i+0] = 0.05;
+   //}
    
    
    //nPeaks = 16;
-   TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
+   //TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
+   TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3* nPeaks );
    fit->SetNpx(1000);
    fit->SetParameters(para);
    //fit->Draw("same");   
@@ -130,13 +137,14 @@ void Count(int detID){
    
    double * ExPos = new double[nPeaks];
    
-   for(int i = 0; i < nPeaks + nEPeaks; i++){
+   //for(int i = 0; i < nPeaks + nEPeaks; i++){
+   for(int i = 0; i < nPeaks ; i++){
       ExPos[i] = paraA[3*i+1];
    }
    //sort ExPos
 
-   
-   for(int i = 0; i < nPeaks + nEPeaks; i++){
+   //for(int i = 0; i < nPeaks + nEPeaks; i++){
+   for(int i = 0; i < nPeaks ; i++){
       ExPos[i] = paraA[3*i+1];
       printf("%2d , count: %8.0f(%3.0f), mean: %8.4f(%8.4f), sigma: %8.4f(%8.4f) \n", 
               i, 

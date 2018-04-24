@@ -441,7 +441,7 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("tac", tacC, "tacC[6]/F");
    newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
    newTree->Branch("dt", dt, "dt[6]/I");
-   newTree->Branch("det", &det, "det/I");
+   newTree->Branch("detID", &det, "det/I");
    //newTree->Branch("tt", &tt, "tt/F");
    //newTree->Branch("ttt", &ttt, "ttt/F");
    newTree->Branch("t4", &t4, "t4/F");
