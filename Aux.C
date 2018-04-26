@@ -1,7 +1,26 @@
-TGraph * g1, *g2;
+TGraph * g1, *g2, *gData;
 
-Double func1(Double_t *x, Double_t *) {return g1->Eval(x[0]);};
-Double func2(Double_t *x, Double_t *) {return g2->Eval(x[0]);};
+Double_t func1(Double_t *x, Double_t *) {return g1->Eval(x[0]);}
+Double_t func2(Double_t *x, Double_t *) {return g2->Eval(x[0]);}
+Double_t func(Double_t *x, Double_t *para) {
+   double f1 = g1->Eval(x[0]);
+   double f2 = g2->Eval(x[0]);
+   double val = para[0] * f1 + para[1] * f2;
+   
+   return val;
+}
+
+Double_t Average(TGraph * g, double x1, double x2, int n){
+   double dx = (x2-x1)/n;
+   
+   double val = 0;
+   for(int i = 0; i <=n ;i ++){
+      val += g->Eval(x1 + dx*i);
+      //printf("%d, %f, %f\n", i, x1+dx*i, val); 
+   }
+   
+   return val /(n+1);
+}
 
 double expAngle[7][6] = {
    { 24.2, 29.7, 34.3, 38.4},
@@ -13,9 +32,11 @@ double expAngle[7][6] = {
    {             14.2, 24.0, 30.4, 35.7}
 };
 
-double expDangle[2][6] = {
-   { 5.6, 4.6, 4.0, 3.6},
-   { 10.6, 6.1, 4.9, 4.3, 3.8, 3.5}
+double expDangle[4][6] = {
+   {  5.6,  4.6,  4.0,  3.6},
+   { 10.6,  6.1,  4.9,  4.3,  3.8,  3.5},
+   { 11.7, 19.6, 26.8, 32.3, 36.9, 41.1},
+   {       13.6, 22.9, 29.3, 34.5, 39.1}
 };
 
 
@@ -30,17 +51,18 @@ double expData[7][6] = {
 };
 
 void Aux(){
-   TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, 500, 500);
+   TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, 1000, 500);
    
-   cAux->Divide(1,1);
-   for( int i = 1; i <= 3 ; i++){
+   cAux->Divide(2,1);
+   for( int i = 1; i <= 2 ; i++){
       cAux->cd(i)->SetGrid();
       cAux->cd(i)->SetLogy();
    }
    cAux->cd(1);
    TString expression;
    
-   int fitCol[2] = {2,3};
+   int fitCol[2] = {6,7}; // start from 0, 0 = angle, 1 = ground state
+   int expCol = 3;
    
    //======== load Xsec data
    ifstream file;
@@ -76,11 +98,56 @@ void Aux(){
    g2 = new TGraph(); g2->SetLineColor(2);
    
    for( int i =0 ; i < angle.size() ; i++){
-      g1.SetPoint(i, angle[i], f1[i]);
-      g2.SetPoint(i, angle[i], f2[i]);
+      g1->SetPoint(i, angle[i], f1[i]);
+      g2->SetPoint(i, angle[i], f2[i]);
    }
    
-   g1.Draw("AC");
-   g2.Draw("same");
+   g1->Draw("AC");
+   g2->Draw("same");
+
+   
+   //============================= fitting
+   
+   double dphi = 4 * 2 * TMath::ATan(4.5/11.);
+   double count2Xsec = 1e+27/ 2.36e+30;
+   
+   gData = new TGraph();
+   int i = expCol;
+   for(int j = 0; j < 6 ; j++){
+      if( expData[i] == 0 ) continue;
+      double dOmega = TMath::Sin(expAngle[i][j]*TMath::DegToRad())* expDangle[i][j]*TMath::DegToRad()* dphi;
+      dOmega = 0.01;
+      printf("%d, %4.1f  %5.0f %5.3f  %6.3f\n", j, expAngle[i][j], expData[i][j], expDangle[i][j], dOmega);
+      gData->SetPoint(j, expAngle[i][j], expData[i][j] / dOmega * count2Xsec);
+   }
+   
+   
+   
+   gData->Draw("* same");
+
+   cAux->cd(2);   
+   gData->GetXaxis()->SetLimits(0,50);
+   gData->Draw("A*");
+   
+   TF1 * fit = new TF1("fit", func, -5 , 45, 2);
+   double para[2] = { 0.1 , 0.1};
+   fit->SetParameters(para);
+   fit->SetLineColor(6);
+   gData->Fit("fit");
+   
+   TF1 * fit1 = new TF1("fit1", func, -5, 45, 2);
+   double a = fit->GetParameter(0);
+   fit1->SetParameter(0, a);
+   fit1->SetParameter(1, 0);
+   fit1->SetLineColor(4);
+   
+   TF1 * fit2 = new TF1("fit2", func, -5, 45, 2);
+   double b = fit->GetParameter(1);
+   fit2->SetParameter(0, 0);
+   fit2->SetParameter(1, b);
+   fit2->SetLineColor(2);
+   
+   fit1->Draw("same");
+   fit2->Draw("same");
    
 }
