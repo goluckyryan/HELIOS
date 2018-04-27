@@ -1,4 +1,4 @@
-void AngularDist(double Ex) {   
+void AngularDist(double Ex, int bin = 80) {   
 
 /**///======================================================== initial input
    
@@ -27,7 +27,6 @@ void AngularDist(double Ex) {
       cAngularDist->cd(i)->SetGrid();
    }
    cAngularDist->cd(1);
-
    gStyle->SetOptStat(1111111);
    gStyle->SetStatY(0.8);
    gStyle->SetStatX(0.99);
@@ -40,13 +39,13 @@ void AngularDist(double Ex) {
    
    //double Ex = 4.3;
    
-   printf(" ============================ Ex : %f\n", Ex);
+   printf("============================ Ex : %f\n", Ex);
    TString expression, gate_e, gate, gate_det;
    
    TH1F* h = new TH1F("h", "h", 500, 0, 50);
    TH2F* h2 = new TH2F("h2", "h2", 400, -600, -200, 500, 0, 50); 
    TH1F* w = new TH1F("w", "w", 400, -600, -200);
-   TH1F* k = new TH1F("k", "k",  80, -600, -200); 
+   TH1F* k = new TH1F("k", "k", bin, -600, -200); 
    
    for( int i = 0; i < 6; i++){
       //printf("--------- detID == %d \n", i);

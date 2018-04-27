@@ -14,7 +14,7 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 }
 
 
-void Count(int detID, double threshold = 0.1){   
+void Count(int detID, int splitCtrl = 0, double threshold = 0.1){   
 
 /**///======================================================== initial input
    
@@ -60,27 +60,42 @@ void Count(int detID, double threshold = 0.1){
 
 /**///========================================================= Analysis
 
-   int splitCtrl = 1;
-   double startZ, endZ;
-   if( splitCtrl == 0 ) {
-      endZ = zFPos[detID] + width /2. * splitCtrl;
-   }
-   if( splitCtrl == 1 || splitCtrl == 2) endZ = zFPos[detID] + width /2. * splitCtrl;
-   
-   
-
    TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
-
-   spec ->SetXTitle("Ex [MeV]");
-   
+   spec ->SetXTitle("Ex [MeV]");   
    TString gate, gateB, gate_cm, gate_z ;
    
-   //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
-   gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+   double startZ, endZ;
+   if( detID >= 0 ){
+      gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+      if( splitCtrl == -1 ) {
+         startZ = -600;
+         endZ = -200;
+      }
+      if( splitCtrl == 0 ) {
+         startZ = zFPos[detID];
+         endZ = zFPos[detID] + width;
+      }
+      if( splitCtrl == 1) {
+         startZ = zFPos[detID];
+         endZ = zFPos[detID] + width /2. ;
+      }
+      if( splitCtrl == 2) {
+         startZ = zFPos[detID] + width/2.;
+         endZ = zFPos[detID] + width ;
+      }
+      if( splitCtrl == 3) { // middle
+         startZ = zFPos[detID] + width/3.;
+         endZ = zFPos[detID] + width * 2. /3. ;
+      }   
+   }else if (detID == -1){
+      gate.Form("good == 1 && TMath::Abs(t4)<1000");
+      startZ = -600;
+      endZ = -200;
+   }
    
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
    gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
-   gate_z.Form("&& %f < z && z < %f", zFPos[detID], zFPos[detID] + width /2. * splitCtrl);
+   gate_z.Form("&& %5.1f < z && z < %5.1f", startZ, endZ);
    
    printf("%s\n", gate.Data());
    printf("%s\n", gate_cm.Data());
@@ -103,7 +118,11 @@ void Count(int detID, double threshold = 0.1){
    cCount->cd(2);
    TH1F * specS = (TH1F*) spec->Clone();
    TString title;
-   title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+   if( detID >= 0){
+      title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+   }else if(detID == -1){
+      title.Form("t4-gate && |e_t| < 20 && TMath::Abs(t4)<1000");
+   }
    specS->SetTitle(title + gate_cm + gate_z);
    specS->SetName("specS");
    specS->Add(h1, -1.);
@@ -114,11 +133,11 @@ void Count(int detID, double threshold = 0.1){
    //========== Fitting 
    nPeaks  = peak->Search(specS, 1, "", threshold);
    printf("======== found %d peaks \n", nPeaks);
-   //float * xpos = peak->GetPositionX();
-   //float * ypos = peak->GetPositionY();
+   float * xpos = peak->GetPositionX();
+   float * ypos = peak->GetPositionY();
    
-   Double_t * xpos = peak->GetPositionX();
-   Double_t * ypos = peak->GetPositionY();
+   //Double_t * xpos = peak->GetPositionX();
+   //Double_t * ypos = peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );
