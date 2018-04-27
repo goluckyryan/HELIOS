@@ -22,35 +22,60 @@ Double_t Average(TGraph * g, double x1, double x2, int n){
    return val /(n+1);
 }
 
-double expAngle[7][6] = {
+double expAngle[12][6] = {
    { 24.2, 29.7, 34.3, 38.4},
-   { 15.8, 24.4, 30.2, 34.9, 39.2, 43.0},
-   { 11.5, 19.4, 26.7, 32.1, 36.8, 41.0},
-   {       13.5, 22.7, 29.2, 34.4, 39.0},
-   {       12.3, 20.9, 27.9, 33.4, 38.1},
-   {       10.1, 17.7, 26.0, 31.9, 36.9},
-   {             14.2, 24.0, 30.4, 35.7}
+   { 15.8, 24.4, 30.2, 35.0, 39.2, 43.0},
+   {  9.7, 19.6, 26.8, 32.3, 36.9, 41.1},
+   {       11.1, 23.0, 29.3, 34.5, 39.1},
+   {       10.1, 21.0, 28.0, 33.5, 38.2},
+   {        8.5, 17.1, 25.7, 31.7, 36.8},
+   {             11.5, 24.0, 30.4, 35.7},
+   {             11.1, 23.0, 29.7, 35.2},
+   {             10.5, 22.0, 29.1, 34.6},
+   {              9.5, 19.6, 27.5, 33.3},
+   {                   11.1, 23.3, 30.2},
+   {                    9.9, 20.9, 28.6}
 };
 
-double expDangle[4][6] = {
-   {  5.6,  4.6,  4.0,  3.6},
-   { 10.6,  6.1,  4.9,  4.3,  3.8,  3.5},
-   { 11.7, 19.6, 26.8, 32.3, 36.9, 41.1},
-   {       13.6, 22.9, 29.3, 34.5, 39.1}
+double expDangle[12][6] = {
+   {  5.5,  4.5,  4.0,  3.6},
+   { 10.7,  6.2,  4.9,  4.3,  3.9,  3.5},
+   { 11.5,  8.2,  5.8,  4.9,  4.2,  3.8},
+   {       16.3,  6.9,  5.4,  4.6,  4.1},
+   {       13.4,  7.8,  5.8,  4.9,  4.2},
+   {        5.8, 10.6,  6.4,  5.2,  4.5},
+   {             17.6,  7.0,  5.4,  4.7},
+   {             16.3,  7.4,  5.6,  4.9},
+   {             14.8,  8.0,  5.9,  4.9},
+   {             10.9,  9.2,  6.3,  5.2},
+   {                   16.4,  7.9,  5.9},
+   {                   12.8,  9.1,  6.4}
 };
 
+double expEx[12] = {0.0, 1.8, 1.9, 2.9, 4.3, 4.9, 5.3, 5.5, 5.7, 6.1, 7.0, 7.4};
 
-double expData[7][6] = {
-   { 84,  66,  73,  51},
-   { 71, 140, 140,  78,  45,  24},
-   {167, 175, 311, 296, 241,  70},
-   {     334, 391, 370, 331, 103},
-   {     230, 238, 347, 270, 114},
-   {      29, 130, 170, 155,  56},
-   {          129, 266, 198,  53}
+double expData[12][6] = {
+   { 84,  66,  73,  51},                  // 0.0
+   { 71, 140, 140,  78,   45,  24},       // 1.8
+   {167, 175, 311, 296,  241,  70},       // 2.9
+   {     334, 391, 370,  331, 103},       // 3.9
+   {     230, 238, 347,  270, 114},       // 4.3
+   {      29, 130, 170,  155,  56},       // 4.9
+   {          129, 266,  198,  53},       // 5.3
+   {           78,  93,   96,  67},       // 5.5
+   {           26,  67,   75,  48},       // 5.7
+   {          124, 328,  370, 213},       // 6.1
+   {               494,  310, 123},       // 7.0
+   {              1071, 1032, 506}       // 7.4
 };
 
-void Aux(){
+void Aux(int expCol, int k1, int k2){
+   
+   int fitCol[2] = {k1,k2}; // start from 0, 0 = angle, 1 = ground state
+   //int expCol = 3;
+   
+   printf("============== Ex : %f MeV\n", expEx[expCol]);
+   
    TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, 1000, 500);
    
    cAux->Divide(2,1);
@@ -61,9 +86,6 @@ void Aux(){
    cAux->cd(1);
    TString expression;
    
-   int fitCol[2] = {6,7}; // start from 0, 0 = angle, 1 = ground state
-   int expCol = 3;
-   
    //======== load Xsec data
    ifstream file;
    file.open("25Mg_dp.out.Xsec.txt");
@@ -71,13 +93,19 @@ void Aux(){
    vector<double> angle;
    vector<double> f1;
    vector<double> f2;
+   TString g1Name, g2Name;
+   double range[2] = {1,1};
    if( file.is_open() ){
       int lineNum = 0;
       while( ! file.eof() ){
          getline(file, line);
          lineNum += 1;
-         if( lineNum == 1 ) continue;
-         
+         if( lineNum == 1 ) {
+            
+            g1Name = line.substr(17 + 18*(fitCol[0]-1), 18);
+            g2Name = line.substr(17 + 18*(fitCol[1]-1), 18);
+            continue;
+         }
          // get angle
          int len = line.length();
          if( (17 + 18*fitCol[0] > len) || (17 + 18*fitCol[1] > len)) {
@@ -88,23 +116,27 @@ void Aux(){
          f1.push_back(atof(line.substr(17 + 18*(fitCol[0]-1), 18).c_str()));
          f2.push_back(atof(line.substr(17 + 18*(fitCol[1]-1), 18).c_str()));
          
+         if( f1.back() > range[0] ) range[0] = f1.back();
+         if( f2.back() > range[0] ) range[0] = f2.back();
+         
+         if( f1.back() < range[1] ) range[1] = f1.back();
+         if( f2.back() < range[1] ) range[1] = f2.back();
+         
+         
          //printf("%d| %f, %f, %f \n", lineNum,  angle.back(), f1.back(), f2.back());
       }
    }else{
       printf("... fail\n");
    }
-
-   g1 = new TGraph(); g1->SetLineColor(4);
-   g2 = new TGraph(); g2->SetLineColor(2);
+   
+   g1 = new TGraph(); g1->SetLineColor(4); g1->SetTitle(g1Name);
+   g2 = new TGraph(); g2->SetLineColor(2); g2->SetTitle(g2Name);
    
    for( int i =0 ; i < angle.size() ; i++){
       g1->SetPoint(i, angle[i], f1[i]);
       g2->SetPoint(i, angle[i], f2[i]);
    }
    
-   g1->Draw("AC");
-   g2->Draw("same");
-
    
    //============================= fitting
    
@@ -112,27 +144,53 @@ void Aux(){
    double count2Xsec = 1e+27/ 2.36e+30;
    
    gData = new TGraph();
+   gData->SetTitle("Exp");
    int i = expCol;
    for(int j = 0; j < 6 ; j++){
-      if( expData[i] == 0 ) continue;
-      double dOmega = TMath::Sin(expAngle[i][j]*TMath::DegToRad())* expDangle[i][j]*TMath::DegToRad()* dphi;
-      dOmega = 0.01;
-      printf("%d, %4.1f  %5.0f %5.3f  %6.3f\n", j, expAngle[i][j], expData[i][j], expDangle[i][j], dOmega);
-      gData->SetPoint(j, expAngle[i][j], expData[i][j] / dOmega * count2Xsec);
+      if( expData[i][j] == 0.0 ) {
+         continue;
+      }else{
+         double dOmega = TMath::Sin(expAngle[i][j]*TMath::DegToRad())* expDangle[i][j]*TMath::DegToRad()* dphi;
+         dOmega = 0.01;
+         //printf("%d, %4.1f  %5.0f %5.3f  %6.3f\n", j, expAngle[i][j], expData[i][j], expDangle[i][j], dOmega);
+         
+         double data = expData[i][j] / dOmega * count2Xsec;
+         
+         gData->SetPoint(j, expAngle[i][j], data);
+         
+         if( data > range[0] ) range[0] = data;
+         if( data < range[1] ) range[1] = data;
+      }
    }
    
+   double up = TMath::Power(10,TMath::Ceil(TMath::Log10(range[0])));
+   double down = TMath::Power(10,TMath::Floor(TMath::Log10(range[1])));
+   //printf(" %f %f \n", down, up);
    
+   auto legend = new TLegend(0.6, 0.7, 0.9, 0.9);
+   legend->AddEntry(g1, g1Name , "l");
+   legend->AddEntry(g2, g2Name , "l");
+   legend->AddEntry(gData, "Exp" , "l");
    
+   //====== drawing
+   cAux->cd(1);
+   g1->GetYaxis()->SetRangeUser(down, up);
+   g1->Draw("AC");
+   g2->Draw("same");
    gData->Draw("* same");
+   legend->Draw();
 
-   cAux->cd(2);   
+   cAux->cd(2);
+   gData->GetYaxis()->SetRangeUser(down, up);   
    gData->GetXaxis()->SetLimits(0,50);
    gData->Draw("A*");
    
    TF1 * fit = new TF1("fit", func, -5 , 45, 2);
    double para[2] = { 0.1 , 0.1};
    fit->SetParameters(para);
-   fit->SetLineColor(6);
+   fit->SetParLimits(0, 0, 1000);
+   fit->SetParLimits(1, 0, 1000);
+   fit->SetLineColor(1);
    gData->Fit("fit");
    
    TF1 * fit1 = new TF1("fit1", func, -5, 45, 2);

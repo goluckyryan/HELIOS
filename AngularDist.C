@@ -46,7 +46,7 @@ void AngularDist(double Ex) {
    TH1F* h = new TH1F("h", "h", 500, 0, 50);
    TH2F* h2 = new TH2F("h2", "h2", 400, -600, -200, 500, 0, 50); 
    TH1F* w = new TH1F("w", "w", 400, -600, -200);
-   TH1F* k = new TH1F("k", "k", 450, -600, -200); 
+   TH1F* k = new TH1F("k", "k",  80, -600, -200); 
    
    for( int i = 0; i < 6; i++){
       //printf("--------- detID == %d \n", i);
@@ -123,9 +123,13 @@ void AngularDist(double Ex) {
    tree1->Draw("z >> w", gate_e);
    tree0->Draw("z >> k", gate  );
    double wMax = w->GetMaximum(); 
+   
    w->Scale(50./wMax);
    w->Draw("");
+   
    k->SetLineColor(2);
+   double kMax = k->GetMaximum();
+   k->Scale(50./kMax);
    k->Draw("same");
    h2->Draw("same");
    

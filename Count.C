@@ -51,21 +51,44 @@ void Count(int detID, double threshold = 0.1){
    
 /**///========================================================= load files
 
+   double zNPos[6] = {-513.3, -464.7, -395.4, -336.5, -277.5, -218.5};
+   double width = 50.5;
+   double zFPos[6];
+   for(int i = 0; i < 6; i ++){
+      zFPos[i] = zNPos[i] - width;
+   }
+
 /**///========================================================= Analysis
+
+   int splitCtrl = 1;
+   double startZ, endZ;
+   if( splitCtrl == 0 ) {
+      endZ = zFPos[detID] + width /2. * splitCtrl;
+   }
+   if( splitCtrl == 1 || splitCtrl == 2) endZ = zFPos[detID] + width /2. * splitCtrl;
+   
+   
 
    TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
 
    spec ->SetXTitle("Ex [MeV]");
    
-   TString gate, gateB, gate_cm;
+   TString gate, gateB, gate_cm, gate_z ;
    
    //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
    gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
    
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
    gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
+   gate_z.Form("&& %f < z && z < %f", zFPos[detID], zFPos[detID] + width /2. * splitCtrl);
    
-   tree->Draw("Ex>>spec ", gate + gate_cm, "");
+   printf("%s\n", gate.Data());
+   printf("%s\n", gate_cm.Data());
+   printf("%s\n", gate_z.Data());
+   
+   printf(" threshold : %f \n", threshold);
+   
+   tree->Draw("Ex>>spec ", gate + gate_cm + gate_z, "");
   
    cCount->cd(1);
    spec ->Draw();
@@ -81,7 +104,7 @@ void Count(int detID, double threshold = 0.1){
    TH1F * specS = (TH1F*) spec->Clone();
    TString title;
    title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
-   specS->SetTitle(title + gate_cm);
+   specS->SetTitle(title + gate_cm + gate_z);
    specS->SetName("specS");
    specS->Add(h1, -1.);
    specS->Sumw2();
@@ -91,8 +114,11 @@ void Count(int detID, double threshold = 0.1){
    //========== Fitting 
    nPeaks  = peak->Search(specS, 1, "", threshold);
    printf("======== found %d peaks \n", nPeaks);
-   float * xpos = peak->GetPositionX();
-   float * ypos = peak->GetPositionY();
+   //float * xpos = peak->GetPositionX();
+   //float * ypos = peak->GetPositionY();
+   
+   Double_t * xpos = peak->GetPositionX();
+   Double_t * ypos = peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );
