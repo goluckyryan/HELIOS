@@ -51,12 +51,7 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    
 /**///========================================================= load files
 
-   double zNPos[6] = {-513.3, -464.7, -395.4, -336.5, -277.5, -218.5};
-   double width = 50.5;
-   double zFPos[6];
-   for(int i = 0; i < 6; i ++){
-      zFPos[i] = zNPos[i] - width;
-   }
+   double zMPos[6] = { -538.55, -479.95, -420.65, -361.75, -302.75, -243.75};
 
 /**///========================================================= Analysis
 
@@ -64,38 +59,25 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    spec ->SetXTitle("Ex [MeV]");   
    TString gate, gateB, gate_cm, gate_z ;
    
-   double startZ, endZ;
    if( detID >= 0 ){
       gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
-      if( splitCtrl == -1 ) {
-         startZ = -600;
-         endZ = -200;
-      }
       if( splitCtrl == 0 ) {
-         startZ = zFPos[detID];
-         endZ = zFPos[detID] + width;
+         gate_z.Form("&& -600 < z && z < -200");
       }
       if( splitCtrl == 1) {
-         startZ = zFPos[detID];
-         endZ = zFPos[detID] + width /2. ;
+         gate_z.Form("&& z < %f", zMPos[detID]);
       }
       if( splitCtrl == 2) {
-         startZ = zFPos[detID] + width/2.;
-         endZ = zFPos[detID] + width ;
+         gate_z.Form("&& z > %f", zMPos[detID]);
       }
-      if( splitCtrl == 3) { // middle
-         startZ = zFPos[detID] + width/3.;
-         endZ = zFPos[detID] + width * 2. /3. ;
-      }   
    }else if (detID == -1){
       gate.Form("good == 1 && TMath::Abs(t4)<1000");
-      startZ = -600;
-      endZ = -200;
+      gate_z.Form("&& -600 < z && z < -200");
    }
    
    gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
    gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
-   gate_z.Form("&& %5.1f < z && z < %5.1f", startZ, endZ);
+   
    
    printf("%s\n", gate.Data());
    printf("%s\n", gate_cm.Data());

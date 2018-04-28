@@ -55,18 +55,18 @@ double expDangle[12][6] = {
 double expEx[12] = {0.0, 1.8, 1.9, 2.9, 4.3, 4.9, 5.3, 5.5, 5.7, 6.1, 7.0, 7.4};
 
 double expData[12][6] = {
-   { 84,  52,  73,  51},                  // 0.0
-   { 71, 120, 140,  78,   45,  24},       // 1.8
-   {     147, 309, 296,  241,  70},       // 2.9
-   {     313, 391, 370,  331, 103},       // 3.9
-   {     191, 237, 347,  270, 115},       // 4.3
-   {          130, 170,  155,  56},       // 4.9
-   {          129, 266,  198,  53},       // 5.3
-   {           78,  93,   96,  68},       // 5.5
-   {           26,  67,   75,  48},       // 5.7
-   {          124, 328,  370, 210},       // 6.1
-   {               494,  310, 113},       // 7.0
-   {              1071, 1032, 494}        // 7.4
+   { 84,  52,  73,  51},                  // 0.0 -- OK d5/2
+   { 71, 120, 140,  78,   45,  24},       // 1.8 -- OK d5/2, no dip ~ 20 deg of s1/2
+   {     147, 309, 296,  241,  70},       // 2.9 -- a dip ~ 20 deg, should be s1/2
+   {     313, 391, 370,  331, 103},       // 3.9 -- a dip ~ 20 deg, should be s1/2
+   {     191, 237, 347,  270, 115},       // 4.3 -- a dip ~ 20 deg
+   {          130, 170,  155,  56},       // 4.9 -- a dip ~ 20 deg
+   {          129, 266,  198,  53},       // 5.3 -- OK d5/2
+   {           78,  93,   96,  68},       // 5.5 -- no dip, d-shell
+   {           26,  67,   75,  48},       // 5.7 -- no dip, d-shell
+   {          124, 328,  370, 210},       // 6.1 -- no dip
+   {               494,  310, 113},       // 7.0 -- no dip
+   {              1071, 1032, 494}        // 7.4 -- no dip
 };
 
 void Aux(int expCol, int k1, int k2){
@@ -138,7 +138,7 @@ void Aux(int expCol, int k1, int k2){
    }
    
    
-   //============================= fitting
+   //============================= filling gData and fitting
    
    double dphi = 4 * 2 * TMath::ATan(4.5/11.);
    double count2Xsec = 1e+27/ 2.36e+30;
@@ -146,6 +146,8 @@ void Aux(int expCol, int k1, int k2){
    gData = new TGraph();
    gData->SetTitle("Exp");
    int i = expCol;
+   double startT = 0; 
+   double endT = 50;
    for(int j = 0; j < 6 ; j++){
       if( expData[i][j] == 0.0 ) {
          continue;
@@ -160,6 +162,10 @@ void Aux(int expCol, int k1, int k2){
          
          if( data > range[0] ) range[0] = data;
          if( data < range[1] ) range[1] = data;
+         
+         if( expAngle[i][j] > startT) startT = expAngle[i][j] + 5;
+         if( expAngle[i][j] < endT  ) endT   = expAngle[i][j] - 5 ;
+         
       }
    }
    
@@ -185,7 +191,7 @@ void Aux(int expCol, int k1, int k2){
    gData->GetXaxis()->SetLimits(0,50);
    gData->Draw("A*");
    
-   TF1 * fit = new TF1("fit", func, -5 , 45, 2);
+   TF1 * fit = new TF1("fit", func, startT , endT, 2);
    double para[2] = { 1 , 1};
    fit->SetParameters(para);
    fit->SetParLimits(0, 0, 1000);
@@ -193,13 +199,13 @@ void Aux(int expCol, int k1, int k2){
    fit->SetLineColor(1);
    gData->Fit("fit");
    
-   TF1 * fit1 = new TF1("fit1", func, -5, 45, 2);
+   TF1 * fit1 = new TF1("fit1", func, startT , endT, 2);
    double a = fit->GetParameter(0);
    fit1->SetParameter(0, a);
    fit1->SetParameter(1, 0);
    fit1->SetLineColor(4);
    
-   TF1 * fit2 = new TF1("fit2", func, -5, 45, 2);
+   TF1 * fit2 = new TF1("fit2", func, startT , endT, 2);
    double b = fit->GetParameter(1);
    fit2->SetParameter(0, 0);
    fit2->SetParameter(1, b);

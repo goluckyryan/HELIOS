@@ -1,4 +1,4 @@
-void AngularDist(double Ex, int bin = 80) {   
+void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.2) {   
 
 /**///======================================================== initial input
    
@@ -44,78 +44,85 @@ void AngularDist(double Ex, int bin = 80) {
    
    TH1F* h = new TH1F("h", "h", 500, 0, 50);
    TH2F* h2 = new TH2F("h2", "h2", 400, -600, -200, 500, 0, 50); 
-   TH1F* w = new TH1F("w", "w", 400, -600, -200);
-   TH1F* k = new TH1F("k", "k", bin, -600, -200); 
+   TH1F* w = new TH1F("w", "Z_th", 400, -600, -200);
+   TH1F* k = new TH1F("k", "Z_exp", bin, -600, -200); 
    
-   for( int i = 0; i < 6; i++){
-      //printf("--------- detID == %d \n", i);
-      gate_det.Form("&& detID%6 == %d", i);
-      gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.1", Ex);      
+   if( mode == 1 ){
    
-      //============= get the acceptance
+      for( int i = 0; i < 6; i++){
+         //printf("--------- detID == %d \n", i);
+         gate_det.Form("&& detID%6 == %d", i);
+         gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.01", Ex);      
       
-      tree1->Draw("thetaCM >> h", gate_e + gate_det);
-        
-      tree1->Draw("thetaCM : z >> h2", gate_e + gate_det);
-      
-      if( h->GetEntries() == 0){
-         printf(" no data for detID == %d \n", i);
-         continue;
-      }
-      //============== find the acceptance, the angle the count drop
-      vector<double> angle;
-      angle.clear();
-      for(int j = 1 ; j < 500; j++){
-         int a = h->GetBinContent(j);
-         int b = h->GetBinContent(j+1);
+         //============= get the acceptance
          
-         if( a == 0 && b > 0) {
-            angle.push_back(h->GetBinLowEdge(j+1));
-            //printf(" boundary : %10.5f\n", h[i]->GetBinLowEdge(j+1) );
+         tree1->Draw("thetaCM >> h", gate_e + gate_det);
+           
+         tree1->Draw("thetaCM : z >> h2", gate_e + gate_det);
+         
+         if( h->GetEntries() == 0){
+            printf(" no data for detID == %d \n", i);
+            continue;
          }
-         if( a > 0 && b == 0) {
-            angle.push_back(h->GetBinLowEdge(j+1));
-            //printf(" boundary : %10.5f\n", h[i]->GetBinLowEdge(j+1) );
-         }
-      }
-      
-      if( angle.size() == 4){
-         angle.erase(angle.begin(), angle.begin()+2);
-      }
+         //============== find the acceptance, the angle the count drop
+         vector<double> angle;
+         angle.clear();
+         for(int j = 1 ; j < 500; j++){
+            int a = h->GetBinContent(j);
+            int b = h->GetBinContent(j+1);
             
-      vector<double> dCos;
-      dCos.clear();
-      for( int j = 0; j < angle.size()/2; j++){
-         double delta = angle[2*j+1] - angle[2*j];
-         double mean = (angle[2*j+1] + angle[2*j])/2;
-         if ( delta < 2. ) continue;
-         dCos.push_back(TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
-         printf(" %10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
-                    angle[2*j], 
-                    angle[2*j+1], 
-                    delta,
-                    mean,
-                    1./TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
+            if( a == 0 && b > 0) {
+               angle.push_back(h->GetBinLowEdge(j+1));
+               //printf(" boundary : %10.5f\n", h[i]->GetBinLowEdge(j+1) );
+            }
+            if( a > 0 && b == 0) {
+               angle.push_back(h->GetBinLowEdge(j+1));
+               //printf(" boundary : %10.5f\n", h[i]->GetBinLowEdge(j+1) );
+            }
+         }
+         
+         if( angle.size() == 4){
+            angle.erase(angle.begin(), angle.begin()+2);
+         }
+               
+         vector<double> dCos;
+         dCos.clear();
+         for( int j = 0; j < angle.size()/2; j++){
+            double delta = angle[2*j+1] - angle[2*j];
+            double mean = (angle[2*j+1] + angle[2*j])/2;
+            if ( delta < 2. ) continue;
+            dCos.push_back(TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
+            printf(" %10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
+                       angle[2*j], 
+                       angle[2*j+1], 
+                       delta,
+                       mean,
+                       1./TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
+         }
+         
+         tree1->Draw("z >> w", gate_e + gate_det);
+         double wMax = w->GetMaximum(); 
+         
+         
+         gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
+         tree0->Draw("z >> k", gate + gate_det );
+         
+         w->Scale(50./wMax);
+         w->Draw("");
+         k->SetLineColor(2);
+         k->Draw("same");
+         h2->Draw("same");
+         
+         cAngularDist->Update();
+         //printf("0 for stop, 1 for continous : ");
+         //int dummy;
+         //scanf("%d", &dummy);
+         //if( dummy == 0 ) break;
       }
       
-      tree1->Draw("z >> w", gate_e + gate_det);
-      double wMax = w->GetMaximum(); 
-      
-      
-      gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%f)<0.2", Ex);
-      tree0->Draw("z >> k", gate + gate_det );
-      
-      w->Scale(50./wMax);
-      w->Draw("");
-      k->SetLineColor(2);
-      k->Draw("same");
-      h2->Draw("same");
-      
-      cAngularDist->Update();
-      //printf("0 for stop, 1 for continous : ");
-      //int dummy;
-      //scanf("%d", &dummy);
-      //if( dummy == 0 ) break;
+   }else if (mode == 0) {
+      gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.1", Ex);  
+      gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%4.1f)<%3f", Ex, dEx);
    }
     
    tree1->Draw("thetaCM : z >> h2", gate_e );
