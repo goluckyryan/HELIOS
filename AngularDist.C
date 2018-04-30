@@ -1,4 +1,4 @@
-void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.2) {   
+void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {   
 
 /**///======================================================== initial input
    

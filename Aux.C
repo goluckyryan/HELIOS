@@ -23,7 +23,7 @@ Double_t Average(TGraph * g, double x1, double x2, int n){
 }
 
 double expAngle[12][6] = {
-   { 24.2, 29.7, 34.3, 38.4},
+   { 24.2, 29.7, 34.3, 38.4, 42.3},
    { 15.8, 24.4, 30.2, 35.0, 39.2, 43.0},
    {       19.6, 26.8, 32.3, 36.9, 41.1},
    {       11.1, 23.0, 29.3, 34.5, 39.1},
@@ -38,7 +38,7 @@ double expAngle[12][6] = {
 };
 
 double expDangle[12][6] = {
-   {  5.5,  4.5,  4.0,  3.6},
+   {  5.5,  4.5,  4.0,  3.6,  3.2},
    { 10.7,  6.2,  4.9,  4.3,  3.9,  3.5},
    {        8.2,  5.8,  4.9,  4.2,  3.8},
    {       16.3,  6.9,  5.4,  4.6,  4.1},
@@ -52,14 +52,14 @@ double expDangle[12][6] = {
    {                   12.8,  9.1,  6.4}
 };
 
-double expEx[12] = {0.0, 1.8, 1.9, 2.9, 4.3, 4.9, 5.3, 5.5, 5.7, 6.1, 7.0, 7.4};
+double expEx[12] = {0.0, 1.8, 2.9, 3.9, 4.3, 4.9, 5.3, 5.5, 5.7, 6.1, 7.0, 7.4};
 
 double expData[12][6] = {
-   { 84,  52,  73,  51},                  // 0.0 -- OK d5/2
-   { 71, 120, 140,  78,   45,  24},       // 1.8 -- OK d5/2, no dip ~ 20 deg of s1/2
-   {     147, 309, 296,  241,  70},       // 2.9 -- a dip ~ 20 deg, should be s1/2
-   {     313, 391, 370,  331, 103},       // 3.9 -- a dip ~ 20 deg, should be s1/2
-   {     191, 237, 347,  270, 115},       // 4.3 -- a dip ~ 20 deg
+   { 84,  66,  73,  51,   11},                  // 0.0 -- OK d5/2
+   { 71, 140, 140,  78,   38,  24},       // 1.8 -- OK d5/2, no dip ~ 20 deg of s1/2
+   {     175, 311, 297,  241,  70},       // 2.9 -- a dip ~ 20 deg, should be s1/2
+   {          391, 370,  331, 103},       // 3.9 -- a dip ~ 20 deg, should be s1/2
+   {          237, 347,  270, 115},       // 4.3 -- a dip ~ 20 deg
    {          130, 170,  155,  56},       // 4.9 -- a dip ~ 20 deg
    {          129, 266,  198,  53},       // 5.3 -- OK d5/2
    {           78,  93,   96,  68},       // 5.5 -- no dip, d-shell
@@ -88,7 +88,9 @@ void Aux(int expCol, int k1, int k2){
    
    //======== load Xsec data
    ifstream file;
-   file.open("25Mg_dp.out.Xsec.txt");
+   TString fileName = "25Mg_dp_3.out.Xsec.txt";
+   file.open(fileName.Data());
+   printf("--- using theoretical Xsec : %s \n", fileName.Data());
    string line;
    vector<double> angle;
    vector<double> f1;
@@ -146,8 +148,8 @@ void Aux(int expCol, int k1, int k2){
    gData = new TGraph();
    gData->SetTitle("Exp");
    int i = expCol;
-   double startT = 0; 
-   double endT = 50;
+   double startT = 50; 
+   double endT = 0;
    for(int j = 0; j < 6 ; j++){
       if( expData[i][j] == 0.0 ) {
          continue;
@@ -163,11 +165,16 @@ void Aux(int expCol, int k1, int k2){
          if( data > range[0] ) range[0] = data;
          if( data < range[1] ) range[1] = data;
          
-         if( expAngle[i][j] > startT) startT = expAngle[i][j] + 5;
-         if( expAngle[i][j] < endT  ) endT   = expAngle[i][j] - 5 ;
+         if( expAngle[i][j] < startT) startT = expAngle[i][j];
+         if( expAngle[i][j] > endT  ) endT   = expAngle[i][j] ;
+         
+         //printf("%f, %f, %f \n", expAngle[i][j], startT, endT);
          
       }
    }
+   
+   startT -= 5;
+   endT += 5;
    
    double up = TMath::Power(10,TMath::Ceil(TMath::Log10(range[0])));
    double down = TMath::Power(10,TMath::Floor(TMath::Log10(range[1])));
@@ -213,5 +220,7 @@ void Aux(int expCol, int k1, int k2){
    
    fit1->Draw("same");
    fit2->Draw("same");
+   
+   legend->Draw();
    
 }

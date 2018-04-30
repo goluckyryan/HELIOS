@@ -63,9 +63,12 @@ void HELIOS(){
    printf(" Ex Sigma ? ");
    scanf("%f", &ExSigma);
    printf(" Ex Sigma = %f \n", ExSigma);
+   int numEvent;
+   printf(" Number of Events ? ");
+   scanf("%d", &numEvent);
 
    const double c = 299.792458;
-   const int numEvent = 1000000;
+
 
    int Zb = 1;
    int ZB = 12;
@@ -100,7 +103,7 @@ void HELIOS(){
    ExKnown.push_back(8.5);
       
    //====================== build tree
-   TFile * saveFile = new TFile("test.root", "recreate");
+   TFile * saveFile = new TFile("test_2.root", "recreate");
    TTree * tree = new TTree("tree", "tree");
 
    double z;
@@ -181,8 +184,8 @@ void HELIOS(){
          //phiCM = 2*TMath::Pi() * gRandom->Rndm();
          phiCM = 0.;
          ExID = gRandom->Integer(ExKnown.size());
-         //Ex = ExKnown[ExID]; 
-         Ex = 10 * gRandom->Rndm(); 
+         Ex = ExKnown[ExID]; 
+         //Ex = 10 * gRandom->Rndm(); 
       
          TLorentzVector * P = Reaction(mA, ma, mb, mB + Ex, T, thetaCM , phiCM);
          
