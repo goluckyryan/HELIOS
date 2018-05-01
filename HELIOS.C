@@ -59,10 +59,10 @@ void HELIOS(){
    int option;
    printf(" include finite detector size correction (1 = yes, 0 = No)? ");
    scanf("%d", &option);
-   float ExSigma;
-   printf(" Ex Sigma ? ");
-   scanf("%f", &ExSigma);
-   printf(" Ex Sigma = %f \n", ExSigma);
+   float energyResolution;
+   printf(" Energy resolution ? ");
+   scanf("%f", &energyResolution);
+   printf(" Energy resol. = %f \n", energyResolution);
    int numEvent;
    printf(" Number of Events ? ");
    scanf("%d", &numEvent);
@@ -103,7 +103,8 @@ void HELIOS(){
    ExKnown.push_back(8.5);
       
    //====================== build tree
-   TFile * saveFile = new TFile("test_2.root", "recreate");
+   TString saveFileName = "test_2.root";
+   TFile * saveFile = new TFile(saveFileName, "recreate");
    TTree * tree = new TTree("tree", "tree");
 
    double z;
@@ -191,7 +192,7 @@ void HELIOS(){
          
          thetaCM = thetaCM * TMath::RadToDeg();
          
-         Ex += gRandom->Gaus(0, ExSigma); // add energy resolution
+         Ex += gRandom->Gaus(0, energyResolution); // add energy resolution
          
          theta = P[0].Theta(); // Lab theta
          rho   = P[0].Pt() / Bfield / Zb / c * 1000.; // mm
@@ -206,7 +207,7 @@ void HELIOS(){
 
             double    vt0 = P[0].Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
             double    vp0 = P[0].Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
-            e = P[0].E() - mb ; // KE
+            e = P[0].E() - mb + gRandom->Gaus(0, energyResolution); // KE
             
             
             if( rho > a ) {
@@ -294,5 +295,6 @@ void HELIOS(){
    saveFile->Close();
    
    printf("========== done.\n");
+   printf("========= saved as %s.\n", saveFileName.Data());
    
 }
