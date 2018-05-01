@@ -109,7 +109,7 @@
       name.Form("k%d", i);
       k[i] = new TH1F(name, name, 300, 1500, 4500);
       TString expression;
-      expression.Form("tt>> k%d", i, i);
+      expression.Form("(tac[4] - 650 * x[%d]*x[%d] < %f ?  tac[4] - 650 * x[%d]*x[%d] + 1250 :  tac[4] - 650 * x[%d]*x[%d])>> k%d", i, i, cut[i], i, i, i, i, i);
             
       TString gate;
       gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
@@ -136,7 +136,7 @@
       
       q[i] = new TH2F(name, name, 50, -1, 1, 50, 1500, 4500);
       TString expression;
-      expression.Form("tt:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> q%d", i, i, i, i, i);
+      expression.Form("tac[4] - 650 * x[%d]*x[%d] < %f ? tac[4] - 650 * x[%d]*x[%d] + 1250 : tac[4] - 650 * x[%d]*x[%d]:x[%d] >> q%d", i, i, cut[i], i, i,i,i,i,i);
             
       TString gate;
       gate.Form("tac[4] > 2000 && e[%d] > 100 && xf[%d] !=0 && xn[%d] !=0", i, i, i);
