@@ -5,54 +5,7 @@
 #include "TTree.h"
 #include "TRandom.h"
 #include <vector>
-
-TLorentzVector * Reaction(double mA, double ma, double mb, double mB, double T, double thetaCM, double phiCM){
-
-   double k = TMath::Sqrt(TMath::Power(mA + T, 2) - mA * mA);    
-   double beta = k / (mA + ma + T);
-   double gamma = 1 / TMath::Sqrt(1- beta * beta);
-   
-   double Etot = TMath::Sqrt(TMath::Power(mA + ma + T,2) - k * k);
-   
-   double p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB,2)) * (Etot*Etot - TMath::Power(mb - mB,2)) ) / 2 / Etot;
-   
-   TLorentzVector * FourVector = new TLorentzVector[2];
-   
-   // light particle
-   FourVector[0].SetPxPyPzE(- p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
-                            - p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
-                            gamma * beta * TMath::Sqrt(mb * mb + p * p) - gamma *p * TMath::Cos(thetaCM),
-                            gamma * TMath::Sqrt(mb * mb + p * p) - gamma * beta * p * TMath::Cos(thetaCM)
-                           );
-   // heavy particle       
-   FourVector[1].SetPxPyPzE( p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
-                             p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
-                            gamma * beta * TMath::Sqrt(mB * mB + p * p) + gamma *p * TMath::Cos(thetaCM),
-                            gamma * TMath::Sqrt(mB * mB + p * p) + gamma * beta * p * TMath::Cos(thetaCM)
-                            );
-                            
-   // beta, gamma, p
-   //FourVector[2].SetPxPyPzE(beta, gamma, 0, p);
-                            
-   return FourVector;
-}
-
-double * ReactionInveriance(double mA, double ma, double mb, double mB, double T){
-
-   double k = TMath::Sqrt(TMath::Power(mA + T, 2) - mA * mA);    
-   double beta = k / (mA + ma + T);
-   double gamma = 1 / TMath::Sqrt(1- beta * beta);   
-   double Etot = TMath::Sqrt(TMath::Power(mA + ma + T,2) - k * k);
-   double p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB,2)) * (Etot*Etot - TMath::Power(mb - mB,2)) ) / 2 / Etot;
-   
-   double * output = new double[3];
-   output[0] = beta;
-   output[1] = gamma;
-   output[2] = p; 
-                            
-   return output;
-}
-
+#include "TransferReaction.h"
 
 void HELIOS(){
 
@@ -60,15 +13,18 @@ void HELIOS(){
    printf(" include finite detector size correction (1 = yes, 0 = No)? ");
    scanf("%d", &option);
    float energyResolution;
-   printf(" Energy resolution ? ");
+   printf(" Energy resolution [MeV]? ");
    scanf("%f", &energyResolution);
-   printf(" Energy resol. = %f \n", energyResolution);
+   printf(" Energy resol. = %f MeV\n", energyResolution);
+   float posResolution;
+   printf(" Position resolution [mm]? ");
+   scanf("%f", &posResolution);
+   printf(" Position resol. = %f mm\n", posResolution);
    int numEvent;
    printf(" Number of Events ? ");
    scanf("%d", &numEvent);
 
    const double c = 299.792458;
-
 
    int Zb = 1;
    int ZB = 12;
@@ -107,7 +63,7 @@ void HELIOS(){
    TFile * saveFile = new TFile(saveFileName, "recreate");
    TTree * tree = new TTree("tree", "tree");
 
-   double z;
+   double z, x;
    double e;
    double t;
    double thetaCM;
@@ -124,6 +80,7 @@ void HELIOS(){
    //double zThetaCMSlope, zThetaCMConst; // becasue the finite detector correction, the effective slope and constant must be deduced from simulation.
 
    tree->Branch("e", &e, "e/D");
+   tree->Branch("x", &x, "x/D");
    tree->Branch("z", &z, "z/D");
    tree->Branch("t", &t, "t/D");
    tree->Branch("rho", &rho, "rho/D");
@@ -239,17 +196,18 @@ void HELIOS(){
                
             if( phiAccepted ){
                t = dphi * rho / vt0;
-               z = vp0 * t; // meter   
+               z = vp0 * t; // milimeter   
+               z += gRandom->Gaus(0, posResolution); // add pos resolution
             
                // check z-acceptance
                for( int ID = 0; ID < 6; ID ++){
                   if( pos[ID]-l < z && z < pos[ID] ) {
                      redoFlag = false;
                      detID = 5-ID;
+                     //Calculate x
+                     x = (z - (pos[ID]- l/2))/l*2; // range from -1, 1
                   } 
                }
-               
-               //z += gRandom->Gaus(0, 0.002); // add position resolution   
                
                //printf("-------detID: %d,  z:%f, dphi: %f , redo : %d\n", detID, z, dphi, redoFlag);
                

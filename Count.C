@@ -57,7 +57,11 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
 
    TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
    spec ->SetXTitle("Ex [MeV]");   
-   TString gate, gateB, gate_cm, gate_z ;
+   TString gate, gateB, gate_cm, gate_z, gate_Aux ;
+   
+   gate_Aux = " && z > -629 + 32 * Ex + 0.67 * Ex * Ex ";
+   gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
+   gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
    
    if( detID >= 0 ){
       gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
@@ -70,22 +74,27 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
       if( splitCtrl == 2) {
          gate_z.Form("&& z > %f", zMPos[detID]);
       }
+      
+      //exclude defected detectors
+      if( detID == 0){
+         gate.Form("good == 1 && det%6 == %d && det != 18 && TMath::Abs(t4)<1000", detID);
+      }
+      if( detID == 5){
+         gate.Form("good == 1 && det%6 == %d && det != 11 && TMath::Abs(t4)<1000", detID);
+      }
    }else if (detID == -1){
-      gate.Form("good == 1 && TMath::Abs(t4)<1000");
+      gate.Form("good == 1 && det != 11 && det != 18 && TMath::Abs(t4)<1000");
       gate_z.Form("&& -600 < z && z < -200");
    }
-   
-   gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
-   gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
-   
    
    printf("%s\n", gate.Data());
    printf("%s\n", gate_cm.Data());
    printf("%s\n", gate_z.Data());
+   printf("%s\n", gate_Aux.Data());
    
    printf(" threshold : %f \n", threshold);
    
-   tree->Draw("Ex>>spec ", gate + gate_cm + gate_z, "");
+   tree->Draw("Ex>>spec ", gate + gate_cm + gate_z + gate_Aux, "");
   
    cCount->cd(1);
    spec ->Draw();
@@ -105,7 +114,7 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    }else if(detID == -1){
       title.Form("t4-gate && |e_t| < 20 && TMath::Abs(t4)<1000");
    }
-   specS->SetTitle(title + gate_cm + gate_z);
+   specS->SetTitle(title + gate_cm + gate_z + " && thetaCM > 8");
    specS->SetName("specS");
    specS->Add(h1, -1.);
    specS->Sumw2();
@@ -180,47 +189,5 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
               paraA[3*i+2], paraE[3*i+2]);
    }
    
-   /*
-   printf("============================= 2 sigma\n");
-   for(int i = 0; i < nPeaks + nEPeaks; i++){
-      printf("%2d , Ex: (%8.4f, %8.4f) \n", 
-              i,  
-              paraA[3*i+1] - 2*paraA[3*i+2],
-              paraA[3*i+1] + 2*paraA[3*i+2]);
-   }
-   
-   
-   // theta CM distribution
-   /*
-   int Div2[2] = {5,3};  //x,y
-   int size2[2] = {300,300}; //x,y
-   TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, size2[0]*Div2[0], size2[1]*Div2[1]);
-   cAux->Divide(Div2[0],Div2[1]);
-   for( int i = 1; i <= Div2[0]*Div2[1] ; i++){
-      cAux->cd(i)->SetGrid();
-   }
-   
-   TH1F ** dist = new TH1F*[nPeaks];
-   TString expression, name, title,  gate_e;
-   for(int i = 0; i < nPeaks + nEPeaks; i++){
-      
-      name.Form("dist%d", i);
-      title.Form("Ex = %f +- 0.1", paraA[3*i+1]);
-      dist[i] = new TH1F(name, title, 45, 0, 45);
-      dist[i]->SetXTitle("theta_CM [deg]");
-      dist[i]->SetYTitle("count / 1 deg");
-      
-      expression.Form("thetaCM >> dist%d", i);
-      gate_e.Form("&& thetaCM != 0 && TMath::Abs(Ex - %f) < 0.1", paraA[3*i+1]);
-      cAux->cd(i+1);
-      
-      tree->Draw(expression, gate + gate_e);
-      
-   }
-   
-   cAux->cd(15);
-   tree->Draw("thetaCM:Ex", gate + " && thetaCM != 0", "colz");
-   
-   */
 }
 

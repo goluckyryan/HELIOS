@@ -52,7 +52,7 @@ void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {
       for( int i = 0; i < 6; i++){
          //printf("--------- detID == %d \n", i);
          gate_det.Form("&& detID%6 == %d", i);
-         gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.01", Ex);      
+         gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.01 && thetaCM > 9", Ex);      
       
          //============= get the acceptance
          

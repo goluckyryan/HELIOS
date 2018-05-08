@@ -3,8 +3,8 @@
 /**///======================================================== initial input
    
    //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
+   const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
+   //const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
    
 /**///========================================================  load tree
 
@@ -145,6 +145,25 @@
    
 /**///========================================================= Analysis
    
+   TH2F ** h = new TH2F**[24];
+   
+   TString expression, gate, name ;
+   
+   for( int i = 0; i < 24; i++){
+      name.Form("h%d", i);
+      h[i] = new TH2F(name, name, 100, -1, 1, 100, 0, 2000);
+      
+      expression.Form("e[%d]:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> h%d", i, i, i, i, i, i);
+      
+      gate.Form("e[%d] > 0 && xf[%d] > 0 && xn[%d] > 0", i, i, i);
+      
+      tree->Draw(expression, gate);
+      
+      cScript->Update();
+      printf("===== %d ", i);
+   }
+   
+   /*
    TString expression, gate, gateB;
    
    //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
@@ -153,6 +172,8 @@
    
    expression = "thetaCM : x >>j(400,-600, -200, 400, 0, 50) ";
    tree->Draw(expression, gate , "");
+   /**/
+   
    
 }
 

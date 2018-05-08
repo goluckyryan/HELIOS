@@ -76,14 +76,14 @@ void Aux(int expCol, int k1, int k2){
    
    printf("============== Ex : %f MeV\n", expEx[expCol]);
    
-   TCanvas * cAux = new TCanvas("cAux", "cAux", 0, 0, 1000, 500);
+   TCanvas * cFitXsec = new TCanvas("cFitXsec", "cFitXsec", 0, 0, 1000, 500);
    
-   cAux->Divide(2,1);
+   cFitXsec->Divide(2,1);
    for( int i = 1; i <= 2 ; i++){
-      cAux->cd(i)->SetGrid();
-      cAux->cd(i)->SetLogy();
+      cFitXsec->cd(i)->SetGrid();
+      cFitXsec->cd(i)->SetLogy();
    }
-   cAux->cd(1);
+   cFitXsec->cd(1);
    TString expression;
    
    //======== load Xsec data
@@ -190,14 +190,14 @@ void Aux(int expCol, int k1, int k2){
    legend->AddEntry(gData, gDataName , "l");
    
    //====== drawing
-   cAux->cd(1);
+   cFitXsec->cd(1);
    g1->GetYaxis()->SetRangeUser(down, up);
    g1->Draw("AC");
    if( k2 > 0 ) g2->Draw("same");
    gData->Draw("* same");
    legend->Draw();
 
-   cAux->cd(2);
+   cFitXsec->cd(2);
    if( k2 == 0 ){
       up = 1;
       down = 0.01;
