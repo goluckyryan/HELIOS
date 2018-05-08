@@ -125,7 +125,7 @@ Bool_t Cali_root::Process(Long64_t entry)
    //gate on rdt, a kind of recoil detector, total has 8 of them
    //if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
    
-   if( option == 1){
+   if( option == 0){
       for(int i = 0; i < 8; i++){
          if( rdt[i] > 0 ) {
             rdtC[i] = rdt[i];
@@ -192,7 +192,11 @@ Bool_t Cali_root::Process(Long64_t entry)
          // calculate x
          int detID = i%6;
          if(xf[i] > 0 && xn[i] > 0) {
-            z[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+            if( option == 1 ) {
+               z[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+            }else{
+               x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+            }
             count++;
             det = i;
          }else{
