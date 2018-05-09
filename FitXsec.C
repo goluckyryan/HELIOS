@@ -22,10 +22,11 @@ Double_t Average(TGraph * g, double x1, double x2, int n){
    return val /(n+1);
 }
 
-double expAngle[12][6] = {
+double expAngle[13][12] = {
    { 24.4, 29.8, 34.5, 38.5, 42.3},
    { 16.2, 24.4, 30.2, 35.0, 39.2, 43.0},
    {       20.0, 26.8, 32.3, 36.9, 41.1},
+   {       17.9, 21.6, 25.5, 28.1, 31.2, 33.3, 34.0, 37.9, 40.2, 42},
    {       13.9, 23.0, 29.4, 34.5, 39.1},
    {       12.6, 21.0, 28.0, 33.5, 38.2},
    {             17.4, 25.7, 31.7, 36.8},
@@ -37,10 +38,11 @@ double expAngle[12][6] = {
    {                   12.3, 20.9, 28.6}
 };
 
-double expDangle[12][6] = {
+double expDangle[13][12] = {
    {  5.5,  4.5,  4.0,  3.6,  3.2},
    { 10.7,  6.2,  4.9,  4.3,  3.9,  3.5},
    {        5.7,  5.8,  4.9,  4.2,  3.8},
+   {        3.7,  3.7,  2.6,  2.6, 2.2 , 2.2, 1.9, 1.9, 1.8, 1.8 },
    {              6.9,  5.4,  4.6,  4.1},
    {              7.8,  5.8,  4.9,  4.2},
    {             10.6,  6.4,  5.2,  4.5},
@@ -52,12 +54,13 @@ double expDangle[12][6] = {
    {                   12.8,  9.1,  6.4}
 };
 
-double expEx[12] = {0.0, 1.8, 2.9, 3.9, 4.3, 4.9, 5.3, 5.5, 5.7, 6.1, 7.0, 7.4};
+double expEx[13] = {0.0, 1.8, 2.9, 2.9, 3.9, 4.3, 4.9, 5.3, 5.5, 5.7, 6.1, 7.0, 7.4};
 
-double expData[12][6] = {
+double expData[13][12] = {
    {105,  66,  73,  51,   44},            // 0.0 -- OK d5/2
    { 85, 140, 140,  78,   38,  32},       // 1.8 -- OK d5/2, no dip ~ 20 deg of s1/2
    {     170, 311, 297,  241,  93},       // 2.9 -- a dip ~ 20 deg, should be s1/2
+   {     200, 150, 298,  324, 302, 276, 212, 254, 130, 98 }, // spliting half of 2.9 MeV
    {     275, 391, 370,  331, 137},       // 3.9 -- a dip ~ 20 deg, should be s1/2
    {     142, 237, 347,  270, 153},       // 4.3 -- a dip ~ 20 deg
    {          130, 170,  155,  75},       // 4.9 -- a dip ~ 20 deg
@@ -69,7 +72,7 @@ double expData[12][6] = {
    {               569, 1032, 659}        // 7.4 -- no dip
 };
 
-void Aux(int expCol, int k1, int k2){
+void FitXsec(int expCol, int k1, int k2){
    
    int fitCol[2] = {k1,k2}; // start from 0, 0 = angle, 1 = ground state
    //int expCol = 3;
@@ -151,7 +154,7 @@ void Aux(int expCol, int k1, int k2){
    int i = expCol;
    double startT = 50; 
    double endT = 0;
-   for(int j = 0; j < 6 ; j++){
+   for(int j = 0; j < 12 ; j++){
       if( expData[i][j] == 0.0 ) {
          continue;
       }else{
