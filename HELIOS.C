@@ -6,6 +6,7 @@
 #include "TRandom.h"
 #include <vector>
 #include "TransferReaction.h"
+#include <fstream>
 
 void HELIOS(){
 
@@ -26,37 +27,101 @@ void HELIOS(){
 
    const double c = 299.792458;
 
-   int Zb = 1;
-   int ZB = 12;
-   
    double Bfield = 2.85; // Tesla
 
-   double mA = 23268.0269 ; // 25Mg
-   double ma =  1875.6129 ; // d
-   double mb =   938.272  ; // p
-   double mB = 24196.4992 ; // 26Mg
-
-   double T =  6 * 25;
+   int Zb, ZB;
+   double mA, ma, mb, mB;
+   int AA;
+   double T;
    
    vector<double> ExKnown;
-   ExKnown.push_back(0);
-   ExKnown.push_back(1.80874);
-   ExKnown.push_back(2.93833);
-//   ExKnown.push_back(3.58856);
-   ExKnown.push_back(3.94157);
-   ExKnown.push_back(4.33252);
-//   ExKnown.push_back(4.83513);
-   ExKnown.push_back(4.97230);
-   ExKnown.push_back(5.29174);
-   ExKnown.push_back(5.47605);
-   ExKnown.push_back(5.69108);
-//   ExKnown.push_back(5.71591);
-   ExKnown.push_back(6.12547);
-//   ExKnown.push_back(6.2562);
-   ExKnown.push_back(7.0619);
-   ExKnown.push_back(7.428);
-   ExKnown.push_back(8.1);
-   ExKnown.push_back(8.5);
+   printf("----- loading reaction parameters.");
+   ifstream file;
+   file.open("reaction.txt");
+   string reactionName;
+   if( file.is_open() ){
+      string x;
+      int i = 0;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" ) continue;
+         if( i == 0 ) reactionName = x;
+         if( i == 1 ) mA = atof(x.c_str());
+         if( i == 2 ) ma = atof(x.c_str());
+         if( i == 3 ) mb = atof(x.c_str());
+         if( i == 4 ) mB = atof(x.c_str());
+         if( i == 5 ) Zb = atoi(x.c_str());
+         if( i == 6 ) ZB = atoi(x.c_str());
+         if( i == 7 ) AA = atoi(x.c_str());
+         if( i == 8 ) T  = atof(x.c_str()) * AA; 
+         if ( i >= 9 ){
+            ExKnown.push_back(atof(x.c_str()));
+         }
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+      printf("========== %s, beam energy : %6.2f MeV/u \n", reactionName.c_str(), T / AA);
+      int n = ExKnown.size();
+      for(int i = 0; i < n ; i++){
+         printf("%d, %6.2f MeV \n", i, ExKnown[i]);
+      }
+   }else{
+       printf("... fail\n");
+   }
+   
+   //=========== detector geometry
+   double bore = 925.0; // bore , mm
+   double a = 11.5; // distance from axis
+   double w = 9.0; // width   
+   double posRecoil = 1044.5 ; // recoil, downstream
+   double l = 50.5; // length
+   double support = 43.5;
+   double firstPos = -218.5; // m 
+   double pos[6] = {-294.8, -236.2, -176.9, -118, -59., 0.}; // near position in m
+   
+   printf("----- loading detector geometery.");
+   file.open("detectorGeo.txt");
+   if( file.is_open() ){
+      string x;
+      int i = 0;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" ) continue;
+         if( i == 0 ) bore = atof(x.c_str());
+         if( i == 1 ) a    = atof(x.c_str());
+         if( i == 2 ) w    = atof(x.c_str());
+         if( i == 3 ) posRecoil = atof(x.c_str());
+         if( i == 4 ) l    = atof(x.c_str());
+         if( i == 5 ) support = atof(x.c_str());
+         if( i == 6 ) firstPos = atof(x.c_str());
+         if( i >= 7 ) {
+            pos[i-7] = atof(x.c_str());
+         }
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+      
+      for(int id = 0; id < 6; id++){
+         pos[id] = firstPos + pos[id];
+      }
+      
+      printf("========== Recoil detector: %6.2f mm \n", posRecoil);
+      printf("========== gap of multi-loop: %6.2f mm \n", -(firstPos + support));
+      for(int i = 0; i < 6 ; i++){
+         printf("%d, %6.2f mm \n", i, pos[i]);
+      }
+   }else{
+       printf("... fail\n");
+   }
+   
+   double dphiAccept = 2* TMath::ATan(2*a/w);
+   if( option == 0) {
+      printf(" setting a = 0 \n");
+      a = 0; 
+      dphiAccept = TMath::TwoPi(); 
+   }
       
    //====================== build tree
    TString saveFileName = "test_2.root";
@@ -98,29 +163,6 @@ void HELIOS(){
    tree->Branch("ExID", &ExID, "ExID/I");
    //tree->Branch("zThetaCMSlope", &zThetaCMSlope, "zThetaCMSlope/D");
    //tree->Branch("zThetaCMConst", &zThetaCMConst, "zThetaCMSConst/D");
-
-   //=========== detector geometry
-   double bore = 925.0; // bore , mm
-   double a = 11.5; // distance from axis
-   if( option == 0) {
-      printf(" setting a = 0 \n");
-      a = 0; 
-   }
-   double w = 9.0; // width
-   
-   double dphiAccept = 2* TMath::ATan(2*a/w);
-   if( option == 0 ) dphiAccept = TMath::TwoPi(); 
-   
-   double posRecoil = 1044.5 ; // recoil, downstream
-   
-   double l = 50.5; // length
-   double support = 43.5;
-   double firstPos = 218.5; // m 
-   double pos[6] = {0. , 59., 118., 176.9, 236.2, 294.8}; // near position in m
-   
-   for(int id = 0; id < 6; id++){
-      pos[id] = -firstPos - pos[id];
-   }
 
    //timer
    TBenchmark clock;
@@ -183,10 +225,10 @@ void HELIOS(){
             double t0 = dphi * rho / vt0; // nano-second   
             double z0 = vp0 * t0; // mm   
 
-            if( pos[0]+support < z0 && z0 < 0 ) {
+            if( pos[5]+support < z0 && z0 < 0 ) {
                tag = 1;
                dphi += TMath::TwoPi();
-            }else if( pos[5] - l < z0 && z0 < pos[0] ){
+            }else if( pos[0] - l < z0 && z0 < pos[5] ){
                tag = 2;
             }else{
                tag = 3;
@@ -203,7 +245,7 @@ void HELIOS(){
                for( int ID = 0; ID < 6; ID ++){
                   if( pos[ID]-l < z && z < pos[ID] ) {
                      redoFlag = false;
-                     detID = 5-ID;
+                     detID = ID;
                      //Calculate x
                      x = (z - (pos[ID]- l/2))/l*2; // range from -1, 1
                   } 
