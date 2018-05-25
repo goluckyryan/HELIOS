@@ -1,1 +1,1 @@
-reaction_16N_d_p_17N.txt
+reaction_16N_d_3He_15C.txt
