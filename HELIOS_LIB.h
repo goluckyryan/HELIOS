@@ -23,11 +23,12 @@ public:
    ~TransferReaction();
    
 
-   void SetA(int A, int Z){
+   void SetA(int A, int Z, double Ex = 0){
       Isotopes temp (A, Z);
       mA = temp.Mass;
       AA = A;
       zA = Z;
+      ExA = Ex;
       isReady = false;
    }
    void Seta(int A, int Z){
@@ -73,7 +74,7 @@ public:
    int GetCharge_B(){return zB;}
    
    void Constant();
-   TLorentzVector * Event(double thetaCM, double phiCM);
+   TLorentzVector * Event(double Ex, double thetaCM, double phiCM);
    
 private:
    double thetaIN, phiIN;
@@ -81,6 +82,7 @@ private:
    int AA, Aa, Ab, AB;
    int zA, za, zb, zB;
    double TA, T; // TA = KE of A pre u, T = total energy
+   double ExA;
    
    bool isReady;
    
@@ -93,7 +95,7 @@ private:
 TransferReaction::TransferReaction(){
    thetaIN = 0.;
    phiIN = 0.;
-   SetA(12,6);
+   SetA(12, 6, 0);
    Seta(2,1);
    Setb(1,1);
    SetB(13,6);
@@ -117,14 +119,14 @@ void TransferReaction::Constant(){
    isReady = true;
 }
 
-TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
+TLorentzVector * TransferReaction::Event(double Ex, double thetaCM, double phiCM)
 {
    if( isReady == false ){
       Constant();
    }
 
    TLorentzVector PA;
-   PA.SetXYZM(0, 0, k, mA);
+   PA.SetXYZM(0, 0, k, mA + ExA);
    PA.RotateY(thetaIN);
    PA.RotateZ(phiIN);
    
@@ -164,7 +166,7 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
    vB.Rotate(-thetaCM, uB);
    vB.Rotate(-phiCM, vA);
    
-   PBc.SetVectM(vB, mB);
+   PBc.SetVectM(vB, mB + Ex);
    
    //---- to Lab Frame
    TLorentzVector Pb = Pbc;
