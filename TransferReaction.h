@@ -5,7 +5,9 @@
 #include "TMath.h"
 
 TLorentzVector * Reaction(double mA, double ma, double mb, double mB, double T, double thetaCM, double phiCM){
-
+   // reaction A(a,b)B
+   // particle A is incident particle
+   // thetaCM defined as the angle between A and B or a and b
    double k = TMath::Sqrt(TMath::Power(mA + T, 2) - mA * mA);    
    double beta = k / (mA + ma + T);
    double gamma = 1 / TMath::Sqrt(1- beta * beta);
@@ -16,21 +18,19 @@ TLorentzVector * Reaction(double mA, double ma, double mb, double mB, double T, 
    
    TLorentzVector * FourVector = new TLorentzVector[2];
    
-   // light particle
+   //particle b
    FourVector[0].SetPxPyPzE(- p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
-                            - p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
+                            - p * TMath::Sin(thetaCM) * TMath::Sin(phiCM),
                             gamma * beta * TMath::Sqrt(mb * mb + p * p) - gamma *p * TMath::Cos(thetaCM),
                             gamma * TMath::Sqrt(mb * mb + p * p) - gamma * beta * p * TMath::Cos(thetaCM)
                            );
-   // heavy particle       
+   //particle B       
    FourVector[1].SetPxPyPzE( p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
-                             p * TMath::Sin(thetaCM) * TMath::Cos(phiCM),
+                             p * TMath::Sin(thetaCM) * TMath::Sin(phiCM),
                             gamma * beta * TMath::Sqrt(mB * mB + p * p) + gamma *p * TMath::Cos(thetaCM),
                             gamma * TMath::Sqrt(mB * mB + p * p) + gamma * beta * p * TMath::Cos(thetaCM)
                             );
                             
-   // beta, gamma, p
-   //FourVector[2].SetPxPyPzE(beta, gamma, 0, p);
                             
    return FourVector;
 }

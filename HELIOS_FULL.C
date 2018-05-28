@@ -8,7 +8,7 @@
 #include "TransferReaction.h"
 #include <fstream>
 
-void HELIOS(){
+void HELIOS_FULL(){
 
    int option;
    printf(" include finite detector size correction (1 = yes, 0 = No)? ");
@@ -180,7 +180,12 @@ void HELIOS(){
          detID = 0;
          tag = 0;
          redoFlag = true;
-         thetaCM = TMath::Pi() * gRandom->Rndm();         
+         if( firstPos < 0 ) {
+            thetaCM = 0.5*TMath::Pi() * gRandom->Rndm(); // gRandom->Rndm() from 0 to 1, angle start from -z axis.
+         }else{
+            thetaCM = 0.5*TMath::Pi() * (1 + gRandom->Rndm()) ;
+         }
+         //phiCM = 2*TMath::Pi() * gRandom->Rndm();
          phiCM = 0.;
          ExID = gRandom->Integer(ExKnown.size());
          Ex = ExKnown[ExID]; 
@@ -201,7 +206,7 @@ void HELIOS(){
          eR     = P[1].E() - mB;
          
          //set gate on the obital size, and must be scattered backward 
-         if( bore > 2*rho &&  rho > a/2. && ((firstPos < 0 && theta > TMath::PiOver2() ) || (firstPos > 0 && theta < TMath::PiOver2() ) ) ){ 
+         if( bore > 2*rho &&  rho > a/2. && theta > TMath::PiOver2() ){ 
 
             double    vt0 = P[0].Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
             double    vp0 = P[0].Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
@@ -224,30 +229,14 @@ void HELIOS(){
             double t0 = dphi * rho / vt0; // nano-second   
             double z0 = vp0 * t0; // mm   
 
-            if( firstPos < 0 ) {
-               double minNoBlock = pos[5] + support ;
-               double minDis = pos[5];
-               if( minNoBlock < z0 && z0 < 0 ) {
-                  tag = 1;
-                  dphi += TMath::TwoPi() * (TMath::Ceil( TMath::Abs(minDis / z0) ) - 1);
-               }else if( pos[0] - l < z0 && z0 < pos[5] ){
-                  tag = 2;
-               }else{
-                  tag = 3;
-                  dphi = 0;
-               }
+            if( pos[5] + support < z0 && z0 < 0 ) {
+               tag = 1;
+               dphi += TMath::TwoPi();
+            }else if( pos[0] - l < z0 && z0 < pos[5] ){
+               tag = 2;
             }else{
-               double minNoBlock = pos[0] - l - support ;
-               double minDis = pos[0] - l;
-               if( 0 < z0 &&  z0 < minNoBlock ) {
-                  tag = 1;
-                  dphi += TMath::TwoPi() * (TMath::Ceil( minDis / z0 ) - 1);
-               }else if( pos[0] - l < z0 && z0 < pos[5] ){
-                  tag = 2;
-               }else{
-                  tag = 3;
-                  dphi = 0;
-               }
+               tag = 3;
+               dphi = 0;
             }
             //printf("tag %d------- z:%f, dphi: %f , phiAccpeted %d\n", tag, z0, dphi, phiAccepted);
                
