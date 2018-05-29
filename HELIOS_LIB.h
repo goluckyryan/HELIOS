@@ -90,6 +90,8 @@ private:
    double beta, gamma;
    double Etot;
    double p; // CM frame momentum of b, B
+   
+   TLorentzVector * PA, Pa, Pb, PB;
 };
 
 TransferReaction::TransferReaction(){
@@ -103,10 +105,20 @@ TransferReaction::TransferReaction(){
    T = TA * AA;
    
    Constant();
+   
+   PA = NULL;
+   Pa = NULL;
+   Pb = NULL;
+   PB = NULL;
+   
 }
 
 TransferReaction::~TransferReaction(){
 
+   delete PA;
+   delete Pa;
+   delete Pb;
+   delete PB;
 }
 
 void TransferReaction::Constant(){
@@ -179,7 +191,32 @@ TLorentzVector * TransferReaction::Event(double Ex, double thetaCM, double phiCM
    output[1] = Pa;
    output[2] = Pb;
    output[3] = PB;
+   
+   this->PA = PA;
+   this->Pa = Pa;
+   this->Pb = Pb;
+   this->PB = PB;
 
    return output;   
+}
+
+class HELIOS{
+public:
+
+   // what is the input? particle initial motion, detector configuration
+   HELIOS();
+   ~HELIOS();
+
+private:
+   //what is the output? energy, x, z, rho, dphi
+
+};
+
+HELIOS::HELIOS(){
+
+}
+
+HELIOS::~HELIOS(){
+
 }
 
