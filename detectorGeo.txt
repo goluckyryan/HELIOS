@@ -1,1 +1,1 @@
-detectorGeo_downtream.txt
+detectorGeo_upstream.txt

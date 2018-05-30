@@ -27,8 +27,6 @@ void HELIOS(){
 
    const double c = 299.792458;
 
-   double Bfield = 2.85; // Tesla
-
    int Zb, ZB;
    double mA, ma, mb, mB;
    int AA;
@@ -68,9 +66,11 @@ void HELIOS(){
       }
    }else{
        printf("... fail\n");
+       return;
    }
    
    //=========== detector geometry
+   double Bfield = 2.85; // Tesla
    double bore = 925.0; // bore , mm
    double a = 11.5; // distance from axis
    double w = 9.0; // width   
@@ -88,15 +88,16 @@ void HELIOS(){
       while( file >> x){
          //printf("%d, %s \n", i,  x.c_str());
          if( x.substr(0,2) == "//" ) continue;
-         if( i == 0 ) bore = atof(x.c_str());
-         if( i == 1 ) a    = atof(x.c_str());
-         if( i == 2 ) w    = atof(x.c_str());
-         if( i == 3 ) posRecoil = atof(x.c_str());
-         if( i == 4 ) l    = atof(x.c_str());
-         if( i == 5 ) support = atof(x.c_str());
-         if( i == 6 ) firstPos = atof(x.c_str());
-         if( i >= 7 ) {
-            pos[i-7] = atof(x.c_str());
+         if( i == 0 ) Bfield = atof(x.c_str());
+         if( i == 1 ) bore = atof(x.c_str());
+         if( i == 2 ) a    = atof(x.c_str());
+         if( i == 3 ) w    = atof(x.c_str());
+         if( i == 4 ) posRecoil = atof(x.c_str());
+         if( i == 5 ) l    = atof(x.c_str());
+         if( i == 6 ) support = atof(x.c_str());
+         if( i == 7 ) firstPos = atof(x.c_str());
+         if( i >= 8 ) {
+            pos[i-8] = atof(x.c_str());
          }
          i = i + 1;
       }
@@ -114,6 +115,7 @@ void HELIOS(){
       }
    }else{
        printf("... fail\n");
+       return;
    }
    
    double dphiAccept = 2* TMath::ATan(2*a/w);
@@ -227,9 +229,9 @@ void HELIOS(){
             if( firstPos < 0 ) {
                double minNoBlock = pos[5] + support ;
                double minDis = pos[5];
-               if( minNoBlock < z0 && z0 < 0 ) {
+               if( minDis/2. < z0 && z0 < minNoBlock ) {
                   tag = 1;
-                  dphi += TMath::TwoPi() * (TMath::Ceil( TMath::Abs(minDis / z0) ) - 1);
+                  dphi += TMath::TwoPi() ;
                }else if( pos[0] - l < z0 && z0 < pos[5] ){
                   tag = 2;
                }else{
@@ -239,9 +241,9 @@ void HELIOS(){
             }else{
                double minNoBlock = pos[0] - l - support ;
                double minDis = pos[0] - l;
-               if( 0 < z0 &&  z0 < minNoBlock ) {
+               if( minNoBlock < z0 &&  z0 < minDis/2. ) {
                   tag = 1;
-                  dphi += TMath::TwoPi() * (TMath::Ceil( minDis / z0 ) - 1);
+                  dphi += TMath::TwoPi() ;
                }else if( pos[0] - l < z0 && z0 < pos[5] ){
                   tag = 2;
                }else{
