@@ -6,10 +6,13 @@
 #include "TTree.h"
 #include "TRandom.h"
 #include <vector>
-#include "TransferReaction.h"
 #include <fstream>
 
 void sim(){
+
+   int numEvent;
+   printf(" Number of Events ? ");
+   scanf("%d", &numEvent);
 
    TransferReaction reaction;
    
@@ -65,6 +68,8 @@ void sim(){
    double e, z, x, t;
    int loop, detID;
    double dphi, rho;
+   int ExID;
+   double Ex;
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -79,6 +84,8 @@ void sim(){
    tree->Branch("loop", &loop, "loop/I");
    tree->Branch("dphi", &dphi, "dphi/D");
    tree->Branch("rho", &rho, "rho/D");
+   tree->Branch("ExID", &ExID, "ExID/I");
+   tree->Branch("Ex", &Ex, "Ex/D");
    
    //timer
    TBenchmark clock;
@@ -86,15 +93,20 @@ void sim(){
    clock.Reset();
    clock.Start("timer");
    shown = false;
-   int numEvent = 1000;
    printf("================= generating %d events \n", numEvent);
    
+   
+   //====================================================== calculate 
    int count = 0;
    for( int i = 0; i < numEvent; i++){
       bool redoFlag = true;
       do{
          thetaCM = 0.5*TMath::Pi() * gRandom->Rndm(); 
-         TLorentzVector * output = reaction.Event(0.0, thetaCM, 0);
+         ExID = gRandom->Integer(ExKnown.size());
+         Ex = ExKnown[ExID]; 
+         
+         reaction.SetExB(Ex);
+         TLorentzVector * output = reaction.Event(thetaCM, 0);
       
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];

@@ -29,6 +29,7 @@ public:
       zA = Z;
       ExA = Ex;
       isReady = false;
+      isBSet = true;
    }
    void Seta(int A, int Z){
       Isotopes temp (A, Z);
@@ -36,6 +37,7 @@ public:
       Aa = A;
       za = Z;
       isReady = false;
+      isBSet = false;
    }
    void Setb(int A, int Z){
       Isotopes temp (A, Z);
@@ -43,6 +45,7 @@ public:
       Ab = A;
       zb = Z;
       isReady = false;
+      isBSet = false;
    }
    void SetB(int A, int Z){
       Isotopes temp (A, Z);
@@ -50,6 +53,7 @@ public:
       AB = A;
       zB = Z;
       isReady = false;
+      isBSet = true;
    }
    void SetIncidentEnergyPerU(double T){
       TA = T;
@@ -59,6 +63,14 @@ public:
    void SetIncidentAngle(double theta, double phi){
       thetaIN = theta;
       phiIN = phi;
+      isReady = false;
+   }
+   void SetExA(double Ex){
+      this->ExA = Ex;
+      isReady = false;
+   }
+   void SetExB(double Ex){
+      this->ExB = Ex;
       isReady = false;
    }
    
@@ -77,8 +89,8 @@ public:
    TLorentzVector GetPb(){return Pb;}
    TLorentzVector GetPB(){return PB;}
    
-   void Constant();
-   TLorentzVector * Event(double Ex, double thetaCM, double phiCM);
+   void CalReactioConstant();
+   TLorentzVector * Event(double thetaCM, double phiCM);
    
 private:
    double thetaIN, phiIN;
@@ -86,9 +98,10 @@ private:
    int AA, Aa, Ab, AB;
    int zA, za, zb, zB;
    double TA, T; // TA = KE of A pre u, T = total energy
-   double ExA;
+   double ExA, ExB;
    
    bool isReady;
+   bool isBSet;
    
    double k; // Lab frame momentum mA 
    double beta, gamma;
@@ -108,7 +121,10 @@ TransferReaction::TransferReaction(){
    TA = 6;
    T = TA * AA;
    
-   Constant();
+   ExA = 0;
+   ExB = 0;
+   
+   CalReactioConstant();
    
    TLorentzVector temp (0,0,0,0);
    PA = temp;
@@ -122,20 +138,28 @@ TransferReaction::~TransferReaction(){
 
 }
 
-void TransferReaction::Constant(){
+void TransferReaction::CalReactioConstant(){
+   if( !isBSet){
+      AB = AA + Aa - Ab;
+      zB = zA + za - zb;
+      Isotopes temp (AB, zB);
+      mB = temp.Mass;
+      isBSet = true;
+   }
+   
    k = TMath::Sqrt(TMath::Power(mA + T, 2) - mA * mA); 
    beta = k / (mA + ma + T);
    gamma = 1 / TMath::Sqrt(1- beta * beta);   
    Etot = TMath::Sqrt(TMath::Power(mA + ma + T,2) - k * k);
-   p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB,2)) * (Etot*Etot - TMath::Power(mb - mB,2)) ) / 2 / Etot;
+   p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB + ExB,2)) * (Etot*Etot - TMath::Power(mb - mB - ExB,2)) ) / 2 / Etot;
    
    isReady = true;
 }
 
-TLorentzVector * TransferReaction::Event(double Ex, double thetaCM, double phiCM)
+TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
 {
    if( isReady == false ){
-      Constant();
+      CalReactioConstant();
    }
 
    TLorentzVector PA;
@@ -179,7 +203,7 @@ TLorentzVector * TransferReaction::Event(double Ex, double thetaCM, double phiCM
    vB.Rotate(-thetaCM, uB);
    vB.Rotate(-phiCM, vA);
    
-   PBc.SetVectM(vB, mB + Ex);
+   PBc.SetVectM(vB, mB + ExB);
    
    //---- to Lab Frame
    TLorentzVector Pb = Pbc;
@@ -200,8 +224,9 @@ TLorentzVector * TransferReaction::Event(double Ex, double thetaCM, double phiCM
    
    return output;   
 }
-
-
+//=======================================================
+//#######################################################
+//======================================================= 
 class HELIOS{
 public:
 
