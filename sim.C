@@ -1,6 +1,15 @@
 #include "HELIOS_LIB.h"
+#include "TBenchmark.h"
+#include "TLorentzVector.h"
+#include "TMath.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TRandom.h"
+#include <vector>
+#include "TransferReaction.h"
+#include <fstream>
 
-int main(){
+void sim(){
 
    TransferReaction reaction;
    
@@ -45,7 +54,7 @@ int main(){
    }
    
    //====================== build tree
-   TString saveFileName = "test_2.root";
+   TString saveFileName = "test_3.root";
    TFile * saveFile = new TFile(saveFileName, "recreate");
    TTree * tree = new TTree("tree", "tree");
    
@@ -55,6 +64,7 @@ int main(){
    
    double e, z, x, t;
    int loop, detID;
+   double dphi, rho;
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -67,6 +77,8 @@ int main(){
    tree->Branch("t", &t, "t/D");
    tree->Branch("detID", &detID, "detID/I");
    tree->Branch("loop", &loop, "loop/I");
+   tree->Branch("dphi", &dphi, "dphi/D");
+   tree->Branch("rho", &rho, "rho/D");
    
    //timer
    TBenchmark clock;
@@ -82,7 +94,7 @@ int main(){
       bool redoFlag = true;
       do{
          thetaCM = 0.5*TMath::Pi() * gRandom->Rndm(); 
-         TLorentzVector * output = reaction.Event(0, thetaCM, 0);
+         TLorentzVector * output = reaction.Event(0.0, thetaCM, 0);
       
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];
@@ -102,6 +114,8 @@ int main(){
             t = helios.GetTime();
             loop = helios.GetLoop();
             detID = helios.GetDetID();
+            dphi = helios.GetdPhi();
+            rho = helios.GetRho();
             redoFlag = false;
          }else{
             redoFlag = true;
@@ -133,6 +147,5 @@ int main(){
    
    printf("========== done.\n");
    printf("========= saved as %s.\n", saveFileName.Data());
-   
-   return 0;
+
 }

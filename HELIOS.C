@@ -118,12 +118,14 @@ void HELIOS(){
        return;
    }
    
-   double dphiAccept = 2* TMath::ATan(2*a/w);
+   double dphiAccept = TMath::ATan(w/2./a);
    if( option == 0) {
       printf(" setting a = 0 \n");
       a = 0; 
       dphiAccept = TMath::TwoPi(); 
    }
+   
+   printf("dphi acceptance : %f deg \n", dphiAccept * TMath::RadToDeg() );
       
    //====================== build tree
    TString saveFileName = "test_2.root";
@@ -139,7 +141,7 @@ void HELIOS(){
    double theta;
    double dphi;
    double rho;
-   int tag;
+   int loop;
    int detID;
    double thetaR, eR, rhoR;
    double tR;
@@ -156,7 +158,7 @@ void HELIOS(){
    tree->Branch("thetaCM", &thetaCM, "thetaCM/D");
    tree->Branch("phiCM", &phiCM, "phiCM/D");
    tree->Branch("Ex", &Ex, "Ex/D");
-   tree->Branch("tag", &tag, "tag/I");
+   tree->Branch("loop", &loop, "loop/I");
    tree->Branch("detID", &detID, "detID/I");
    tree->Branch("eR", &eR, "eR/D");
    tree->Branch("thetaR", &thetaR, "thetaR/D");
@@ -176,11 +178,11 @@ void HELIOS(){
    
    int i = 0;
    for( i = 0; i < numEvent; i++){  
-      bool phiAccepted = false;
       bool redoFlag = true;
       do{
+         bool phiAccepted = false;
          detID = 0;
-         tag = 0;
+         loop = 0;
          redoFlag = true;
          thetaCM = TMath::Pi() * gRandom->Rndm();         
          phiCM = 0.;
@@ -191,8 +193,6 @@ void HELIOS(){
          TLorentzVector * P = Reaction(mA, ma, mb, mB + Ex, T, thetaCM , phiCM);
          
          thetaCM = thetaCM * TMath::RadToDeg();
-         
-         Ex += gRandom->Gaus(0, energyResolution); // add energy resolution
          
          theta = P[0].Theta(); // Lab theta
          rho   = P[0].Pt() / Bfield / Zb / c * 1000.; // mm
@@ -213,14 +213,21 @@ void HELIOS(){
             if( rho > a ) {
                dphi = TMath::TwoPi() + TMath::ASin(-a/rho);  // exact position
             }else{
-               dphi = TMath::TwoPi() - 2*TMath::ASin(TMath::Sqrt(a/2/rho));
+               //dphi = TMath::TwoPi() - 2*TMath::ASin(TMath::Sqrt(a/2/rho));
+               dphi = 0;
             }
             
             //double * para = ReactionInveriance(mA, ma, mb, mB + Ex, T);
             //zThetaCMConst = dphi/ Bfield/ Zb / c * para[0] * para[1] * TMath::Sqrt( TMath::Power(mb,2) + TMath::Power(para[2],2)) * 1000.;
             //zThetaCMSlope = dphi/ Bfield/ Zb / c * para[1] * para[2] * 1000.;
             
-            if( TMath::Abs(dphi/2 - TMath::PiOver2()) < dphiAccept  || TMath::Abs(dphi/2 - TMath::Pi()) < dphiAccept ) phiAccepted = true;
+            //if( TMath::Abs(dphi - TMath::Pi()) < dphiAccept  || TMath::Abs(dphi - 3./4.*TMath::TwoPi()) < dphiAccept ) phiAccepted = true;
+            
+            if( TMath::Abs(rho - TMath::Sqrt(rho*rho - a*a)) < w/2.) {
+               phiAccepted = true;
+            }else{
+               phiAccepted = false;
+            }
             
             //infinite small detector
             double t0 = dphi * rho / vt0; // nano-second   
@@ -229,45 +236,51 @@ void HELIOS(){
             if( firstPos < 0 ) {
                double minNoBlock = pos[5] + support ;
                double minDis = pos[5];
-               if( minDis/2. < z0 && z0 < minNoBlock ) {
-                  tag = 1;
+               if( minNoBlock < z0 &&  z0 < minDis/2. ) {
+                  loop = 2;
                   dphi += TMath::TwoPi() ;
                }else if( pos[0] - l < z0 && z0 < pos[5] ){
-                  tag = 2;
+                  loop = 1;
                }else{
-                  tag = 3;
+                  loop = 0;
                   dphi = 0;
                }
             }else{
                double minNoBlock = pos[0] - l - support ;
                double minDis = pos[0] - l;
-               if( minNoBlock < z0 &&  z0 < minDis/2. ) {
-                  tag = 1;
+               if( minDis/2. < z0 &&  z0 < minNoBlock ) {
+                  loop = 2;
                   dphi += TMath::TwoPi() ;
                }else if( pos[0] - l < z0 && z0 < pos[5] ){
-                  tag = 2;
+                  loop = 1;
                }else{
-                  tag = 3;
+                  loop = 0;
                   dphi = 0;
                }
             }
-            //printf("tag %d------- z:%f, dphi: %f , phiAccpeted %d\n", tag, z0, dphi, phiAccepted);
+            //printf("loop %d------- z:%f, dphi: %f , phiAccpeted %d\n", loop, z0, dphi, phiAccepted);
                
-            if( phiAccepted ){
+            if( phiAccepted == true ){
                t = dphi * rho / vt0;
                z = vp0 * t; // milimeter   
                z += gRandom->Gaus(0, posResolution); // add pos resolution
             
                // check z-acceptance
+               bool hit = false;
                for( int ID = 0; ID < 6; ID ++){
                   if( pos[ID]-l < z && z < pos[ID] ) {
-                     redoFlag = false;
+                     hit = true;
                      detID = ID;
                      //Calculate x
                      x = (z - (pos[ID]- l/2))/l*2; // range from -1, 1
                   } 
                }
                
+               if( !hit ){
+                  redoFlag = true; 
+               }else{
+                  redoFlag = false;
+               }
                //printf("-------detID: %d,  z:%f, dphi: %f , redo : %d\n", detID, z, dphi, redoFlag);
                
             }else{
@@ -275,7 +288,7 @@ void HELIOS(){
             }
             
             //if( 0.005 < rho && rho < a ) {
-            //   printf("rho :%f, z0: %f, z: %f, tag: %d, phiAccepted: %d, redoFlag %d , dphi: %f deg\n", rho, z0, z, tag, phiAccepted, redoFlag, dphi *TMath::RadToDeg() );
+            //   printf("rho :%f, z0: %f, z: %f, loop: %d, phiAccepted: %d, redoFlag %d , dphi: %f deg\n", rho, z0, z, loop, phiAccepted, redoFlag, dphi *TMath::RadToDeg() );
             //}
 
          }

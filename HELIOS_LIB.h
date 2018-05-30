@@ -324,7 +324,7 @@ void HELIOS::SetDetectorGeometry(string filename){
 int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    if( isReady == false ) {
       printf("Please Set Detector Geometry. SetDetectorGeometry(TString filename)");
-      return;
+      return 0;
    }
    
    //initialization
@@ -360,7 +360,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       }
 
       //infinite small detector   
-       
       double    vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
       double    vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
       double t0 = dphi * rho / vt0; // nano-second   
@@ -372,7 +371,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       if( firstPos > 0 ){ // for downstream setting
          double minNoBlock = pos[0] - support ;
          double minDis = pos[0];
-         if( minNoBlock < z0 &&  z0 < minDis/2. ) {
+         if( minDis/2. < z0 &&  z0 < minNoBlock ) {
             loop = 2;
             dphi += TMath::TwoPi() * (loop - 1);
          }else if( pos[0] < z0 && z0 < pos[5] + l ){
@@ -385,7 +384,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       }else{ // for upstream setting
          double minNoBlock = pos[5] + support ;
          double minDis = pos[5];
-         if( minDis/2. < z0 &&  z0 < minNoBlock ) {
+         if( minNoBlock < z0 &&  z0 < minDis/2. ) {
             loop = 2;
             dphi += TMath::TwoPi() * (loop - 1);
          }else if( pos[0]-l < z0 && z0 < pos[5] ){
