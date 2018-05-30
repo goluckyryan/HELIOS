@@ -9,12 +9,10 @@
 #include <fstream>
 #include "isotopes.h"
 
-//given a beam 4-vector, reaction type, loading detector geometric file, generate an event
-
-// TransferReaction class ? -- only for reaction, both for beam generation and reaction
-// scattering in target
-// HELIOS class? -- only for detection
-
+//=======================================================
+//#######################################################
+//Class for Transfer Reaction
+//======================================================= 
 class TransferReaction {
 public:
 
@@ -230,11 +228,11 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
 }
 //=======================================================
 //#######################################################
+//Class for HELIOS
 //======================================================= 
 class HELIOS{
 public:
 
-   // what is the input? particle initial motion, detector configuration
    HELIOS();
    ~HELIOS();
    
@@ -254,7 +252,6 @@ public:
    double GetZ0(){return z0;}
    double GetTime0(){return t0;}
 private:
-   //what is the output? energy, x, z, rho, dphi
    double e, z, x, rho, dphi, t;
    int detID, loop;   // multiloop
    double eB, rhoB, tB;
@@ -472,4 +469,41 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
 
    return hit;
 }
+
+//=======================================================
+//#######################################################
+// Class for multi-scattering of the beam inside target
+//=======================================================
+class TargetScattering(){
+//input : TLorentzVector, target thickness
+//output : scattered TLorentzVector
+public:
+   TargetScattering();
+   ~TargetScattering();
+   
+   void SetThickness(double x){
+      this->t = x;
+   }
+   TLorentzVector Scattering(TLorentzVector P);
+   
+private:
+   double t; // thickness
+   
+};
+
+TargetScattering::TargetScattering(){
+
+}
+
+TargetScattering::~TargetScattering(){
+
+}
+
+TLorentzVector TargetScattering::Scattering(TLorentzVector P){
+   double KE    = P.E() - P.M();
+   double theta = P.Theta();
+   
+   
+}
+
 
