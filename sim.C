@@ -14,18 +14,21 @@ void sim(){
    printf(" Number of Events ? ");
    scanf("%d", &numEvent);
 
+   //===== Set Reaction
    TransferReaction reaction;
    
-   reaction.SetA(25,12);
+   reaction.SetA(16,7);
    reaction.Seta(2,1);
-   reaction.Setb(1,1);
-   reaction.SetB(26,12);
+   int Ab = 3, zb = 2;
+   reaction.Setb(Ab,zb);
+   int AB = 15, zB = 6;
+   reaction.SetB(AB,zB);
    
-   reaction.SetIncidentEnergyPerU(6);
+   reaction.SetIncidentEnergyPerU(12);
    reaction.SetIncidentAngle(0, 0);
+   reaction.CalReactioConstant();
    
-   HELIOS helios;
-   helios.SetDetectorGeometry("detectorGeo_upstream.txt");
+   printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
    
    //-----loading excitation energy
    vector<double> ExKnown;
@@ -55,6 +58,10 @@ void sim(){
    }else{
        printf("... fail\n");
    }
+   
+   //======== Set HELIOS   
+   HELIOS helios;
+   helios.SetDetectorGeometry("detectorGeo_downstream.txt");
    
    //====================== build tree
    TString saveFileName = "test_3.root";
@@ -87,7 +94,7 @@ void sim(){
    tree->Branch("ExID", &ExID, "ExID/I");
    tree->Branch("Ex", &Ex, "Ex/D");
    
-   //timer
+   //========timer
    TBenchmark clock;
    bool shown ;   
    clock.Reset();
@@ -101,7 +108,7 @@ void sim(){
    for( int i = 0; i < numEvent; i++){
       bool redoFlag = true;
       do{
-         thetaCM = 0.5*TMath::Pi() * gRandom->Rndm(); 
+         thetaCM = TMath::Pi() * gRandom->Rndm(); 
          ExID = gRandom->Integer(ExKnown.size());
          Ex = ExKnown[ExID]; 
          
@@ -117,7 +124,7 @@ void sim(){
          Tb = Pb.E() - Pb.M();
          TB = PB.E() - PB.M();
          
-         int hit = helios.CalHit(Pb, 1, PB, 12);
+         int hit = helios.CalHit(Pb, zb, PB, zB);
          if( hit == 1) {
             count ++;
             e = helios.GetEnergy();
@@ -131,7 +138,7 @@ void sim(){
             redoFlag = false;
          }else{
             redoFlag = true;
-            //printf("%d, %2d, thetaCM : %f, theta : %f \n", i, hit, thetaCM * TMath::RadToDeg(), thetab);
+            //printf("%d, %2d, thetaCM : %f, theta : %f, z0: %f \n", i, hit, thetaCM * TMath::RadToDeg(), thetab, helios.GetZ0());
          }
          
       }while( redoFlag );

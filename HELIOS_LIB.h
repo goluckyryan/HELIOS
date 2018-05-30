@@ -84,6 +84,10 @@ public:
    int GetCharge_b(){return zb;}
    int GetCharge_B(){return zB;}
    
+   double GetCMTotalKE() {return Etot - mA - ma;}
+   double GetQValue() {return mA + ma - mb - mB;}
+   double GetMaxExB() {return Etot - mb - mB;}
+   
    TLorentzVector GetPA(){return PA;}
    TLorentzVector GetPa(){return Pa;}
    TLorentzVector GetPb(){return Pb;}
@@ -147,10 +151,10 @@ void TransferReaction::CalReactioConstant(){
       isBSet = true;
    }
    
-   k = TMath::Sqrt(TMath::Power(mA + T, 2) - mA * mA); 
-   beta = k / (mA + ma + T);
+   k = TMath::Sqrt(TMath::Power(mA + ExA + T, 2) - (mA + ExA) * (mA + ExA)); 
+   beta = k / (mA + ExA + ma + T);
    gamma = 1 / TMath::Sqrt(1- beta * beta);   
-   Etot = TMath::Sqrt(TMath::Power(mA + ma + T,2) - k * k);
+   Etot = TMath::Sqrt(TMath::Power(mA + ExA + ma + T,2) - k * k);
    p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB + ExB,2)) * (Etot*Etot - TMath::Power(mb - mB - ExB,2)) ) / 2 / Etot;
    
    isReady = true;
@@ -247,12 +251,15 @@ public:
    int GetLoop(){return loop;}
    double GetRecoilEnergy(){return eB;}
    double GetRecoilTime(){return tB;}
+   double GetZ0(){return z0;}
+   double GetTime0(){return t0;}
 private:
    //what is the output? energy, x, z, rho, dphi
    double e, z, x, rho, dphi, t;
    int detID, loop;   // multiloop
    double eB, rhoB, tB;
    bool isReady;
+   double z0, t0; // infinite detector 
    
    //detetcor Geometry
    double Bfield; // T
@@ -280,6 +287,9 @@ HELIOS::HELIOS(){
    rhoB = TMath::QuietNaN();
    tB = TMath::QuietNaN();
    isReady = false;
+
+   z0 = TMath::QuietNaN();
+   t0 = TMath::QuietNaN();
 
    Bfield = 0;
    bore = 1000;
@@ -342,6 +352,7 @@ void HELIOS::SetDetectorGeometry(string filename){
       
    }else{
        printf("... fail\n");
+       isReady = false;
    }
    isReady = true;
 }
@@ -385,10 +396,10 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       }
 
       //infinite small detector   
-      double    vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
-      double    vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
-      double t0 = dphi * rho / vt0; // nano-second   
-      double z0 = vp0 * t0; // mm        
+      double vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
+      double vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
+      t0 = dphi * rho / vt0; // nano-second   
+      z0 = vp0 * t0; // mm        
       
       //printf("====== z0: %f \n",  z0);
       
