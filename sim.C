@@ -114,7 +114,7 @@ void sim(){
          Ex = ExKnown[ExID]; 
          
          //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
-         KEA = gRandom->Gaus(12, 0.25);
+         KEA = gRandom->Gaus(12, 0.01);
          reaction.SetIncidentEnergyPerU(KEA);
          reaction.SetExB(Ex);
          TLorentzVector * output = reaction.Event(thetaCM, 0);

@@ -488,30 +488,29 @@ public:
       this->thickness = thickness;
       isTargetSet = true;
    }
-   void SetBeam(int A, int Z, TLorentzVector P ){
-      this->a = A;
-      this->z = Z;
-      this->P = P;
-   }
    
-   TLorentzVector Scattering( TLorentzVector P){
+   TLorentzVector Scattering(int A, TLorentzVector P){
       double mass = P.M();
-      double KE = P.E() - mass;
+      double KE0 = (P.E() - mass)/A;
+      double KE = KE0;
       double theta = P.Theta();
       
       //effective depth of target
       double depthMax = thickness/TMath::Cos(theta);
       double depth = depthMax * gRandom->Rndm();
       
-      //integrate the energy loss within the depth
-      double dx = 0.001; // cm 
+      //integrate the energy loss within the depth of A
+      double dx = thickness/100.; // cm 
       double x = 0;
       do{
-         KE = KE - gA->Eval(KE) * dx;
+         //printf(" x: %f, KE:  %f, S: %f \n", x, KE, gA->Eval(KE));
+         KE = KE - density * gA->Eval(KE) * dx;
          x = x + dx;
       }while(x < depth);
       
-      double newk = TMath::Sqrt(TMath::Power(mass+KE,2) - mass * mass);
+      printf(" depth: %f cm, KE : %f -> %f MeV \n", depth, KE0, KE);
+      
+      double newk = TMath::Sqrt(TMath::Power(mass+KE*A,2) - mass * mass);
       
       TVector3 vb = P.Vect();
       vb.SetMag(newk);
@@ -525,8 +524,6 @@ public:
 private:
    bool isTargetSet;
    double density,  thickness; // density [mg/cm2], thickness [cm]
-   int a, z; // incident particle
-   TLorentzVector P;
    double depth; // reaction depth
    
    TGraph * gA, * gb, * gB; // stopping power of A, b, B, in unit of MeV/(mg/cm2)
@@ -537,8 +534,6 @@ TargetScattering::TargetScattering(){
    isTargetSet = false;
    density = 1; // mg/cm2
    thickness = 1; // cm
-   a = 0, z = 0; 
-   P.SetXYZM(0,0,0,0);
    gA = NULL;
    gb = NULL;
    gB = NULL;
@@ -555,9 +550,9 @@ void TargetScattering::LoadStoppingPower(int id, string filename){
    if( id == 1){
       printf("----- loading Stopping power for Beam: %s.", filename.c_str());
    }else if( id == 2){
-      printf("----- loading Stopping power for b: %s.", filename.c_str());
+      printf("----- loading Stopping power for b   : %s.", filename.c_str());
    }else if( id == 3){
-      printf("----- loading Stopping power for B: %s.", filename.c_str());
+      printf("----- loading Stopping power for B   : %s.", filename.c_str());
    }else{
       printf("id = 1 for Beam, id = 2 for b, id = 3 for B\n");
       return;
