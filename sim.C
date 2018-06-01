@@ -76,7 +76,7 @@ void sim(){
    int loop, detID;
    double dphi, rho;
    int ExID;
-   double Ex;
+   double Ex, KEA;
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -93,6 +93,7 @@ void sim(){
    tree->Branch("rho", &rho, "rho/D");
    tree->Branch("ExID", &ExID, "ExID/I");
    tree->Branch("Ex", &Ex, "Ex/D");
+   tree->Branch("KEA", &KEA, "KEA/D");
    
    //========timer
    TBenchmark clock;
@@ -112,6 +113,9 @@ void sim(){
          ExID = gRandom->Integer(ExKnown.size());
          Ex = ExKnown[ExID]; 
          
+         //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
+         KEA = gRandom->Gaus(12, 0.25);
+         reaction.SetIncidentEnergyPerU(KEA);
          reaction.SetExB(Ex);
          TLorentzVector * output = reaction.Event(thetaCM, 0);
       

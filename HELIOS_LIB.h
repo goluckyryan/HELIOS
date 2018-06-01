@@ -5,6 +5,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TRandom.h"
+#include "TGraph.h"
 #include <vector>
 #include <fstream>
 #include "isotopes.h"
@@ -15,11 +16,9 @@
 //======================================================= 
 class TransferReaction {
 public:
-
    TransferReaction();
    ~TransferReaction();
-   
-
+  
    void SetA(int A, int Z, double Ex = 0){
       Isotopes temp (A, Z);
       mA = temp.Mass;
@@ -473,37 +472,158 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
 //=======================================================
 //#######################################################
 // Class for multi-scattering of the beam inside target
+// using SRIM to generate stopping power
 //=======================================================
-class TargetScattering(){
-//input : TLorentzVector, target thickness
+class TargetScattering{
+//input : TLorentzVector, data_files
 //output : scattered TLorentzVector
 public:
    TargetScattering();
    ~TargetScattering();
    
-   void SetThickness(double x){
-      this->t = x;
+   void LoadStoppingPower(int id, string file);
+   
+   void SetTarget(double density, double thickness){
+      this->density = density;
+      this->thickness = thickness;
+      isTargetSet = true;
    }
-   TLorentzVector Scattering(TLorentzVector P);
+   void SetBeam(int A, int Z, TLorentzVector P ){
+      this->a = A;
+      this->z = Z;
+      this->P = P;
+   }
+   
+   TLorentzVector Scattering( TLorentzVector P){
+      double mass = P.M();
+      double KE = P.E() - mass;
+      double theta = P.Theta();
+      
+      //effective depth of target
+      double depthMax = thickness/TMath::Cos(theta);
+      double depth = depthMax * gRandom->Rndm();
+      
+      //integrate the energy loss within the depth
+      double dx = 0.001; // cm 
+      double x = 0;
+      do{
+         KE = KE - gA->Eval(KE) * dx;
+         x = x + dx;
+      }while(x < depth);
+      
+      double newk = TMath::Sqrt(TMath::Power(mass+KE,2) - mass * mass);
+      
+      TVector3 vb = P.Vect();
+      vb.SetMag(newk);
+      
+      TLorentzVector Pnew;
+      Pnew.SetVectM(vb,mass);
+      
+      return Pnew;
+   }
    
 private:
-   double t; // thickness
+   bool isTargetSet;
+   double density,  thickness; // density [mg/cm2], thickness [cm]
+   int a, z; // incident particle
+   TLorentzVector P;
+   double depth; // reaction depth
    
+   TGraph * gA, * gb, * gB; // stopping power of A, b, B, in unit of MeV/(mg/cm2)
+      
 };
 
 TargetScattering::TargetScattering(){
-
+   isTargetSet = false;
+   density = 1; // mg/cm2
+   thickness = 1; // cm
+   a = 0, z = 0; 
+   P.SetXYZM(0,0,0,0);
+   gA = NULL;
+   gb = NULL;
+   gB = NULL;
 }
 
 TargetScattering::~TargetScattering(){
-
+   delete gA;
+   delete gb;
+   delete gB;
 }
 
-TLorentzVector TargetScattering::Scattering(TLorentzVector P){
-   double KE    = P.E() - P.M();
-   double theta = P.Theta();
+void TargetScattering::LoadStoppingPower(int id, string filename){
    
+   if( id == 1){
+      printf("----- loading Stopping power for Beam: %s.", filename.c_str());
+   }else if( id == 2){
+      printf("----- loading Stopping power for b: %s.", filename.c_str());
+   }else if( id == 3){
+      printf("----- loading Stopping power for B: %s.", filename.c_str());
+   }else{
+      printf("id = 1 for Beam, id = 2 for b, id = 3 for B\n");
+      return;
+   }
+   ifstream file;
+   file.open(filename.c_str());
+   
+   vector<double> energy;
+   vector<double> stopping;
+   
+   if( file.is_open() ){
+      printf("... OK\n");
+      char lineChar[16635];
+      string line;
+      while( !file.eof() ){
+         file.getline(lineChar, 16635, '\n');
+         line = lineChar;
+
+         //printf("%s \n", line.c_str());
+         
+         size_t found = line.find("keV   ");
+         if ( found != string::npos){
+            //printf("%s \n", line.c_str());
+            energy.push_back( atof(line.substr(0,7).c_str()) * 0.001);
+            double a = atof(line.substr(14,10).c_str());
+            double b = atof(line.substr(25,10).c_str());
+            stopping.push_back(a+b);
+            //printf("%f , %f \n", a, b);
+         }
+         
+         found = line.find("MeV   ");
+         if ( found != string::npos){
+            //printf("%s \n", line.c_str());
+            energy.push_back( atof(line.substr(0,7).c_str()));
+            double a = atof(line.substr(14,10).c_str());
+            double b = atof(line.substr(25,10).c_str());
+            stopping.push_back(a+b);
+            //printf("%f \n", energy.back());   
+         }
+         
+      }
+      
+   }else{
+       printf("... fail\n");
+   }
+   
+   if( id == 1){
+      gA = new TGraph(energy.size(), &energy[0], &stopping[0]);
+   }else if( id == 2){
+      gb = new TGraph(energy.size(), &energy[0], &stopping[0]);
+   }else if( id == 3){
+      gB = new TGraph(energy.size(), &energy[0], &stopping[0]);
+   }
    
 }
+//=======================================================
+//#######################################################
+// Class for Particle Decay
+//=======================================================
+class Decay{
+//input : TLorentzVector, emitting particle
+//output : scattered TLorentzVector
+public:
+   Decay();
+   ~Decay();
+   
+private:
 
-
+};
