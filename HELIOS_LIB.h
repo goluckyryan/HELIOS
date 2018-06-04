@@ -52,14 +52,11 @@ public:
       isReady = false;
       isBSet = true;
    }
-   void SetIncidentEnergyPerU(double T){
-      TA = T;
+   void SetIncidentEnergyAngle(double KEA, double theta, double phi){
+      this->TA = KEA;
       this->T = TA * AA;
-      isReady = false;
-   }
-   void SetIncidentAngle(double theta, double phi){
-      thetaIN = theta;
-      phiIN = phi;
+      this->thetaIN = theta;
+      this->phiIN = phi;
       isReady = false;
    }
    void SetExA(double Ex){
@@ -481,34 +478,42 @@ public:
    TargetScattering();
    ~TargetScattering();
    
+   double GetKE0(){return KE0;}
+   double GetKE() {return KE;}
+   double GetDepth() {return depth;}
+   
    void LoadStoppingPower(int id, string file);
    
    void SetTarget(double density, double thickness){
       this->density = density;
       this->thickness = thickness;
       isTargetSet = true;
+      printf("--- Target, density: %f g/cm3, thickness: %f um \n", density, thickness * 1e+4 );
    }
    
    TLorentzVector Scattering(int A, TLorentzVector P){
       double mass = P.M();
-      double KE0 = (P.E() - mass)/A;
-      double KE = KE0;
+      KE0 = (P.E() - mass)/A;
+      KE = KE0;
       double theta = P.Theta();
       
       //effective depth of target
       double depthMax = thickness/TMath::Cos(theta);
-      double depth = depthMax * gRandom->Rndm();
+      depth = depthMax * gRandom->Rndm();
       
       //integrate the energy loss within the depth of A
-      double dx = thickness/100.; // cm 
+      double dx = thickness/10000.; // if thickness is cm, dx is order of um 
       double x = 0;
+      double densityUse = density;
+      if( unitID == 0 ) densityUse = 1.;
       do{
+         //assume the particle will not be stopped
          //printf(" x: %f, KE:  %f, S: %f \n", x, KE, gA->Eval(KE));
-         KE = KE - density * gA->Eval(KE) * dx;
+         KE = KE - densityUse * gA->Eval(KE) * 10. * dx; // factor 10, convert MeV/mm -> MeV/cm
          x = x + dx;
       }while(x < depth);
       
-      printf(" depth: %f cm, KE : %f -> %f MeV \n", depth, KE0, KE);
+      //printf(" depth: %f cm = %f um, KE : %f -> %f MeV , dE = %f MeV \n", depth, depth * 1e+4, KE0, KE, KE0 - KE);
       
       double newk = TMath::Sqrt(TMath::Power(mass+KE*A,2) - mass * mass);
       
@@ -525,6 +530,10 @@ private:
    bool isTargetSet;
    double density,  thickness; // density [mg/cm2], thickness [cm]
    double depth; // reaction depth
+   int unitID; // 0 = MeV /mm or keV/um , 1 = MeV / (ug/cm2) 
+   
+   double depth;
+   double KE0, KE;
    
    TGraph * gA, * gb, * gB; // stopping power of A, b, B, in unit of MeV/(mg/cm2)
       
@@ -534,6 +543,10 @@ TargetScattering::TargetScattering(){
    isTargetSet = false;
    density = 1; // mg/cm2
    thickness = 1; // cm
+   unitID = 0; 
+   KE0 = 0;
+   KE = 0;
+   depth = 0;
    gA = NULL;
    gb = NULL;
    gB = NULL;
@@ -572,8 +585,28 @@ void TargetScattering::LoadStoppingPower(int id, string filename){
          line = lineChar;
 
          //printf("%s \n", line.c_str());
+         size_t found = line.find("Target Density");
+         if( found != string::npos ){
+            printf("    %s\n", line.c_str());
+            //density = atof(line.substr(18,12).c_str()); 
+         }
          
-         size_t found = line.find("keV   ");
+         
+         found = line.find("Stopping Units =");
+         if( found != string::npos){         
+            printf("    %s\n", line.c_str());
+            if( line.find("MeV / mm") != string::npos ) { 
+               unitID = 0;
+            }else if( line.find("keV / micron") != string::npos ){
+               unitID = 0;
+            }else if( line.find("MeV / (mg/cm2)") != string::npos ) {
+               unitID = 1;
+            }else{
+               printf("please using MeV/mm, keV/um, or MeV/(mg/cm2) \n");  
+            }
+         }
+         
+         found = line.find("keV   ");
          if ( found != string::npos){
             //printf("%s \n", line.c_str());
             energy.push_back( atof(line.substr(0,7).c_str()) * 0.001);

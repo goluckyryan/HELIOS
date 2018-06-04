@@ -64,7 +64,7 @@ void MultiFit(){
    }
    
    vector<double> knownE;
-   knownE.push_back(0);
+   knownE.push_back(0.00);
    knownE.push_back(0.74);
    knownE.push_back(4.78);
    knownE.push_back(5.83);
@@ -87,8 +87,10 @@ void MultiFit(){
       printf(" %d , e: %8.3f \n", j, realEnergy[j]);
    }
    
-   tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, -1, 10)", "loop==1 && detID == 5", "colz");
+   tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, 4, 5.5)", "loop==1 && detID == 5", "colz");
 
+   spec2->Fit("gaus");
+/*
    //========== Fitting 
    TSpectrum * peak = new TSpectrum(20);
    double threshold = 0.1;
@@ -144,7 +146,7 @@ void MultiFit(){
    
    printf("======= mean Sigma : %f \n", meanSigma/nPeaks);
    
-   
+*/
    
 }
 

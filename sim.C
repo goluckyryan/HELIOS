@@ -24,8 +24,7 @@ void sim(){
    int AB = 15, zB = 6;
    reaction.SetB(AB,zB);
    
-   reaction.SetIncidentEnergyPerU(12);
-   reaction.SetIncidentAngle(0, 0);
+   reaction.SetIncidentEnergyAngle(12, 0, 0);
    reaction.CalReactioConstant();
    
    printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
@@ -76,7 +75,7 @@ void sim(){
    int loop, detID;
    double dphi, rho;
    int ExID;
-   double Ex, KEA;
+   double Ex, KEA, theta, phi;
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -93,6 +92,8 @@ void sim(){
    tree->Branch("rho", &rho, "rho/D");
    tree->Branch("ExID", &ExID, "ExID/I");
    tree->Branch("Ex", &Ex, "Ex/D");
+   tree->Branch("theta", &theta, "theta/D");
+   tree->Branch("phi", &phi, "phi/D");
    tree->Branch("KEA", &KEA, "KEA/D");
    
    //========timer
@@ -114,8 +115,11 @@ void sim(){
          Ex = ExKnown[ExID]; 
          
          //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
-         KEA = gRandom->Gaus(12, 0.01);
-         reaction.SetIncidentEnergyPerU(KEA);
+         //KEA = gRandom->Gaus(12, 0.01);
+         KEA = 12.;
+         theta = gRandom->Gaus(0, 0.015);
+         phi = TMath::TwoPi() * gRandom->Rndm();
+         reaction.SetIncidentEnergyAngle(KEA, theta, phi);
          reaction.SetExB(Ex);
          TLorentzVector * output = reaction.Event(thetaCM, 0);
       
