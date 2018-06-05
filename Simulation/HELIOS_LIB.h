@@ -491,9 +491,9 @@ public:
       printf("--- Target, density: %f g/cm3, thickness: %f um \n", density, thickness * 1e+4 );
    }
    
-   TLorentzVector Scattering(int A, TLorentzVector P){
+   TLorentzVector Scattering(TLorentzVector P){
       double mass = P.M();
-      KE0 = (P.E() - mass)/A;
+      KE0 = (P.E() - mass);
       KE = KE0;
       double theta = P.Theta();
       
@@ -509,13 +509,13 @@ public:
       do{
          //assume the particle will not be stopped
          //printf(" x: %f, KE:  %f, S: %f \n", x, KE, gA->Eval(KE));
-         KE = KE - densityUse * gA->Eval(KE) * 10. * dx; // factor 10, convert MeV/mm -> MeV/cm
+         KE = KE - densityUse * gA->Eval(KE) * 10. * dx ; // factor 10, convert MeV/mm -> MeV/cm
          x = x + dx;
       }while(x < depth);
       
       //printf(" depth: %f cm = %f um, KE : %f -> %f MeV , dE = %f MeV \n", depth, depth * 1e+4, KE0, KE, KE0 - KE);
       
-      double newk = TMath::Sqrt(TMath::Power(mass+KE*A,2) - mass * mass);
+      double newk = TMath::Sqrt(TMath::Power(mass+KE,2) - mass * mass);
       
       TVector3 vb = P.Vect();
       vb.SetMag(newk);
@@ -529,10 +529,9 @@ public:
 private:
    bool isTargetSet;
    double density,  thickness; // density [mg/cm2], thickness [cm]
-   double depth; // reaction depth
    int unitID; // 0 = MeV /mm or keV/um , 1 = MeV / (ug/cm2) 
    
-   double depth;
+   double depth; // reaction depth
    double KE0, KE;
    
    TGraph * gA, * gb, * gB; // stopping power of A, b, B, in unit of MeV/(mg/cm2)

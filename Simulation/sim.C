@@ -17,14 +17,17 @@ void sim(){
    //===== Set Reaction
    TransferReaction reaction;
    
-   reaction.SetA(16,7);
-   reaction.Seta(2,1);
-   int Ab = 3, zb = 2;
+   int AA = 25, zA = 12;
+   int Aa = 2,  za = 1;
+   int Ab = 1,  zb = 1;
+   int AB = AA+Aa-Ab, zB = zA+za-zb;
+   
+   reaction.SetA(AA,zA);
+   reaction.Seta(Aa,za);
    reaction.Setb(Ab,zb);
-   int AB = 15, zB = 6;
    reaction.SetB(AB,zB);
    
-   reaction.SetIncidentEnergyAngle(12, 0, 0);
+   reaction.SetIncidentEnergyAngle(6, 0, 0);
    reaction.CalReactioConstant();
    
    printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
@@ -60,7 +63,7 @@ void sim(){
    
    //======== Set HELIOS   
    HELIOS helios;
-   helios.SetDetectorGeometry("detectorGeo_downstream.txt");
+   helios.SetDetectorGeometry("detectorGeo_upstream.txt");
    
    //====================== build tree
    TString saveFileName = "test_3.root";
@@ -115,9 +118,11 @@ void sim(){
          Ex = ExKnown[ExID]; 
          
          //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
-         //KEA = gRandom->Gaus(12, 0.01);
-         KEA = 12.;
-         theta = gRandom->Gaus(0, 0.015);
+         //KEA = gRandom->Gaus(6., 0.05);
+         KEA = 6.;
+         //theta = 0;
+         theta = gRandom->Gaus(0, 0.025);
+         //phi = 0.;
          phi = TMath::TwoPi() * gRandom->Rndm();
          reaction.SetIncidentEnergyAngle(KEA, theta, phi);
          reaction.SetExB(Ex);

@@ -31,15 +31,15 @@ void MultiFit(){
 /**///======================================================== Browser or Canvas
 
    //TBrowser B ;   
-   Int_t Div[2] = {1,1};  //x,y
-   Int_t size[2] = {800,600}; //x,y
+   Int_t Div[2] = {2,2};  //x,y
+   Int_t size[2] = {400,400}; //x,y
    
-   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
-   cScript->Divide(Div[0],Div[1]);
+   TCanvas * cMultiFit = new TCanvas("cMultiFit", "cMultiFit", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   cMultiFit->Divide(Div[0],Div[1]);
    for( int i = 1; i <= Div[0]*Div[1] ; i++){
-      cScript->cd(i)->SetGrid();
+      cMultiFit->cd(i)->SetGrid();
    }
-   cScript->cd(1);
+   cMultiFit->cd(1);
 
    gStyle->SetOptStat(1111111);
    gStyle->SetStatY(1.0);
@@ -48,12 +48,51 @@ void MultiFit(){
    gStyle->SetStatH(0.1);
    
 /**///========================================================= Analysis
-   
-   tree->Draw("0.03815* z - 14.76 - e >> spec(400, -1, 9)", "loop==1 && detID == 5", "colz");
 
+   //============ found the loop of e:z plot
+   cMultiFit->cd(1);
+   TH2F * ez = new TH2F("ez", "ez", 400, -600, -200, 400, 0, 20);
+   tree->Draw("e:z >> ez", "loop == 1 && ExID == 0");
+   
+   TProfile * ezpx = new TProfile("ezpx", "ezpx", 400, -600, -200, 0, 20);
+   ez->ProfileX("ezpx")->Draw("same");
+   
+   TF1 * fitE = new TF1("fitE", "pol1");
+   
+   ezpx->Fit("fitE");
+   
+   double a0 = fitE->GetParameter(0);
+   double a1 = fitE->GetParameter(1);
+   
+   printf("a0 : %f, a1 : %f \n", a0, a1);
+   
+   //######################################
+   // better to fix this number
+   a0 = 14.1079;
+   a1 = 0.0146341;
+      
+   //=========== adjust energy
+   cMultiFit->cd(2);
+   TH2F * Ez = new TH2F("Ez", "Ez", 400, -600, -200, 400, -1, 8);
+   
+   TString expression;
+   expression.Form("%f * z + %f - e : z >> Ez", a1, a0);
+   
+   tree->Draw(expression, "loop==1", "colz");
+
+
+   //=========== energy
+   TH1F * spec = new TH1F("spec", "energy", 400, -1, 8);
+   
+   expression.Form("%f * z + %f - e >> spec", a1, a0);
+   
+   tree->Draw(expression, "loop==1 && detID == 5", "colz");
+
+   
    TSpectrum * specPeak = new TSpectrum(20);
    int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
-   float * xpos = specPeak->GetPositionX();
+   //float * xpos = specPeak->GetPositionX();
+   double * xpos = specPeak->GetPositionX();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );  
@@ -63,22 +102,48 @@ void MultiFit(){
       energy.push_back(xpos[inX[j]]);
    }
    
-   vector<double> knownE;
-   knownE.push_back(0.00);
-   knownE.push_back(0.74);
-   knownE.push_back(4.78);
-   knownE.push_back(5.83);
-   knownE.push_back(6.36);
-   knownE.push_back(8.0);
-   knownE.push_back(9.0);
+   //---- load Ex energy
+   vector<double> ExKnown;
+   printf("----- loading excitation energy levels.");
+   ifstream file;
+   file.open("excitation_energies.txt");
+   string isotopeName;
+   if( file.is_open() ){
+      string line;
+      int i = 0;
+      while( file >> line){
+         //printf("%d, %s \n", i,  line.c_str());
+         if( line.substr(0,2) == "//" ) continue;
+         if( i == 0 ) isotopeName = line; 
+         if ( i >= 1 ){
+            ExKnown.push_back(atof(line.c_str()));
+         }
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+      printf("========== %s\n", isotopeName.c_str());
+      int n = ExKnown.size();
+      for(int i = 0; i < n ; i++){
+         printf("%d, %6.2f MeV \n", i, ExKnown[i]);
+      }
+   }else{
+       printf("... fail\n");
+   }
+   
+   Ez->Draw("colz");
    
    // convert to real energy 
-   int numPeak = knownE.size();
-   TGraph * ga = new TGraph(numPeak, &energy[0], &knownE[0] );
+   cMultiFit->cd(3);
+   int numPeak = ExKnown.size();
+   TGraph * ga = new TGraph(numPeak, &energy[0], &ExKnown[0] );
    ga->Draw("*ap");
-   ga->Fit("pol1", "");
-   double eC0 = pol1->GetParameter(0);
-   double eC1 = pol1->GetParameter(1);
+   
+   TF1 * fit2 = new TF1("fit2", "pol1");
+   
+   ga->Fit("fit2", "");
+   double eC0 = fit2->GetParameter(0);
+   double eC1 = fit2->GetParameter(1);
    printf("====  eC0:%8.3f, eC1:%8.3f \n", eC0, eC1);
    
    vector<double> realEnergy;
@@ -87,9 +152,30 @@ void MultiFit(){
       printf(" %d , e: %8.3f \n", j, realEnergy[j]);
    }
    
-   tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, 4, 5.5)", "loop==1 && detID == 5", "colz");
+   //######################################
+   // better to fix this number
+   eC0 = 0.00532281;
+   eC1 = 1.03766;
+   
+   
+   //======= spectrum
+   cMultiFit->cd(4);
+   TH1F * spec2 = new TH1F("spec2", "spec2", 400, -1, 8);
 
-   spec2->Fit("gaus");
+   expression.Form("(%f * z + %f - e) * %f + %f >> spec2", a1, a0, eC1, eC0);
+   tree->Draw(expression, "loop == 1 && detID == 5");
+   
+   
+   TF1 * fit3 = new TF1("fit3", "gaus");
+   
+   spec2->Fit("fit3", "", "", -1,1 );
+   
+   printf("===========\n");
+   printf("resolution : %f MeV \n", fit3->GetParameter(2));
+   
+   //tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, 4, 5.5)", "loop==1 && detID == 5", "colz");
+
+   //spec2->Fit("gaus");
 /*
    //========== Fitting 
    TSpectrum * peak = new TSpectrum(20);
