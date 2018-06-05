@@ -35,6 +35,11 @@ void sim(){
    
    printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
    
+   //---- excitation of Beam 
+   double ExAList[2];
+   ExAList[0] = 0.000;
+   ExAList[1] = 0.120; 
+   
    //-----loading excitation energy
    vector<double> ExKnown;
    printf("----- loading excitation energy levels.");
@@ -82,6 +87,10 @@ void sim(){
    double dphi, rho;
    int ExID;
    double Ex, KEA, theta, phi;
+   double ExA;
+   int ExAID;
+   double beamk;
+   double beamE;
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -101,6 +110,10 @@ void sim(){
    tree->Branch("theta", &theta, "theta/D");
    tree->Branch("phi", &phi, "phi/D");
    tree->Branch("KEA", &KEA, "KEA/D");
+   tree->Branch("ExAID", &ExAID, "ExAID/I");
+   tree->Branch("ExA", &ExA, "ExA/D");
+   tree->Branch("beamk", &beamk, "beamk/D");
+   tree->Branch("beamE", &beamE, "beamE/D");
    
    //==== Target scattering, only energy loss
    TargetScattering ms;
@@ -128,6 +141,11 @@ void sim(){
    for( int i = 0; i < numEvent; i++){
       bool redoFlag = true;
       do{
+      
+         //==== Set Ex of A
+         ExAID = gRandom->Integer(2);
+         ExA = ExAList[ExAID];
+         reaction.SetExA(ExA);
          
          //==== Set Ex of B
          ExID = gRandom->Integer(ExKnown.size());
@@ -142,14 +160,17 @@ void sim(){
          //theta = gRandom->Gaus(0, 0.025);
          phi = 0.;
          //phi = TMath::TwoPi() * gRandom->Rndm();
-         
          reaction.SetIncidentEnergyAngle(KEA, theta, phi);
+         reaction.CalReactioConstant();
+         TLorentzVector PA = reaction.GetPA();            
+         beamE = PA.E() - PA.M();
+         beamk = PA.P();
+         
          
          double depth = 0;
          if( isTargetScattering ){
             //==== Target scattering, only energy loss
-            reaction.CalReactioConstant();
-            TLorentzVector PA = reaction.GetPA();         
+            
             depth = targetThickness * gRandom->Rndm();
             ms.SetTarget(density, depth); 
             TLorentzVector PAnew = ms.Scattering(PA);
