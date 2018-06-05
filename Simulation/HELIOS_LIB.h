@@ -151,6 +151,12 @@ void TransferReaction::CalReactioConstant(){
    Etot = TMath::Sqrt(TMath::Power(mA + ExA + ma + T,2) - k * k);
    p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB + ExB,2)) * (Etot*Etot - TMath::Power(mb - mB - ExB,2)) ) / 2 / Etot;
    
+   PA.SetXYZM(0, 0, k, mA + ExA);
+   PA.RotateY(thetaIN);
+   PA.RotateZ(phiIN);
+   
+   Pa.SetXYZM(0,0,0,ma);
+   
    isReady = true;
 }
 
@@ -160,12 +166,7 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
       CalReactioConstant();
    }
 
-   TLorentzVector PA;
-   PA.SetXYZM(0, 0, k, mA + ExA);
-   PA.RotateY(thetaIN);
-   PA.RotateZ(phiIN);
-   
-   TLorentzVector Pa(0, 0, 0, ma);
+   //TLorentzVector Pa(0, 0, 0, ma);
    
    //---- to CM frame
    TLorentzVector Pc = PA + Pa;
@@ -340,8 +341,13 @@ void HELIOS::SetDetectorGeometry(string filename){
       printf("========== Recoil detector: %6.2f mm \n", posRecoil);
       printf("========== gap of multi-loop: %6.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
       for(int i = 0; i < nDet ; i++){
-         printf("%d, %6.2f mm \n", i, pos[i]);
+         if( firstPos > 0 ){
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + l);
+         }else{
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - l , pos[i]);
+         }
       }
+      printf("=======================\n");
       
    }else{
        printf("... fail\n");
@@ -375,6 +381,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    //--- X-Y plane
    rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
    double  theta = Pb.Theta();
+   //printf("bore:%f, rho:%f, firstPos:%f, theta:%f < %f \n", bore, rho, firstPos, theta, TMath::PiOver2() );
    
    if( bore > 2 * rho && rho > a && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
       //rotate Pb back to X-Z plane
@@ -480,29 +487,29 @@ public:
    
    double GetKE0(){return KE0;}
    double GetKE() {return KE;}
+   double GetKELoss() {return KE0-KE;}
    double GetDepth() {return depth;}
+   double GetPathLength() {return length;}
    
-   void LoadStoppingPower(int id, string file);
+   void LoadStoppingPower(string file);
    
-   void SetTarget(double density, double thickness){
+   void SetTarget(double density, double depth){
       this->density = density;
-      this->thickness = thickness;
+      this->depth = depth;
       isTargetSet = true;
-      printf("--- Target, density: %f g/cm3, thickness: %f um \n", density, thickness * 1e+4 );
+      //printf("===== Target, density: %f g/cm3, depth: %f um \n", density, depth * 1e+4 );
    }
    
    TLorentzVector Scattering(TLorentzVector P){
       double mass = P.M();
       KE0 = (P.E() - mass);
       KE = KE0;
-      double theta = P.Theta();
-      
-      //effective depth of target
-      double depthMax = thickness/TMath::Cos(theta);
-      depth = depthMax * gRandom->Rndm();
+      double theta = P.Theta();   
+      this->length = TMath::Abs(depth/TMath::Cos(theta));
+      //printf("------- theta: %f deg, length: %f um, KE: %f MeV \n", theta * TMath::RadToDeg(), this->length * 1e+4, KE);
       
       //integrate the energy loss within the depth of A
-      double dx = thickness/10000.; // if thickness is cm, dx is order of um 
+      double dx = length/100.; 
       double x = 0;
       double densityUse = density;
       if( unitID == 0 ) densityUse = 1.;
@@ -511,7 +518,7 @@ public:
          //printf(" x: %f, KE:  %f, S: %f \n", x, KE, gA->Eval(KE));
          KE = KE - densityUse * gA->Eval(KE) * 10. * dx ; // factor 10, convert MeV/mm -> MeV/cm
          x = x + dx;
-      }while(x < depth);
+      }while(x < length);
       
       //printf(" depth: %f cm = %f um, KE : %f -> %f MeV , dE = %f MeV \n", depth, depth * 1e+4, KE0, KE, KE0 - KE);
       
@@ -528,47 +535,36 @@ public:
    
 private:
    bool isTargetSet;
-   double density,  thickness; // density [mg/cm2], thickness [cm]
+   double density; // density [mg/cm2]
    int unitID; // 0 = MeV /mm or keV/um , 1 = MeV / (ug/cm2) 
    
-   double depth; // reaction depth
+   double depth; // depth in target [cm]
+   double length; // total path length in target [cm]
    double KE0, KE;
    
-   TGraph * gA, * gb, * gB; // stopping power of A, b, B, in unit of MeV/(mg/cm2)
+   TGraph * gA; // stopping power of A, b, B, in unit of MeV/(mg/cm2)
       
 };
 
 TargetScattering::TargetScattering(){
    isTargetSet = false;
    density = 1; // mg/cm2
-   thickness = 1; // cm
    unitID = 0; 
    KE0 = 0;
    KE = 0;
    depth = 0;
+   length = 0;
    gA = NULL;
-   gb = NULL;
-   gB = NULL;
 }
 
 TargetScattering::~TargetScattering(){
    delete gA;
-   delete gb;
-   delete gB;
 }
 
-void TargetScattering::LoadStoppingPower(int id, string filename){
+void TargetScattering::LoadStoppingPower(string filename){
    
-   if( id == 1){
-      printf("----- loading Stopping power for Beam: %s.", filename.c_str());
-   }else if( id == 2){
-      printf("----- loading Stopping power for b   : %s.", filename.c_str());
-   }else if( id == 3){
-      printf("----- loading Stopping power for B   : %s.", filename.c_str());
-   }else{
-      printf("id = 1 for Beam, id = 2 for b, id = 3 for B\n");
-      return;
-   }
+   printf("##### loading Stopping power: %s.", filename.c_str());
+   
    ifstream file;
    file.open(filename.c_str());
    
@@ -593,7 +589,7 @@ void TargetScattering::LoadStoppingPower(int id, string filename){
          
          found = line.find("Stopping Units =");
          if( found != string::npos){         
-            printf("    %s\n", line.c_str());
+            printf("      %s\n", line.c_str());
             if( line.find("MeV / mm") != string::npos ) { 
                unitID = 0;
             }else if( line.find("keV / micron") != string::npos ){
@@ -631,13 +627,7 @@ void TargetScattering::LoadStoppingPower(int id, string filename){
        printf("... fail\n");
    }
    
-   if( id == 1){
-      gA = new TGraph(energy.size(), &energy[0], &stopping[0]);
-   }else if( id == 2){
-      gb = new TGraph(energy.size(), &energy[0], &stopping[0]);
-   }else if( id == 3){
-      gB = new TGraph(energy.size(), &energy[0], &stopping[0]);
-   }
+   gA = new TGraph(energy.size(), &energy[0], &stopping[0]);
    
 }
 //=======================================================

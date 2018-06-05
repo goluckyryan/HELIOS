@@ -3,11 +3,11 @@
 void Aux(){
    TargetScattering ms;
    
-   ms.LoadStoppingPower(1, "25Mg_in_CD2.txt");
+   ms.LoadStoppingPower(1, "16N_in_CD2.txt");
    ms.LoadStoppingPower(2, "3He_in_CD2.txt");
    ms.LoadStoppingPower(3, "15C_in_CD2.txt");
    
-   ms.SetTarget(0.913, 10e-4); // 0.913 g/cm3 , 10.0 um
+   ms.SetTarget(0.913, 5e-4); // 0.913 g/cm3 , 5.0 um
    
    int AA = 25, ZA = 12;
    Isotopes N16(AA, ZA);

@@ -13,9 +13,9 @@ void SingleEvent(){
    //===== Set Reaction
    TransferReaction reaction;
    
-   int AA = 25, zA = 12;
+   int AA = 16, zA = 7;
    int Aa = 2,  za = 1;
-   int Ab = 1,  zb = 1;
+   int Ab = 3,  zb = 2;
    int AB = AA+Aa-Ab, zB = zA+za-zb;
    
    reaction.SetA(AA,zA);
@@ -23,39 +23,93 @@ void SingleEvent(){
    reaction.Setb(Ab,zb);
    reaction.SetB(AB,zB);
    
-   reaction.SetIncidentEnergyAngle(6, 0, 0);
+   reaction.SetIncidentEnergyAngle(12., 0, 0);
    reaction.CalReactioConstant();
    
    printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
 
-
-   //======== Set HELIOS   
-   HELIOS helios;
-   helios.SetDetectorGeometry("detectorGeo_upstream.txt");
-   
-   
-   //======== Calculation
-   //double thetaCM = TMath::Pi() * gRandom->Rndm(); 
-   double thetaCM = 30 * TMath::DegToRad(); 
    double Ex = 0.; 
-   
-   //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
-   //KEA = gRandom->Gaus(6., 0.01);
-   double KEA = 6.;
-   double theta = 30. * TMath::DegToRad();
-   //theta = gRandom->Gaus(0, 0.015);
+   double KEA = 12.;
+   double theta = 0. * TMath::DegToRad();
    double phi = 0.;
-   //phi = TMath::TwoPi() * gRandom->Rndm();
    reaction.SetIncidentEnergyAngle(KEA, theta, phi);
    reaction.SetExB(Ex);
-   TLorentzVector * output = reaction.Event(thetaCM, 0);
-
-   TLorentzVector PA = output[0];
-   TLorentzVector Pa = output[1];
+   reaction.CalReactioConstant();
    
+   TLorentzVector PA = reaction.GetPA();
+   
+   //==== Target scattering, only energy loss
+   TargetScattering ms;
+   ms.LoadStoppingPower("16N_in_CD2.txt");
+   double density = 0.913; // 0.913 g/cm3
+   double targetThickness = 2.2e-4; // 2.2 um = 201 ug/cm2
+   double depth = 0.9e-4; //targetThickness * gRandom->Rndm();
+   ms.SetTarget(density, depth); 
+
+   TLorentzVector PAnew = ms.Scattering(PA);
+   
+   double KEAnew = ms.GetKE()/AA;
+   printf("length : %f um, KE-loss : %f MeV , new KE/u : %f MeV/u\n", ms.GetPathLength() * 1e4, ms.GetKELoss(), KEAnew);
+   
+   //Calculate reaction
+   double thetaCM = 35 * TMath::DegToRad(); 
+   reaction.SetIncidentEnergyAngle(KEAnew, theta, phi);
+   TLorentzVector * output = reaction.Event(thetaCM, 0);
    TLorentzVector Pb = output[2];
    TLorentzVector PB = output[3];
+   printf("=======================\n");
+   double thetab = Pb.Theta() * TMath::RadToDeg();
+   double thetaB = PB.Theta() * TMath::RadToDeg();
+   double Tb = Pb.E() - Pb.M();
+   double TB = PB.E() - PB.M();
+   printf("T(b) : %f MeV, theta(b) : %f deg\n", Tb, thetab);
+   printf("T(B) : %f MeV, theta(B) : %f deg\n", TB, thetaB);
+   printf("=======================\n");
    
+   //Calculate energy loss of scattered and recoil in target
+   TargetScattering msb;
+   msb.LoadStoppingPower("3He_in_CD2.txt");
+   msb.SetTarget(density, targetThickness - depth);
+   TLorentzVector Pbnew = msb.Scattering(Pb);
+   
+   printf("length : %f um, KE-loss : %f MeV , new KE/u : %f MeV/u\n", 
+            msb.GetPathLength() * 1e4, 
+            msb.GetKELoss(), 
+            msb.GetKE());
+            
+   //Pbnew.Print();
+   
+   TargetScattering msB;
+   msB.LoadStoppingPower("15C_in_CD2.txt");
+   msB.SetTarget(density, targetThickness - depth);
+   TLorentzVector PBnew = msB.Scattering(PB);
+   printf("length : %f um, KE-loss : %f MeV , new KE/u : %f MeV/u\n", 
+            msB.GetPathLength() * 1e4, 
+            msB.GetKELoss(), 
+            msB.GetKE());
+            
+   //PBnew.Print();
+            
+   //======== Set HELIOS   
+   HELIOS helios;
+   helios.SetDetectorGeometry("detectorGeo_downstream.txt");
+   
+   int hit = helios.CalHit(Pbnew, zb, PBnew, zB);
+   
+   printf("hit: %d \n", hit);
+   double e = helios.GetEnergy();
+   double z = helios.GetZ();
+   double x = helios.GetX();
+   double t = helios.GetTime();
+   double loop = helios.GetLoop();
+   double detID = helios.GetDetID();
+   double dphi = helios.GetdPhi();
+   double rho = helios.GetRho();
+   
+   printf("energy : %f MeV, z : %f mm, loop: %d, detID: %d, rho: %f mm\n", e, z, loop, detID, rho); 
+   
+   
+   /*
    printf("=======================\n");
    PA.Print();
    Pa.Print();
@@ -83,7 +137,7 @@ void SingleEvent(){
    double Tb = Pb.E() - Pb.M();
    double TB = PB.E() - PB.M();
    printf("T(b) : %f, T(B) : %f \n", Tb, TB);
-
+   */
 
 /*
 

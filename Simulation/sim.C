@@ -13,13 +13,16 @@ void sim(){
    int numEvent;
    printf(" Number of Events ? ");
    scanf("%d", &numEvent);
+   
+   bool isTargetScattering = true;
+   
 
    //===== Set Reaction
    TransferReaction reaction;
    
-   int AA = 25, zA = 12;
+   int AA = 16, zA = 7;
    int Aa = 2,  za = 1;
-   int Ab = 1,  zb = 1;
+   int Ab = 3,  zb = 2;
    int AB = AA+Aa-Ab, zB = zA+za-zb;
    
    reaction.SetA(AA,zA);
@@ -27,7 +30,7 @@ void sim(){
    reaction.Setb(Ab,zb);
    reaction.SetB(AB,zB);
    
-   reaction.SetIncidentEnergyAngle(6, 0, 0);
+   reaction.SetIncidentEnergyAngle(12., 0, 0);
    reaction.CalReactioConstant();
    
    printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
@@ -63,7 +66,7 @@ void sim(){
    
    //======== Set HELIOS   
    HELIOS helios;
-   helios.SetDetectorGeometry("detectorGeo_upstream.txt");
+   helios.SetDetectorGeometry("detectorGeo_downstream.txt");
    
    //====================== build tree
    TString saveFileName = "test_3.root";
@@ -99,6 +102,19 @@ void sim(){
    tree->Branch("phi", &phi, "phi/D");
    tree->Branch("KEA", &KEA, "KEA/D");
    
+   //==== Target scattering, only energy loss
+   TargetScattering ms;
+   TargetScattering msB;
+   TargetScattering msb;
+   double density = 0.913; // 0.913 g/cm3
+   double targetThickness = 2.2e-4; // 2.2 um = 201 ug/cm2
+            
+   if( isTargetScattering ){
+      ms.LoadStoppingPower("16N_in_CD2.txt");
+      msb.LoadStoppingPower("3He_in_CD2.txt");
+      msB.LoadStoppingPower("15C_in_CD2.txt");
+   }
+   
    //========timer
    TBenchmark clock;
    bool shown ;   
@@ -107,36 +123,63 @@ void sim(){
    shown = false;
    printf("================= generating %d events \n", numEvent);
    
-   
    //====================================================== calculate 
    int count = 0;
    for( int i = 0; i < numEvent; i++){
       bool redoFlag = true;
       do{
-         thetaCM = TMath::Pi() * gRandom->Rndm(); 
+         
+         //==== Set Ex of B
          ExID = gRandom->Integer(ExKnown.size());
          Ex = ExKnown[ExID]; 
-         
-         //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
-         //KEA = gRandom->Gaus(6., 0.05);
-         KEA = 6.;
-         //theta = 0;
-         theta = gRandom->Gaus(0, 0.025);
-         //phi = 0.;
-         phi = TMath::TwoPi() * gRandom->Rndm();
-         reaction.SetIncidentEnergyAngle(KEA, theta, phi);
          reaction.SetExB(Ex);
+         
+         //==== Set incident beam
+         //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
+         KEA = gRandom->Gaus(12., 0.05);
+         //KEA = 12.;
+         theta = 0;
+         //theta = gRandom->Gaus(0, 0.025);
+         phi = 0.;
+         //phi = TMath::TwoPi() * gRandom->Rndm();
+         
+         reaction.SetIncidentEnergyAngle(KEA, theta, phi);
+         
+         double depth = 0;
+         if( isTargetScattering ){
+            //==== Target scattering, only energy loss
+            reaction.CalReactioConstant();
+            TLorentzVector PA = reaction.GetPA();         
+            depth = targetThickness * gRandom->Rndm();
+            ms.SetTarget(density, depth); 
+            TLorentzVector PAnew = ms.Scattering(PA);
+            double KEAnew = ms.GetKE()/AA;
+            reaction.SetIncidentEnergyAngle(KEAnew, theta, phi);
+         }
+         
+         //==== Calculate reaction
+         thetaCM = TMath::Pi() * gRandom->Rndm(); 
          TLorentzVector * output = reaction.Event(thetaCM, 0);
       
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];
          
+         if( isTargetScattering ){
+            //==== Calculate energy loss of scattered and recoil in target
+            msb.SetTarget(density, targetThickness - depth);
+            Pb = msb.Scattering(Pb);
+            msB.SetTarget(density, targetThickness - depth);
+            PB = msB.Scattering(PB);
+         }
+         
+         //------------- 
          thetab = Pb.Theta() * TMath::RadToDeg();
          thetaB = PB.Theta() * TMath::RadToDeg();
       
          Tb = Pb.E() - Pb.M();
          TB = PB.E() - PB.M();
          
+         //==== Helios
          int hit = helios.CalHit(Pb, zb, PB, zB);
          if( hit == 1) {
             count ++;
