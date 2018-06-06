@@ -108,6 +108,16 @@ void SingleEvent(){
    
    printf("energy : %f MeV, z : %f mm, loop: %d, detID: %d, rho: %f mm\n", e, z, loop, detID, rho); 
    
+   double zzb[100], xb[100], yb[100];
+   for(int i = 0; i < 100 ; i++){
+      double theta = Pb.Theta();
+      zzb[i] = z/100.*i;
+      xb[i] = rho * (TMath::Sin( TMath::Tan(theta) * zzb[i]/rho)  + 1);
+      yb[i] = rho * TMath::Cos( TMath::Tan(theta) * zzb[i]/rho);
+      
+      printf("%6f, %6f, %6f \n", zzb[i], xb[i], yb[i]);
+   }
+   
    
    /*
    printf("=======================\n");

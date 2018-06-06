@@ -91,6 +91,8 @@ void sim(){
    int ExAID;
    double beamk;
    double beamE;
+   double rhoHit, rhoBHit;
+   double zzb[100], xb[100], yb[100];
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -114,7 +116,11 @@ void sim(){
    tree->Branch("ExA", &ExA, "ExA/D");
    tree->Branch("beamk", &beamk, "beamk/D");
    tree->Branch("beamE", &beamE, "beamE/D");
-   
+   tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
+   tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
+   tree->Branch("xb", xb, "xb[100]/D");
+   tree->Branch("yb", yb, "yb[100]/D");
+   tree->Branch("zb", zzb, "zb[100]/D");
    //==== Target scattering, only energy loss
    TargetScattering ms;
    TargetScattering msB;
@@ -212,6 +218,16 @@ void sim(){
             detID = helios.GetDetID();
             dphi = helios.GetdPhi();
             rho = helios.GetRho();
+            rhoHit = helios.GetRhoHit();
+            rhoBHit = helios.GetRecoilRhoHit();
+            
+            for(int i = 0; i < 100 ; i++){
+               double theta = Pb.Theta();
+               zzb[i] = z/100.*( i + gRandom->Rndm() - 0.5 );
+               xb[i] = rho * (1- TMath::Cos( TMath::Tan(theta) * zzb[i]/rho) );
+               yb[i] = rho * TMath::Sin( TMath::Tan(theta) * zzb[i]/rho);
+            }
+            
             redoFlag = false;
          }else{
             redoFlag = true;

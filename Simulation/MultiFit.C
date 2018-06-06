@@ -49,13 +49,13 @@ void MultiFit(){
    
 /**///========================================================= Analysis
    
-   double xrange[2] = {550, 950};
-   double exrange[2] = {-1, 6};
+   double xrange[2] = {550, 1000};
+   double exrange[2] = {-1, 10};
 
    //============ found the loop of e:z plot
    cMultiFit->cd(1);
    TH2F * ez = new TH2F("ez", "ez", 400, xrange[0], xrange[1], 400, 0, 20);
-   tree->Draw("e:z >> ez", "loop == 1 && ExID == 0");
+   tree->Draw("e:z >> ez", "loop == 1 && ExID == 0 && ExAID == 0");
    
    TProfile * ezpx = new TProfile("ezpx", "ezpx", 400, xrange[0], xrange[1], 0, 20);
    ez->ProfileX("ezpx")->Draw("same");
@@ -91,7 +91,7 @@ void MultiFit(){
    
    expression.Form("%f * z + %f - e >> spec", a1, a0);
    
-   tree->Draw(expression, "loop==1 && detID == 5", "colz");
+   tree->Draw(expression, "loop==1 && detID == 5 && ExAID == 0", "colz");
 
    
    TSpectrum * specPeak = new TSpectrum(20);
@@ -176,6 +176,9 @@ void MultiFit(){
    
    printf("===========\n");
    printf("resolution : %f MeV \n", fit3->GetParameter(2));
+   
+   
+   cMultiFit->cd(4);
    
    //tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, 4, 5.5)", "loop==1 && detID == 5", "colz");
 

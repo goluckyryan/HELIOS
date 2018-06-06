@@ -242,22 +242,32 @@ public:
    int GetDetID(){return detID;}
    double GetTime(){return t;}
    double GetRho(){return rho;}
-   double GetRhoHitRecoil(){return rhoHit;}
+   double GetRhoHit(){return rhoHit;} // radius of particle-b hit recoil detector 
    double GetdPhi(){return dphi;}
    int GetLoop(){return loop;}
+   double GetVt(){return vt0;}
+   double GetVp(){return vp0;}
+   
    double GetRecoilEnergy(){return eB;}
    double GetRecoilTime(){return tB;}
    double GetRecoilRho(){return rhoB;}
    double GetRecoilRhoHit(){return rhoBHit;}
+   double GetRecoilVt(){return vt0B;}
+   double GetRecoilVp(){return vp0B;}
+   
    double GetZ0(){return z0;}
    double GetTime0(){return t0;}
 private:
    double e, z, x, rho, dphi, t;
+   double vt0, vp0;
    double rhoHit; // radius of particle-b hit on recoil detector
    int detID, loop;   // multiloop
+   
    double eB, rhoB, tB;
+   double vt0B, vp0B;
    double rhoBHit; // particle-B hit radius
    bool isReady;
+   
    double z0, t0; // infinite detector 
    
    //detetcor Geometry
@@ -284,6 +294,8 @@ HELIOS::HELIOS(){
    dphi = TMath::QuietNaN();
    detID = -1;
    loop = -1;
+   
+   
    eB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
    rhoBHit = TMath::QuietNaN();
@@ -348,7 +360,7 @@ void HELIOS::SetDetectorGeometry(string filename){
       }
       
       printf("========== B-field: %6.2f T \n", Bfield);
-      printf("========== Recoil detector: %6.2f mm \n", posRecoil);
+      printf("========== Recoil detector: %6.2f mm, radius: %6.2f mm \n", posRecoil, rhoRecoil);
       printf("========== gap of multi-loop: %6.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
       for(int i = 0; i < nDet ; i++){
          if( firstPos > 0 ){
@@ -393,6 +405,12 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    //printf("bore:%f, rho:%f, firstPos:%f, theta:%f < %f \n", bore, rho, firstPos, theta, TMath::PiOver2() );
    
    if( bore > 2 * rho && rho > a && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
+      //====================== infinite small detector   
+      vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
+      vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
+      t0 = TMath::TwoPi() * rho / vt0; // nano-second   
+      z0 = vp0 * t0; // mm        
+      //printf("====== z0: %f \n",  z0);
 
       //======================  recoil detector
       double  thetaB = Pb.Theta();
@@ -401,7 +419,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       eB   = PB.E() - PB.M();
       
       // check particle-b 
-      rhoHit = rho * TMath::Sqrt(2 + 2 * TMath:Sin(vt0/vp0 * posRecoil / rho));// radius of light particle b at recoil detector
+      rhoHit = rho * TMath::Sqrt(2 - 2 * TMath::Cos(vt0/vp0 * posRecoil / rho));// radius of light particle b at recoil detector
       if( z0 > 0 && posRecoil > 0 && z0 > posRecoil && rhoHit < rhoRecoil) {
           return -2 ;
       }
@@ -409,10 +427,9 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
           return -3 ;
       }
       // calculate particle-B hit radius on recoil dectector
-      double thetaB = PB.Theta();
-      double vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
-      double vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
-      rhoBHit = rhoB * TMath::Sqrt(2 + 2 * TMath:Sin(vt0B/vp0B * posRecoil / rhoB));
+      vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
+      vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
+      rhoBHit = rhoB * TMath::Sqrt(2 - 2 * TMath::Cos(vt0B/vp0B * posRecoil / rhoB));
       if( rhoBHit > rhoRecoil ) return -4;
       
       //====================== calculate rotation angle
@@ -421,16 +438,10 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       if( hit_y > w/2.  ) {
          return -1;
       }
-
-      //====================== infinite small detector   
-      double vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
-      double vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
-      t0 = dphi * rho / vt0; // nano-second   
-      z0 = vp0 * t0; // mm        
-      
-      //printf("====== z0: %f \n",  z0);
       
       //====================== calculate number of loop
+      t0 = dphi * rho / vt0; // nano-second   
+      z0 = vp0 * t0; // mm 
       if( firstPos > 0 ){ // for downstream setting
          double minNoBlock = pos[0] - support ;
          double minDis = pos[0];
