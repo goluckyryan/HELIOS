@@ -242,16 +242,21 @@ public:
    int GetDetID(){return detID;}
    double GetTime(){return t;}
    double GetRho(){return rho;}
+   double GetRhoHitRecoil(){return rhoHit;}
    double GetdPhi(){return dphi;}
    int GetLoop(){return loop;}
    double GetRecoilEnergy(){return eB;}
    double GetRecoilTime(){return tB;}
+   double GetRecoilRho(){return rhoB;}
+   double GetRecoilRhoHit(){return rhoBHit;}
    double GetZ0(){return z0;}
    double GetTime0(){return t0;}
 private:
    double e, z, x, rho, dphi, t;
+   double rhoHit; // radius of particle-b hit on recoil detector
    int detID, loop;   // multiloop
    double eB, rhoB, tB;
+   double rhoBHit; // particle-B hit radius
    bool isReady;
    double z0, t0; // infinite detector 
    
@@ -261,6 +266,7 @@ private:
    double a; // distance from axis
    double w; // width   
    double posRecoil; // recoil, downstream
+   double rhoRecoil; // radius recoil
    double l; // length
    double support;
    double firstPos; // m 
@@ -274,11 +280,13 @@ HELIOS::HELIOS(){
    x = TMath::QuietNaN();
    t = TMath::QuietNaN();
    rho = TMath::QuietNaN();
+   rhoHit = TMath::QuietNaN();
    dphi = TMath::QuietNaN();
    detID = -1;
    loop = -1;
    eB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
+   rhoBHit = TMath::QuietNaN();
    tB = TMath::QuietNaN();
    isReady = false;
 
@@ -290,6 +298,7 @@ HELIOS::HELIOS(){
    a = 10;
    w = 10;
    posRecoil = 0;
+   rhoRecoil = 0;
    l = 0;
    support = 0;
    firstPos = 0;
@@ -320,10 +329,11 @@ void HELIOS::SetDetectorGeometry(string filename){
          if( i == 2 ) a    = atof(x.c_str());
          if( i == 3 ) w    = atof(x.c_str());
          if( i == 4 ) posRecoil = atof(x.c_str());
-         if( i == 5 ) l    = atof(x.c_str());
-         if( i == 6 ) support = atof(x.c_str());
-         if( i == 7 ) firstPos = atof(x.c_str());
-         if( i >= 8 ) {
+         if( i == 5 ) rhoRecoil   = atof(x.c_str());
+         if( i == 6 ) l    = atof(x.c_str());
+         if( i == 7 ) support = atof(x.c_str());
+         if( i == 8 ) firstPos = atof(x.c_str());
+         if( i >= 9 ) {
             pos.push_back(atof(x.c_str()));
          }
          i = i + 1;
@@ -365,7 +375,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    //initialization
    int hit = 0;
    const double c = 299.792458; // m/s
-   //double dphiAccept = 2* TMath::ATan(2*a/w);
    e = TMath::QuietNaN();
    z = TMath::QuietNaN();
    x = TMath::QuietNaN();
@@ -378,24 +387,42 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    rhoB = TMath::QuietNaN();
    tB = TMath::QuietNaN();
    
-   //--- X-Y plane
+   //====================== X-Y plane
    rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
    double  theta = Pb.Theta();
    //printf("bore:%f, rho:%f, firstPos:%f, theta:%f < %f \n", bore, rho, firstPos, theta, TMath::PiOver2() );
    
    if( bore > 2 * rho && rho > a && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
-      //rotate Pb back to X-Z plane
-      //double phib = Pb.Phi();
-      //Pb.RotateZ(-phib);
+
+      //======================  recoil detector
+      double  thetaB = Pb.Theta();
+      rhoB = PB.Pt() / Bfield / ZB / c * 1000; //mm
+      tB   = posRecoil / (PB.Beta() * TMath::Cos(thetaB) * c ); // nano-second
+      eB   = PB.E() - PB.M();
       
-      // calculate rotation angle
+      // check particle-b 
+      rhoHit = rho * TMath::Sqrt(2 + 2 * TMath:Sin(vt0/vp0 * posRecoil / rho));// radius of light particle b at recoil detector
+      if( z0 > 0 && posRecoil > 0 && z0 > posRecoil && rhoHit < rhoRecoil) {
+          return -2 ;
+      }
+      if( z0 < 0 && posRecoil < 0 && z0 < posRecoil && rhoHit < rhoRecoil) {
+          return -3 ;
+      }
+      // calculate particle-B hit radius on recoil dectector
+      double thetaB = PB.Theta();
+      double vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
+      double vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
+      rhoBHit = rhoB * TMath::Sqrt(2 + 2 * TMath:Sin(vt0B/vp0B * posRecoil / rhoB));
+      if( rhoBHit > rhoRecoil ) return -4;
+      
+      //====================== calculate rotation angle
       dphi = TMath::TwoPi() + TMath::ASin(-a/rho);  // exact position
       double hit_y = rho - TMath::Sqrt(rho*rho - a*a); // always positive
       if( hit_y > w/2.  ) {
-         return -4;
+         return -1;
       }
 
-      //infinite small detector   
+      //====================== infinite small detector   
       double vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
       double vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
       t0 = dphi * rho / vt0; // nano-second   
@@ -403,7 +430,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       
       //printf("====== z0: %f \n",  z0);
       
-      // calculate number of loop
+      //====================== calculate number of loop
       if( firstPos > 0 ){ // for downstream setting
          double minNoBlock = pos[0] - support ;
          double minDis = pos[0];
@@ -435,7 +462,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       //printf("====== theta: %f deg, z0: %f \n", theta * TMath::RadToDeg(), z0); 
       //printf("         Loop : %d , dphi: %4.2fpi \n", loop, dphi/ TMath::Pi());
       
-      // final calculation
+      //====================== final calculation for light particle
       e = Pb.E() - Pb.M();
       t = dphi * rho / vt0;
       z = vp0 * t;
@@ -460,10 +487,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
          hit = -7;
       }
       //printf("%d, %f, %f, %f, %d\n", hit, e, z, t, detID);
-      double  thetaB = Pb.Theta();
-      rhoB = PB.Pt() / Bfield / ZB / c * 1000; //mm
-      tB   = posRecoil / (PB.Beta() * TMath::Cos(thetaB) * c ); // nano-second
-      eB   = PB.E() - PB.M();
+      
       
    }else{
       hit = 0;
