@@ -238,7 +238,7 @@ public:
 
    double GetEnergy(){return e;}
    double GetZ(){return z;}
-   double GetX(){return x;}
+   double GetX(){return x;} // position in each detector, range from -1, 1
    int GetDetID(){return detID;}
    double GetTime(){return t;}
    double GetRho(){return rho;}
@@ -247,6 +247,15 @@ public:
    int GetLoop(){return loop;}
    double GetVt(){return vt0;}
    double GetVp(){return vp0;}
+   double GetXPos(double ZPos){
+      return rho * (1 - TMath::Cos(TMath::Tan(theta) * ZPos / rho) );
+   }
+   double GetYPos(double ZPos){
+      return rho * TMath::Sin(TMath::Tan(theta) * ZPos / rho);
+   }
+   double GetR(double ZPos){
+      return rho * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(theta) * ZPos / rho));
+   }
    
    double GetRecoilEnergy(){return eB;}
    double GetRecoilTime(){return tB;}
@@ -254,15 +263,26 @@ public:
    double GetRecoilRhoHit(){return rhoBHit;}
    double GetRecoilVt(){return vt0B;}
    double GetRecoilVp(){return vp0B;}
+   double GetRecoilXPos(double ZPos){
+      return rhoB * (1 - TMath::Cos(TMath::Tan(thetaB) * ZPos / rhoB) );
+   }
+   double GetRecoilYPos(double ZPos){
+      return rhoB * TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB);
+   }   
+   double GetRecoilR(double ZPos){
+      return rhoB * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(thetaB) * ZPos / rhoB));
+   }
    
    double GetZ0(){return z0;}
    double GetTime0(){return t0;}
 private:
+   double theta;
    double e, z, x, rho, dphi, t;
    double vt0, vp0;
    double rhoHit; // radius of particle-b hit on recoil detector
    int detID, loop;   // multiloop
    
+   double thetaB;
    double eB, rhoB, tB;
    double vt0B, vp0B;
    double rhoBHit; // particle-B hit radius
@@ -285,6 +305,7 @@ private:
 };
 
 HELIOS::HELIOS(){
+   theta = TMath::QuietNaN();
    e = TMath::QuietNaN();
    z = TMath::QuietNaN();
    x = TMath::QuietNaN();
@@ -295,7 +316,7 @@ HELIOS::HELIOS(){
    detID = -1;
    loop = -1;
    
-   
+   thetaB = TMath::QuietNaN();
    eB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
    rhoBHit = TMath::QuietNaN();
@@ -387,6 +408,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    //initialization
    int hit = 0;
    const double c = 299.792458; // m/s
+   theta = TMath::QuietNaN();
    e = TMath::QuietNaN();
    z = TMath::QuietNaN();
    x = TMath::QuietNaN();
@@ -401,7 +423,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    
    //====================== X-Y plane
    rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
-   double  theta = Pb.Theta();
+   theta = Pb.Theta();
    //printf("bore:%f, rho:%f, firstPos:%f, theta:%f < %f \n", bore, rho, firstPos, theta, TMath::PiOver2() );
    
    if( bore > 2 * rho && rho > a && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
@@ -413,7 +435,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       //printf("====== z0: %f \n",  z0);
 
       //======================  recoil detector
-      double  thetaB = Pb.Theta();
+      thetaB = Pb.Theta();
       rhoB = PB.Pt() / Bfield / ZB / c * 1000; //mm
       tB   = posRecoil / (PB.Beta() * TMath::Cos(thetaB) * c ); // nano-second
       eB   = PB.E() - PB.M();
