@@ -1,5 +1,5 @@
-#ifndef ISOTOPES_H
-#define ISOTOPES_H
+#ifndef ISOTOPE_H
+#define ISOTOPE_H
 
 #include <iostream>
 #include <fstream>
@@ -19,15 +19,15 @@ string dataPath="mass16.txt";
 // BEA = (Z*M(1H) + N*M(1n) - Me(A,Z))/A , Me is the mass with electrons
 // BEA = (Z*mp + N*mn - M(A,Z))/A , M is the mass without electrons
 
-class Isotopes {
+class Isotope {
 public:
    int A, Z;
    double Mass, MassError, BEA;
    string Name, Symbol;
    string dataSource;
    
-   Isotopes(int a, int z);
-   Isotopes(string name);
+   Isotope(int a, int z);
+   Isotope(string name);
    double CalSp(int na, int nz);
    
 private:
@@ -36,20 +36,20 @@ private:
    
 };
 
-Isotopes::Isotopes(int a, int z){
+Isotope::Isotope(int a, int z){
     this->A = a;
     this->Z = z;
     FindMassByAZ(a,z); 
     this->dataSource = dataPath;
 }
 
-Isotopes::Isotopes(string name){
+Isotope::Isotope(string name){
     
     FindMassByName(name); 
     this->dataSource = dataPath;
 }
 
-void Isotopes::FindMassByAZ(int a, int z){
+void Isotope::FindMassByAZ(int a, int z){
   string line;
   int    lineNum=0;
   int    list_A, list_Z;
@@ -103,7 +103,7 @@ void Isotopes::FindMassByAZ(int a, int z){
   }
 }
 
-void Isotopes::FindMassByName(string name){
+void Isotope::FindMassByName(string name){
 
     // done seperate the Mass number and the name 
     string temp = name;
@@ -188,8 +188,8 @@ void Isotopes::FindMassByName(string name){
     }
 }
 
-double Isotopes::CalSp(int Np, int Nn){
-  Isotopes nucleusD(A - Np - Nn, Z - Np);  
+double Isotope::CalSp(int Np, int Nn){
+  Isotope nucleusD(A - Np - Nn, Z - Np);  
 
   if( nucleusD.Mass != -404){
 	return nucleusD.Mass + Nn*mn + Np*mp - this->Mass;

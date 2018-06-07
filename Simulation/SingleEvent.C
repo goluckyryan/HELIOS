@@ -28,7 +28,7 @@ void SingleEvent(){
    
    printf("=========== Q-value : %f MeV, Max Ex: %f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
 
-   double Ex = 0.; 
+   double Ex = 5.; 
    double KEA = 12.;
    double theta = 0. * TMath::DegToRad();
    double phi = 0.;
@@ -108,6 +108,7 @@ void SingleEvent(){
    
    printf("energy : %f MeV, z : %f mm, loop: %d, detID: %d, rho: %f mm\n", e, z, loop, detID, rho); 
    
+   /*
    double zPos[100], xPos[100], yPos[100];
    for(int i = 0; i < 100 ; i++){
       double theta = Pb.Theta();
@@ -119,7 +120,28 @@ void SingleEvent(){
       
       printf("%6f, %6f, %6f \n", zPos[i], xPos[i], xp);
    }
+   */
    
+   //===== Decay of particle B;
+   printf("==================\n");
+   Decay decay;
+   
+   decay.SetMother(AB, zB, Ex, PBnew);
+   int ok = decay.CalDaugthers(AB-1, zB, 0);
+   
+   
+   printf(" ok? %d, Q: %f \n", ok, decay.GetQValue());
+   
+   TLorentzVector PD = decay.GetDaugther_D();
+   TLorentzVector Pd = decay.GetDaugther_d();
+   
+   PD.Print();
+   Pd.Print();
+   
+   printf("=================, M(PB) : %f\n", PB.M());
+   
+   PB.Print();
+   (Pd+PD).Print();
    
    /*
    printf("=======================\n");

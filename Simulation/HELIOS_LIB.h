@@ -8,7 +8,7 @@
 #include "TGraph.h"
 #include <vector>
 #include <fstream>
-#include "isotopes.h"
+#include "Isotope.h"
 
 //=======================================================
 //#######################################################
@@ -20,7 +20,7 @@ public:
    ~TransferReaction();
   
    void SetA(int A, int Z, double Ex = 0){
-      Isotopes temp (A, Z);
+      Isotope temp (A, Z);
       mA = temp.Mass;
       AA = A;
       zA = Z;
@@ -29,7 +29,7 @@ public:
       isBSet = true;
    }
    void Seta(int A, int Z){
-      Isotopes temp (A, Z);
+      Isotope temp (A, Z);
       ma = temp.Mass;
       Aa = A;
       za = Z;
@@ -37,7 +37,7 @@ public:
       isBSet = false;
    }
    void Setb(int A, int Z){
-      Isotopes temp (A, Z);
+      Isotope temp (A, Z);
       mb = temp.Mass;
       Ab = A;
       zb = Z;
@@ -45,7 +45,7 @@ public:
       isBSet = false;
    }
    void SetB(int A, int Z){
-      Isotopes temp (A, Z);
+      Isotope temp (A, Z);
       mB = temp.Mass;
       AB = A;
       zB = Z;
@@ -140,7 +140,7 @@ void TransferReaction::CalReactioConstant(){
    if( !isBSet){
       AB = AA + Aa - Ab;
       zB = zA + za - zb;
-      Isotopes temp (AB, zB);
+      Isotope temp (AB, zB);
       mB = temp.Mass;
       isBSet = true;
    }
@@ -690,6 +690,7 @@ void TargetScattering::LoadStoppingPower(string filename){
 //=======================================================
 //#######################################################
 // Class for Particle Decay
+// B --> d + D
 //=======================================================
 class Decay{
 //input : TLorentzVector, emitting particle
@@ -698,6 +699,86 @@ public:
    Decay();
    ~Decay();
    
-private:
+   double GetQValue() { return Q;}
+   TLorentzVector GetDaugther_d() {return Pd;}
+   TLorentzVector GetDaugther_D() {return PD;}
+   
+   void SetMother(int A, int Z, double Ex, TLorentzVector P){
+      this->PB = P;
+      this->ExB = Ex;
+      this->AB = A;
+      this->zB = Z;
+      isMotherSet = true;
+   }
+   int CalDaugthers(int A, int Z, double Ex){
+      if( !isMotherSet ) {
+         return -1;
+      }
+      
+      this->ExD = Ex;
+      
+      Isotope Mother(AB, zB);
+      Isotope Daugther_D(A, Z);
+      Isotope Daugther_d(AB-A, zB-Z);
 
+      double mB = Mother.Mass + ExB;
+      double mD = Daugther_D.Mass + ExD;
+      double md = Daugther_d.Mass;
+      
+      //printf("mB: %f, mD: %f, md: %f\n", mB, mD, md); 
+      Q = mB - mD - md;
+      if( Q < 0 ) {
+         return -2;
+      }
+      
+      double k = TMath::Sqrt((mB+mD+md)*(mB+mD-md)*(mB-mD+md)*(mB-mD-md))/2./mB;
+      
+      //printf("k : %f \n", mB);
+      
+      //in mother's frame, assume isotropic decay
+      double theta = TMath::Pi() * gRandom->Rndm();
+      double phi = TMath::TwoPi() * gRandom->Rndm();
+      PD.SetE(TMath::Sqrt(mD * mD + k * k ));
+      PD.SetPz(k);
+      PD.SetTheta(theta);
+      PD.SetPhi(phi);
+      
+      Pd.SetE(TMath::Sqrt(md * md + k * k ));
+      Pd.SetPz(k);
+      Pd.SetTheta(theta + TMath::Pi());
+      Pd.SetPhi(phi + TMath::Pi());
+      
+      //Transform to Lab frame;
+      TVector3 boost = PB.BoostVector();
+      
+      PD.Boost(boost);
+      Pd.Boost(boost);
+      
+      return 0;
+      
+   }
+   
+private:
+   TLorentzVector PB, Pd, PD;
+   int AB, zB;
+   double ExB, ExD;
+   bool isMotherSet;
+   double Q;
 };
+
+Decay::Decay(){
+   TLorentzVector temp(0,0,0,0);
+   PB = temp;
+   Pd = temp;
+   PD = temp;
+   
+   ExB = 0;
+   ExD = 0;
+   Q = 0;
+   isMotherSet = false;
+
+}
+
+Decay::~Decay(){
+   
+}
