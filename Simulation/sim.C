@@ -16,7 +16,7 @@ void sim(){
    
    bool isTargetScattering = true;
    bool isDecay = true;
-   
+   bool isReDo = false;
 
    //===== Set Reaction
    TransferReaction reaction;
@@ -83,6 +83,7 @@ void sim(){
    double thetab, Tb;
    double thetaB, TB;
    
+   int hit;
    double e, z, x, t;
    int loop, detID;
    double dphi, rho;
@@ -95,6 +96,7 @@ void sim(){
    double decayTheta;
    //double zzb[100], xb[100], yb[100];
    
+   tree->Branch("hit", &hit, "hit/I");
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
    tree->Branch("thetaB", &thetaB, "thetaB/D");
@@ -152,6 +154,7 @@ void sim(){
    int count = 0;
    for( int i = 0; i < numEvent; i++){
       bool redoFlag = true;
+      if( !isReDo ) redoFlag = false;
       do{
       
          //==== Set Ex of A
@@ -179,7 +182,6 @@ void sim(){
          double depth = 0;
          if( isTargetScattering ){
             //==== Target scattering, only energy loss
-            
             depth = targetThickness * gRandom->Rndm();
             msA.SetTarget(density, depth); 
             TLorentzVector PAnew = msA.Scattering(PA);
@@ -188,7 +190,8 @@ void sim(){
          }
          
          //==== Calculate reaction
-         thetaCM = TMath::Pi() * gRandom->Rndm(); 
+         thetaCM = TMath::ACos(2 * gRandom->Rndm() - 1) ; 
+         
          TLorentzVector * output = reaction.Event(thetaCM, 0);
       
          TLorentzVector Pb = output[2];
@@ -223,31 +226,37 @@ void sim(){
          
          
          //==== Helios
-         int hit = helios.CalHit(Pb, zb, PB, zB);
-         if( hit == 1) {
-            count ++;
-            e = helios.GetEnergy();
-            z = helios.GetZ();
-            x = helios.GetX();
-            t = helios.GetTime();
-            loop = helios.GetLoop();
-            detID = helios.GetDetID();
-            dphi = helios.GetdPhi();
-            rho = helios.GetRho();
-            rhoHit = helios.GetRhoHit();
-            rhoBHit = helios.GetRecoilRhoHit();
-            /*
-            for(int i = 0; i < 100 ; i++){
-               double theta = Pb.Theta();
-               zzb[i] = z/100.*( i + gRandom->Rndm() - 0.5 );
-               xb[i] = rho * (1- TMath::Cos( TMath::Tan(theta) * zzb[i]/rho) );
-               yb[i] = rho * TMath::Sin( TMath::Tan(theta) * zzb[i]/rho);
+         hit = helios.CalHit(Pb, zb, PB, zB);
+         
+         e = helios.GetEnergy();
+         z = helios.GetZ();
+         x = helios.GetX();
+         t = helios.GetTime();
+         loop = helios.GetLoop();
+         detID = helios.GetDetID();
+         dphi = helios.GetdPhi();
+         rho = helios.GetRho();
+         rhoHit = helios.GetRhoHit();
+         rhoBHit = helios.GetRecoilRhoHit();
+         /*
+         for(int i = 0; i < 100 ; i++){
+            double theta = Pb.Theta();
+            zzb[i] = z/100.*( i + gRandom->Rndm() - 0.5 );
+            xb[i] = rho * (1- TMath::Cos( TMath::Tan(theta) * zzb[i]/rho) );
+            yb[i] = rho * TMath::Sin( TMath::Tan(theta) * zzb[i]/rho);
+         }
+         */
+         
+         if( isReDo ){
+            if( hit == 1) {
+               count ++;   
+               redoFlag = false;
+            }else{
+               redoFlag = true;
+               //printf("%d, %2d, thetaCM : %f, theta : %f, z0: %f \n", i, hit, thetaCM * TMath::RadToDeg(), thetab, helios.GetZ0());
             }
-            */
-            redoFlag = false;
          }else{
-            redoFlag = true;
-            //printf("%d, %2d, thetaCM : %f, theta : %f, z0: %f \n", i, hit, thetaCM * TMath::RadToDeg(), thetab, helios.GetZ0());
+            redoFlag = false;
          }
          
       }while( redoFlag );

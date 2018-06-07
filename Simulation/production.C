@@ -94,10 +94,10 @@ void production(){
 
    double density = 0.913; // 0.913 g/cm3
    double thickness = 500 ; // ug/cm2
-   double targetThickness = 500 * 1e-4 ; //thickness * 1e-6 / 0.913; // in cm
+   double targetThickness = thickness * 1e-6 / 0.913; // in cm
             
    if( isTargetScattering ){
-      msA.LoadStoppingPower("16N_in_CD2.txt");
+      msA.LoadStoppingPower("15N_in_CD2.txt");
       msB.LoadStoppingPower("16N_in_CD2.txt");
    }
    
