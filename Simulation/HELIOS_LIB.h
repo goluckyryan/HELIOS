@@ -441,7 +441,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       eB   = PB.E() - PB.M();
       
       // check particle-b 
-      rhoHit = rho * TMath::Sqrt(2 - 2 * TMath::Cos(vt0/vp0 * posRecoil / rho));// radius of light particle b at recoil detector
+      rhoHit = GetR(posRecoil) ;// radius of light particle b at recoil detector
       if( z0 > 0 && posRecoil > 0 && z0 > posRecoil && rhoHit < rhoRecoil) {
           return -2 ;
       }
@@ -451,7 +451,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       // calculate particle-B hit radius on recoil dectector
       vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
       vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
-      rhoBHit = rhoB * TMath::Sqrt(2 - 2 * TMath::Cos(vt0B/vp0B * posRecoil / rhoB));
+      rhoBHit = GetRecoilR(posRecoil);
       if( rhoBHit > rhoRecoil ) return -4;
       
       //====================== calculate rotation angle
