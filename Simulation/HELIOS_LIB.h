@@ -700,40 +700,46 @@ public:
    ~Decay();
    
    double GetQValue() { return Q;}
+   double GetAngleChange(){return dTheta;} // in deg
+   double GetCMMomentum(){ return k;}
    TLorentzVector GetDaugther_d() {return Pd;}
    TLorentzVector GetDaugther_D() {return PD;}
    
-   void SetMother(int A, int Z, double Ex, TLorentzVector P){
-      this->PB = P;
-      this->ExB = Ex;
-      this->AB = A;
-      this->zB = Z;
+   void SetMotherDaugther(int AB, int zB, int AD, int zD){
+      Isotope Mother(AB, zB);
+      Isotope Daugther_D(AD, zD);
+      Isotope Daugther_d(AB-AD, zB-zD);
+
+      mB = Mother.Mass;
+      mD = Daugther_D.Mass;
+      md = Daugther_d.Mass;
+      
       isMotherSet = true;
    }
-   int CalDaugthers(int A, int Z, double Ex){
+   
+   int CalDecay(TLorentzVector P, double ExB, double ExD){
       if( !isMotherSet ) {
          return -1;
       }
+      this->PB = P;
       
-      this->ExD = Ex;
-      
-      Isotope Mother(AB, zB);
-      Isotope Daugther_D(A, Z);
-      Isotope Daugther_d(AB-A, zB-Z);
-
-      double mB = Mother.Mass + ExB;
-      double mD = Daugther_D.Mass + ExD;
-      double md = Daugther_d.Mass;
-      
-      //printf("mB: %f, mD: %f, md: %f\n", mB, mD, md); 
-      Q = mB - mD - md;
+      double MB = mB + ExB;
+      double MD = mD + ExD;
+      Q = MB - MD - md;
       if( Q < 0 ) {
+         this->PD = this->PB;
+         dTheta = TMath::QuietNaN();
+         k = TMath::QuietNaN();
          return -2;
       }
       
-      double k = TMath::Sqrt((mB+mD+md)*(mB+mD-md)*(mB-mD+md)*(mB-mD-md))/2./mB;
+      //clear 
+      TLorentzVector temp(0,0,0,0);
+      PD = temp;
+      Pd = temp;
+      dTheta = TMath::QuietNaN();
       
-      //printf("k : %f \n", mB);
+      k = TMath::Sqrt((MB+MD+md)*(MB+MD-md)*(MB-MD+md)*(MB-MD-md))/2./MB;
       
       //in mother's frame, assume isotropic decay
       double theta = TMath::Pi() * gRandom->Rndm();
@@ -754,16 +760,29 @@ public:
       PD.Boost(boost);
       Pd.Boost(boost);
       
-      return 0;
+      //Cal angle change
+      TVector3 vD = PD.Vect();
+      TVector3 vB = PB.Vect();
+      vD.SetMag(1);
+      vB.SetMag(1);
+      double dot = vD.Dot(vB);
+      dTheta = TMath::ACos(dot)*TMath::RadToDeg() ;
+      
+      return 1;
       
    }
    
 private:
    TLorentzVector PB, Pd, PD;
-   int AB, zB;
-   double ExB, ExD;
+   
+   double mB, mD, md;
+   
    bool isMotherSet;
    double Q;
+   double k; // momentum in B-frame
+   
+   double dTheta;
+   
 };
 
 Decay::Decay(){
@@ -771,10 +790,15 @@ Decay::Decay(){
    PB = temp;
    Pd = temp;
    PD = temp;
+  
+   mB = TMath::QuietNaN();
+   mD = TMath::QuietNaN();
+   md = TMath::QuietNaN(); 
    
-   ExB = 0;
-   ExD = 0;
-   Q = 0;
+   k = TMath::QuietNaN();
+   
+   Q = TMath::QuietNaN();
+   dTheta = TMath::QuietNaN();
    isMotherSet = false;
 
 }

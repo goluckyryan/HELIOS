@@ -52,7 +52,7 @@ void SingleEvent(){
    printf("length : %f um, KE-loss : %f MeV , new KE/u : %f MeV/u\n", ms.GetPathLength() * 1e4, ms.GetKELoss(), KEAnew);
    
    //Calculate reaction
-   double thetaCM = 35 * TMath::DegToRad(); 
+   double thetaCM = 40 * TMath::DegToRad(); 
    reaction.SetIncidentEnergyAngle(KEAnew, theta, phi);
    TLorentzVector * output = reaction.Event(thetaCM, 0);
    TLorentzVector Pb = output[2];
@@ -89,7 +89,8 @@ void SingleEvent(){
             msB.GetKE());
             
    //PBnew.Print();
-            
+   
+   /*         
    //======== Set HELIOS   
    HELIOS helios;
    helios.SetDetectorGeometry("detectorGeo_downstream.txt");
@@ -126,22 +127,33 @@ void SingleEvent(){
    printf("==================\n");
    Decay decay;
    
-   decay.SetMother(AB, zB, Ex, PBnew);
-   int ok = decay.CalDaugthers(AB-1, zB, 0);
+   decay.SetMotherDaugther(AB, zB, AB-1, zB);
    
+   for( int i = 0; i < 20 ; i++){
+      //printf("==================\n");
+      int ok = decay.CalDecay(PBnew, Ex, 0); 
+      //printf(" ok? %d, Q: %f \n", ok, decay.GetQValue());
    
-   printf(" ok? %d, Q: %f \n", ok, decay.GetQValue());
-   
-   TLorentzVector PD = decay.GetDaugther_D();
-   TLorentzVector Pd = decay.GetDaugther_d();
-   
-   PD.Print();
-   Pd.Print();
-   
-   printf("=================, M(PB) : %f\n", PB.M());
-   
-   PB.Print();
-   (Pd+PD).Print();
+      TLorentzVector PD = decay.GetDaugther_D();
+      TLorentzVector Pd = decay.GetDaugther_d();
+      
+      //PD.Print();
+      //Pd.Print();
+    
+      //PB.Print();
+      //(Pd+PD).Print();
+      
+      //printf("=======================\n");
+      TVector3 vD = PD.Vect();
+      TVector3 vB = PBnew.Vect();
+      vD.SetMag(1);
+      vB.SetMag(1);
+      double dot = vD.Dot(vB);
+      printf("Dot-Produce : %f, Open-angle : %f deg\n", dot , TMath::ACos(dot)*TMath::RadToDeg() );
+      
+      printf(" k : %f , kB: %f \n", decay.GetCMMomentum(), PB.P());
+      
+   }
    
    /*
    printf("=======================\n");

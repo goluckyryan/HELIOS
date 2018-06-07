@@ -92,7 +92,8 @@ void sim(){
    double beamk;
    double beamE;
    double rhoHit, rhoBHit;
-   double zzb[100], xb[100], yb[100];
+   double decayTheta;
+   //double zzb[100], xb[100], yb[100];
    
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("Tb", &Tb, "Tb/D");
@@ -118,9 +119,11 @@ void sim(){
    tree->Branch("beamE", &beamE, "beamE/D");
    tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
    tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
-   tree->Branch("xb", xb, "xb[100]/D");
-   tree->Branch("yb", yb, "yb[100]/D");
-   tree->Branch("zb", zzb, "zb[100]/D");
+   tree->Branch("decayTheta", &decayTheta, "decayTheta/D");
+   //tree->Branch("xb", xb, "xb[100]/D");
+   //tree->Branch("yb", yb, "yb[100]/D");
+   //tree->Branch("zb", zzb, "zb[100]/D");
+   
    //==== Target scattering, only energy loss
    TargetScattering ms;
    TargetScattering msB;
@@ -133,6 +136,10 @@ void sim(){
       msb.LoadStoppingPower("3He_in_CD2.txt");
       msB.LoadStoppingPower("15C_in_CD2.txt");
    }
+   
+   //======= Decay of particle-B
+   Decay decay;
+   decay.SetMotherDaugther(AB, zB, AB-1,zB);
    
    //========timer
    TBenchmark clock;
@@ -160,7 +167,7 @@ void sim(){
          
          //==== Set incident beam
          //KEA = 12 + 0.5*(gRandom->Rndm()-0.5);
-         KEA = gRandom->Gaus(12., 0.05);
+         KEA = gRandom->Gaus(12., 0.1);
          //KEA = 12.;
          theta = 0;
          //theta = gRandom->Gaus(0, 0.025);
@@ -199,12 +206,23 @@ void sim(){
             PB = msB.Scattering(PB);
          }
          
+         
+         //======= Decay of particle-B
+         int isDecay = decay.CalDecay(PB, Ex, 0); // decay to ground state
+         if( isDecay == 1 ){
+            PB = decay.GetDaugther_D();
+            decayTheta = decay.GetAngleChange();
+         }else{
+            decayTheta = TMath::QuietNaN();
+         }
+         
          //------------- 
          thetab = Pb.Theta() * TMath::RadToDeg();
          thetaB = PB.Theta() * TMath::RadToDeg();
       
          Tb = Pb.E() - Pb.M();
          TB = PB.E() - PB.M();
+         
          
          //==== Helios
          int hit = helios.CalHit(Pb, zb, PB, zB);
@@ -220,14 +238,14 @@ void sim(){
             rho = helios.GetRho();
             rhoHit = helios.GetRhoHit();
             rhoBHit = helios.GetRecoilRhoHit();
-            
+            /*
             for(int i = 0; i < 100 ; i++){
                double theta = Pb.Theta();
                zzb[i] = z/100.*( i + gRandom->Rndm() - 0.5 );
                xb[i] = rho * (1- TMath::Cos( TMath::Tan(theta) * zzb[i]/rho) );
                yb[i] = rho * TMath::Sin( TMath::Tan(theta) * zzb[i]/rho);
             }
-            
+            */
             redoFlag = false;
          }else{
             redoFlag = true;
