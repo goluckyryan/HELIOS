@@ -15,6 +15,7 @@ void sim(){
    scanf("%d", &numEvent);
    
    bool isTargetScattering = true;
+   bool isDecay = true;
    
 
    //===== Set Reaction
@@ -89,8 +90,7 @@ void sim(){
    double Ex, KEA, theta, phi;
    double ExA;
    int ExAID;
-   double beamk;
-   double beamE;
+
    double rhoHit, rhoBHit;
    double decayTheta;
    //double zzb[100], xb[100], yb[100];
@@ -115,8 +115,7 @@ void sim(){
    tree->Branch("KEA", &KEA, "KEA/D");
    tree->Branch("ExAID", &ExAID, "ExAID/I");
    tree->Branch("ExA", &ExA, "ExA/D");
-   tree->Branch("beamk", &beamk, "beamk/D");
-   tree->Branch("beamE", &beamE, "beamE/D");
+
    tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
    tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
    tree->Branch("decayTheta", &decayTheta, "decayTheta/D");
@@ -125,14 +124,14 @@ void sim(){
    //tree->Branch("zb", zzb, "zb[100]/D");
    
    //==== Target scattering, only energy loss
-   TargetScattering ms;
+   TargetScattering msA;
    TargetScattering msB;
    TargetScattering msb;
    double density = 0.913; // 0.913 g/cm3
    double targetThickness = 2.2e-4; // 2.2 um = 201 ug/cm2
             
    if( isTargetScattering ){
-      ms.LoadStoppingPower("16N_in_CD2.txt");
+      msA.LoadStoppingPower("16N_in_CD2.txt");
       msb.LoadStoppingPower("3He_in_CD2.txt");
       msB.LoadStoppingPower("15C_in_CD2.txt");
    }
@@ -176,18 +175,15 @@ void sim(){
          reaction.SetIncidentEnergyAngle(KEA, theta, phi);
          reaction.CalReactioConstant();
          TLorentzVector PA = reaction.GetPA();            
-         beamE = PA.E() - PA.M();
-         beamk = PA.P();
-         
          
          double depth = 0;
          if( isTargetScattering ){
             //==== Target scattering, only energy loss
             
             depth = targetThickness * gRandom->Rndm();
-            ms.SetTarget(density, depth); 
-            TLorentzVector PAnew = ms.Scattering(PA);
-            double KEAnew = ms.GetKE()/AA;
+            msA.SetTarget(density, depth); 
+            TLorentzVector PAnew = msA.Scattering(PA);
+            double KEAnew = msA.GetKE()/AA;
             reaction.SetIncidentEnergyAngle(KEAnew, theta, phi);
          }
          
@@ -207,13 +203,15 @@ void sim(){
          }
          
          
-         //======= Decay of particle-B
-         int isDecay = decay.CalDecay(PB, Ex, 0); // decay to ground state
-         if( isDecay == 1 ){
-            PB = decay.GetDaugther_D();
-            decayTheta = decay.GetAngleChange();
-         }else{
-            decayTheta = TMath::QuietNaN();
+         if( isDecay){
+            //======= Decay of particle-B
+            int isDecay = decay.CalDecay(PB, Ex, 0); // decay to ground state
+            if( isDecay == 1 ){
+               PB = decay.GetDaugther_D();
+               decayTheta = decay.GetAngleChange();
+            }else{
+               decayTheta = TMath::QuietNaN();
+            }
          }
          
          //------------- 

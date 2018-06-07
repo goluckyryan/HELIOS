@@ -700,7 +700,16 @@ public:
    ~Decay();
    
    double GetQValue() { return Q;}
-   double GetAngleChange(){return dTheta;} // in deg
+   
+   double GetAngleChange(){
+      TVector3 vD = PD.Vect();
+      TVector3 vB = PB.Vect();
+      vD.SetMag(1);
+      vB.SetMag(1);
+      double dot = vD.Dot(vB);
+      return TMath::ACos(dot)*TMath::RadToDeg() ;
+   }
+    
    double GetCMMomentum(){ return k;}
    TLorentzVector GetDaugther_d() {return Pd;}
    TLorentzVector GetDaugther_D() {return PD;}
@@ -737,7 +746,6 @@ public:
       TLorentzVector temp(0,0,0,0);
       PD = temp;
       Pd = temp;
-      dTheta = TMath::QuietNaN();
       
       k = TMath::Sqrt((MB+MD+md)*(MB+MD-md)*(MB-MD+md)*(MB-MD-md))/2./MB;
       
@@ -759,14 +767,6 @@ public:
       
       PD.Boost(boost);
       Pd.Boost(boost);
-      
-      //Cal angle change
-      TVector3 vD = PD.Vect();
-      TVector3 vB = PB.Vect();
-      vD.SetMag(1);
-      vB.SetMag(1);
-      double dot = vD.Dot(vB);
-      dTheta = TMath::ACos(dot)*TMath::RadToDeg() ;
       
       return 1;
       
