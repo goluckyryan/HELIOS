@@ -84,7 +84,7 @@ void sim(){
    double thetaB, TB;
    
    int hit;
-   double e, z, x, t;
+   double e, z, x, t, eLoss;
    int loop, detID;
    double dphi, rho;
    int ExID;
@@ -106,6 +106,7 @@ void sim(){
    tree->Branch("x", &x, "x/D");
    tree->Branch("z", &z, "z/D");
    tree->Branch("t", &t, "t/D");
+   tree->Branch("eLoss", &eLoss, "eLoss/D");
    tree->Branch("detID", &detID, "detID/I");
    tree->Branch("loop", &loop, "loop/I");
    tree->Branch("dphi", &dphi, "dphi/D");
@@ -201,8 +202,11 @@ void sim(){
             //==== Calculate energy loss of scattered and recoil in target
             msb.SetTarget(density, targetThickness - depth);
             Pb = msb.Scattering(Pb);
+            eLoss = msb.GetKELoss();
             msB.SetTarget(density, targetThickness - depth);
             PB = msB.Scattering(PB);
+         }else{
+            eLoss = 0;
          }
          
          

@@ -96,8 +96,8 @@ void MultiFit(){
    
    TSpectrum * specPeak = new TSpectrum(20);
    int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
-   float * xpos = specPeak->GetPositionX();
-   //double * xpos = specPeak->GetPositionX();
+   //float * xpos = specPeak->GetPositionX();
+   double * xpos = specPeak->GetPositionX();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );  
@@ -178,7 +178,7 @@ void MultiFit(){
    printf("resolution : %f MeV \n", fit3->GetParameter(2));
    
    
-   cMultiFit->cd(4);
+   cMultiFit->cd(6);
    
    //tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, 4, 5.5)", "loop==1 && detID == 5", "colz");
 
