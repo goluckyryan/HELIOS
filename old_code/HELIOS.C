@@ -184,7 +184,7 @@ void HELIOS(){
          detID = 0;
          loop = 0;
          redoFlag = true;
-         thetaCM = TMath::Pi() * gRandom->Rndm();         
+         thetaCM = TMath::ACos(2* gRandom->Rndm()-1);         
          phiCM = 0.;
          ExID = gRandom->Integer(ExKnown.size());
          Ex = ExKnown[ExID]; 
