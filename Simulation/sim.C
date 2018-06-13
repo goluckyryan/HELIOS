@@ -22,7 +22,7 @@ void sim(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000;
+   int numEvent = 1000000;
    
    //HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo_downstream.txt";
@@ -94,7 +94,7 @@ void sim(){
       for(int i = 0; i < n ; i++){
          printf("%d, %6.2f MeV \n", i, ExKnown[i]);
       }
-      rintf("===================\n");
+       printf("===================\n");
    }else{
        printf("... fail\n");
    }
