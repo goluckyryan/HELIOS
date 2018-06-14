@@ -78,34 +78,37 @@ Bool_t Cali_root::Process(Long64_t entry)
       eC_t[i]  = TMath::QuietNaN();
    }
    
-   energy    = TMath::QuietNaN();
-   energy_t  = -100000;
    det = -4;
+   hitID = -4;
    
-   tt  = TMath::QuietNaN();
-   ttt = TMath::QuietNaN();
-   t4  = TMath::QuietNaN();
+   if( option >= 2){
+      energy    = TMath::QuietNaN();
+      energy_t  = -100000;
    
-   Ex  = TMath::QuietNaN();
-   thetaCM  = TMath::QuietNaN();
-   good = 0;
+      tt  = TMath::QuietNaN();
+      ttt = TMath::QuietNaN();
+      t4  = TMath::QuietNaN();
    
-   rdt_m = 0;
-   energy_m = 0;
-   tac_m = 0;
-   
-   for(int i = 0; i < 8 ; i++){
-      rdtC[i] = TMath::QuietNaN();
-      rdtC_t[i] = TMath::QuietNaN();
-      //energy_t[i]  = -1000000;
+      Ex  = TMath::QuietNaN();
+      thetaCM  = TMath::QuietNaN();
+      good = 0;
+      
+      rdt_m = 0;
+      energy_m = 0;
+      tac_m = 0;
+      
+      for(int i = 0; i < 8 ; i++){
+         rdtC[i] = TMath::QuietNaN();
+         rdtC_t[i] = TMath::QuietNaN();
+         //energy_t[i]  = -1000000;
+      }
+      
+      for(int i = 0; i < 6 ; i++){
+         tacC[i] = TMath::QuietNaN();
+         tacC_t[i] = TMath::QuietNaN();
+         dt[i] = -100000;
+      }
    }
-   
-   for(int i = 0; i < 6 ; i++){
-      tacC[i] = TMath::QuietNaN();
-      tacC_t[i] = TMath::QuietNaN();
-      dt[i] = -100000;
-   }
-   
    //#################################################################### processing
    eventID = entry;
    
@@ -114,18 +117,18 @@ Bool_t Cali_root::Process(Long64_t entry)
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);
-   b_RDT->GetEntry(entry,0);
-   b_TAC->GetEntry(entry,0);
-   b_EnergyTimestamp->GetEntry(entry,0);
-   b_RDTTimestamp->GetEntry(entry,0);
-   b_TACTimestamp->GetEntry(entry,0);
-   
-   //printf("---------%d \n", entry);
+   if( option >= 2){
+      b_RDT->GetEntry(entry,0);
+      b_TAC->GetEntry(entry,0);
+      b_EnergyTimestamp->GetEntry(entry,0);
+      b_RDTTimestamp->GetEntry(entry,0);
+      b_TACTimestamp->GetEntry(entry,0);
+   }
    
    //gate on rdt, a kind of recoil detector, total has 8 of them
    //if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
    
-   if( option == 0){
+   if( option >= 2){
       for(int i = 0; i < 8; i++){
          if( rdt[i] > 0 ) {
             rdtC[i] = rdt[i];
@@ -144,7 +147,7 @@ Bool_t Cali_root::Process(Long64_t entry)
    bool rdt_energy = false;
    bool coincident_t = false;
    
-   if( option == 0 ){
+   if( option < 2 ){
       rdt_energy = true;
       coincident_t = true;
    }else{
@@ -157,107 +160,126 @@ Bool_t Cali_root::Process(Long64_t entry)
       }
    }
    
-   
    if(rdt_energy && coincident_t ){
       for(int i = 0; i < numDet; i++){
          //if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
          if( e[i] > 0 ) {
-            eC[i]   = e[i] ;
+            eC[i]   = e[i];
             eC_t[i] = e_t[i];
          }
-         if( xf[i] > 0) xfC[i] = xf[i] ;
-         if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i];
+         if( xf[i] > 0) xfC[i] = xf[i] * xfxneCorr[i][1] + xfxneCorr[i][0] ;
+         if( xn[i] > 0) xnC[i] = xn[i] * xnCorr[i] * xfxneCorr[i][1] + xfxneCorr[i][0];
          
-         if( tac[4] > 2000 && xf[i] !=0 && xn[i] !=0 ) {
-            x[i] = (xf[i] - xn[i])/(xf[i] + xn[i]);
-            tt = tac[4] - 650 * x[i]*x[i]; 
-            if( tt < cut[i]){
-               tt += 1250;
-            }
-            
-            //next correction
-            if( polDeg[i] > 1 ) {
-               //ttt = tt - tc[i][1] * z[i] - tc[i][2]*TMath::Power(z[i],2) - tc[i][3]*TMath::Power(z[i],3) - tc[i][4]*TMath::Power(z[i],4);
-               double xxx = x[i];
-               double value = fit[i]->Eval(xxx);
-               
-               ttt = tt - value - mean[i];
-            }else{
-               ttt = tt - mean[i];
-            }
-            
-            
-         }  
-      
          // calculate x
-         int detID = i%6;
-         if(xf[i] > 0 && xn[i] > 0) {
-            if( option == 1 ) {
-               z[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+         
+         if(xf[i] > 0  && xn[i] > 0 ) {
+            x[i] = (xfC[i]-xnC[i])/(xfC[i]+xnC[i]);
+            hitID = 0;
+         }else if(xf[i] == 0 && xn[i] > 0 ){
+            x[i] = (1-2*xnC[i]/eC[i]);
+            hitID = 1;
+         }else if(xf[i] > 0 && xn[i] == 0 ){
+            x[i] = (2*xfC[i]/eC[i]-1);
+            hitID = 2;
+         }else{
+            x[i] = TMath::QuietNaN();
+         }
+         
+         // calculate z, det
+         if( TMath::IsNaN(x[i]) ) {
+            z[i] = TMath::QuietNaN();
+         }else{ 
+            int detID = i%6;
+            if( pos[detID] < 0 ){
+               z[i] = pos[detID] - (-x[i] + 1.)*length/2 ; 
             }else{
-               x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
+               z[i] = pos[detID] + (x[i] + 1.)*length/2 ; 
             }
             count++;
             det = i;
-         }else{
-            z[i] = TMath::QuietNaN();
+            
+            //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[i], pos[detID], z[i]);
          }
          
-         // recalculate energy;
          
-         int posID = (i - i%6)/6;
-         
-         if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(z[i]) ){
-
-            energy = ((m[detID] * z[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
-            energy_m ++; 
-            
-            // calculate coincident time
-            int temp = 10000;
-            ULong64_t ePicked = -10000000;
-            for(int rID = 0; rID < 8; rID ++){
-               if( !TMath::IsNaN(rdtC_t[rID]) ){
-                  int a = e_t[i];
-                  int b = rdt_t[rID];
-                  if( TMath::Abs(a - b)  < TMath::Abs(temp)){
-                     temp    = e_t[i] - rdt_t[rID];
-                     ePicked = e_t[i];
-                  } 
-                   
+         if( option >= 2){
+            //for tac Calibration
+            if( tac[4] > 2000 &&  xf[i] !=0 && xn[i] !=0 ) {
+               x[i] = (xfC[i] - xnC[i])/(xfC[i] + xnC[i]);
+               tt = tac[4] - 650 * x[i]*x[i]; 
+               if( tt < cut[i]){
+                  tt += 1250;
                }
-            }
+               
+               //next correction
+               if( polDeg[i] > 1 ) {
+                  //ttt = tt - tc[i][1] * z[i] - tc[i][2]*TMath::Power(z[i],2) - tc[i][3]*TMath::Power(z[i],3) - tc[i][4]*TMath::Power(z[i],4);
+                  double xxx = x[i];
+                  double value = fit[i]->Eval(xxx);
+                  
+                  ttt = tt - value - mean[i];
+               }else{
+                  ttt = tt - mean[i];
+               }
             
-            energy_t = temp;
-            
-            for(int tID = 0; tID < 6; tID++){
-               dt[tID] = ePicked - tac_t[tID];
-            }
-            
-            // correction to real position
-            z[i] = z[i] - (nearPos[5] + length) + posToTarget;
-            
-            if( z[i]> 0) printf("i:%d, xfC:%f, xnC:%f, x:%f \n", i, xfC[i], xnC[i], z[i]);
+            }else{
+               x[i] = TMath::QuietNaN();
+            }  
          
-            // correction of ttt with energy
-            t4 = ttt + 0.165 * energy + 0.000188935 * energy * energy + 7.87558e-8 * TMath::Power(energy,3);
+            // recalculate energy;
+            int posID = (i - i%6)/6;
             
-            //thetaCM
-            Ex = 5574.52 + 3.59226 * energy;
-            Ex = Ex/1000.;
-            double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
-            double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
-            double costhetaCM = p0 + p1 * z[i];  
+            if( !TMath::IsNaN(eC[i]) && !TMath::IsNaN(z[i]) ){
+               int detID = i%6;
+               energy = ((m[detID] * z[i] - e[i])*c1[detID][posID] - c0[detID][posID])*j1[detID] + j0[detID];
+               energy_m ++; 
+               
+               // calculate coincident time
+               int temp = 10000;
+               ULong64_t ePicked = -10000000;
+               for(int rID = 0; rID < 8; rID ++){
+                  if( !TMath::IsNaN(rdtC_t[rID]) ){
+                     int a = e_t[i];
+                     int b = rdt_t[rID];
+                     if( TMath::Abs(a - b)  < TMath::Abs(temp)){
+                        temp    = e_t[i] - rdt_t[rID];
+                        ePicked = e_t[i];
+                     } 
+                      
+                  }
+               }
+               
+               energy_t = temp;
+               
+               for(int tID = 0; tID < 6; tID++){
+                  dt[tID] = ePicked - tac_t[tID];
+               }
+               
+               // correction to real position
+               z[i] = z[i] - (pos[5] + length) + firstPos;
+               
+               if( z[i]> 0) printf("i:%d, xfC:%f, xnC:%f, x:%f \n", i, xfC[i], xnC[i], z[i]);
             
-            thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
-            
-            
-            //check for good event
-            
-            if( tcut[i][1] > t4 && t4 > tcut[i][0] && TMath::Abs(energy_t)<20 ) good = 1;
-            
+               // correction of ttt with energy
+               t4 = ttt + 0.165 * energy + 0.000188935 * energy * energy + 7.87558e-8 * TMath::Power(energy,3);
+               
+               //thetaCM
+               Ex = 5574.52 + 3.59226 * energy;
+               Ex = Ex/1000.;
+               double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
+               double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
+               double costhetaCM = p0 + p1 * z[i];  
+               
+               thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
+               
+               
+               //check for good event
+               
+               if( tcut[i][1] > t4 && t4 > tcut[i][0] && TMath::Abs(energy_t)<20 ) good = 1;
+               
+            }
+         
          }
-         
-
          
          
          //if( energy [i] < -3000 ){
@@ -265,26 +287,8 @@ Bool_t Cali_root::Process(Long64_t entry)
          //                          c1[detID][posID], 
          //                          c0[detID][posID], j1[detID], j0[detID] );
          //}
-         
-         /*
-         if( e[i] > 0 ){
-            if(xf[i] > 0  && xn[i] > 0 ) x[i] = ((xfC[i]-xnC[i])/eC[i] + 1.)*length/2 + nearPos[detID];
-            //if(xf[i] == 0 && xn[i] > 0 ) x[i] = (1-xnC[i]/eC[i])*length + nearPos[detID];
-            //if(xf[i] > 0 && xn[i] == 0 ) x[i] = (xfC[i]/eC[i])*length + nearPos[detID];
-            //if(xf[i] == 0 && xn[i] == 0) x[i] = TMath::QuietNaN();
-            count ++;
-         }else{
-            if(xf[i] > 0 && xn[i] > 0) {
-               x[i] = ((xfC[i]-xnC[i])/(xfC[i]+xnC[i]) + 1.)*length/2 + nearPos[detID];
-               count++;
-            }else{
-               x[i] = TMath::QuietNaN();
-            }
-         }*/
-         
-         //show
           
-      }
+      }// end of i
       
    }
    

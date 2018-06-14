@@ -1,8 +1,10 @@
-//void Cali_alpha()
+//void Cali_alpha(TString rootfile)
 {
 /**///======================================================== initial input
    
-   const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
+   const char* rootfile="~/ANALYSIS/RUNs/H060_208Pb/gen_run09.root"; 
+   
+   const char* treeName="gen_tree";
    
    const int numDet = 24;
    
@@ -11,7 +13,7 @@
    printf("============ calibration for PSD detectors using alpha souce. \n");
    printf("1, calibration energy using charateristic energy of alpha souce. \n");
    printf("2, calibration xf-xn with energy-gate. \n");
-   printf("3, calibration e vs xf+xn. \n");
+   //printf("3, calibration e vs xf+xn. \n");
    printf("------------------------------------------------- \n");
 
    TFile *f0 = new TFile (rootfile, "read"); 
@@ -22,9 +24,13 @@
 
    //TBrowser B ;   
    Int_t Div[2] = {6,4};  //x,y
-   Int_t size[2] = {250,250}; //x,y
+   Int_t size[2] = {230,230}; //x,y
    TCanvas * cAlpha = new TCanvas("cAlpha", "cAlpha", 0, 0, size[0]*Div[0], size[1]*Div[1]);
    cAlpha->Divide(Div[0],Div[1]);
+   
+   for( int i = 1; i <= Div[0]*Div[1] ; i++){
+      cAlpha->cd(i)->SetGrid();
+   }
 
    gStyle->SetOptStat(1111111);
    gStyle->SetStatY(1.0);
@@ -72,17 +78,19 @@
       int iMax = q[i]->GetMaximumBin();
       //printf("=========== %d \n", i);
       //printf(" yMax : %f, iMax : %d \n", yMax[i], iMax);
-      if( iMax < 100 ){
-         yMax[i] = q[i]->GetMaximum(yMax[i]/2.);
+      
+      // for the higher energy peak
+      //if( iMax < 100 ){
+      //   yMax[i] = q[i]->GetMaximum(yMax[i]/2.);
          //printf(" ---> corrected yMax : %f \n", yMax[i]);
-      }
+      //}
       int iHalf = q[i]->FindLastBinAbove(yMax[i]/2);
       xHalf[i] = q[i]->GetBinCenter(iHalf);
    
-      //printf("%d | iHalf : %d, xHalf : %f \n", i, iHalf, xHalf[i]);
+      printf("%2d | iHalf : %3d, xHalf : %6f \n", i, iHalf, xHalf[i]);
    }
    
-   printf("----- adjusting the energy......\n");
+   printf("----- adjusting the energy to det-0......\n");
    //------------ 3, correction
    TH1F ** p = new TH1F[numDet];
    for( int i = 0; i < numDet; i ++){
@@ -135,7 +143,7 @@
       
       TString expression;
       expression.Form("xf[%d]:xn[%d]>> h%d" ,i ,i, i);
-      gate[i].Form("xf[%d]!=0 && xn[%d]!=0 && xf[%d] + xn[%d] > 1300 && TMath::Abs(e[%d]-%f)<50", i, i, i, i, i, xHalf[i]-25);
+      gate[i].Form("xf[%d]!=0 && xn[%d]!=0 && xf[%d] + xn[%d] > 10 && TMath::Abs(e[%d]-%f)<50", i, i, i, i, i, xHalf[i]-25);
       
       cAlpha->cd(i+1);
       
@@ -191,8 +199,8 @@
    
    //--------- 4, pause for saving correction parameter
    cAlpha->Update();
-   //printf("0 for stop, 1 for save xf-xn-correction & Canvas, 2 for e - xf+xn correction: ");
-   printf("0 for stop, 1 for save xf-xn-correction & Canvas");
+   printf("0 for stop, 1 for save xf-xn-correction & Canvas, 2 for e - xf+xn correction: ");
+   //printf("0 for stop, 1 for save xf-xn-correction & Canvas: ");
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){   
@@ -202,7 +210,7 @@
       paraOut = fopen (filename.Data(), "w+");
       printf("=========== save xf_xn-correction parameters to %s \n", filename.Data());
       for( int i = 0; i < numDet; i++){
-         fprintf(paraOut, "%9.6f\n", para[i][1]);
+         fprintf(paraOut, "%9.6f\n", -para[i][1]);
       }
       fflush(paraOut);
       fclose(paraOut);
@@ -213,6 +221,7 @@
    return;
    
    //############################################################ for e vs xf+xn correction
+   //#### alpha calibration does not fit for physical run
    printf("############## e - xf+xn correction \n");
    line.SetX1(-200);
    line.SetY1(-200);

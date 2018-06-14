@@ -39,10 +39,12 @@ public :
    
    //correction parameters
    int numDet;
-   Double_t nearPos[6];
-   Double_t length;
-   Double_t posToTarget;
-   Double_t xnCorr[24]; // xn correction
+   vector<double> pos;
+   double length;
+   double firstPos;
+   double xnCorr[24]; // xn correction for xn = xf
+   double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
+   
    double c1[6][4]; // same position e_correction
    double c0[6][4];
    double m[6]  ;   
@@ -58,12 +60,15 @@ public :
    //tree  
    Int_t eventID;
    Float_t eC[24];
-   Float_t energy;
-   Int_t energy_t;
    Float_t xfC[24];
    Float_t xnC[24];
    Float_t x[24]; // unadjusted position, range (-1,1)
    Float_t z[24]; 
+   int det;
+   int hitID; // is e, xf, xn are all fired.
+      
+   Float_t energy;
+   Int_t energy_t;
    Float_t rdtC[8];
    int rdt_m ;
    int tac_m;
@@ -73,7 +78,6 @@ public :
    Float_t tacC[6];
    Float_t tacC_t[6];
    Int_t dt[6];
-   int det;
    Float_t tt; // corrected tac[4];
    Float_t ttt; // next corrected tac[4];
    Float_t t4; // ttt correction with energy 
@@ -154,22 +158,30 @@ void Cali_root::Init(TTree *tree)
    fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);
    fChain->SetBranchAddress("xn", xn, &b_XN);
    fChain->SetBranchAddress("xn_t", xn_t, &b_XNTimestamp);
-   fChain->SetBranchAddress("rdt", rdt, &b_RDT);
-   fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);
-   fChain->SetBranchAddress("tac", tac, &b_TAC);
-   fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
-   fChain->SetBranchAddress("elum", elum, &b_ELUM);
-   fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
-   
+   if( option >= 2){
+      fChain->SetBranchAddress("rdt", rdt, &b_RDT);
+      fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);
+      fChain->SetBranchAddress("tac", tac, &b_TAC);
+      fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
+      fChain->SetBranchAddress("elum", elum, &b_ELUM);
+      fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
+   }
    //===================== custom code
    printf( "========== Coverting root to Calibrated root.\n");
-   printf(" 0 = after alpha source, 1 = final : ");
+   printf(" 0 = after alpha source,\n 1 = after xf/xn - e,\n 2 = final cali : ");
    scanf("%d", &option);
    saveFileName = fChain->GetDirectory()->GetName();
    
+   //remove any folder path to get the name;
+   int found;
+   do{
+      found = saveFileName.First("/");
+      saveFileName.Remove(0,found+1);
+   }while( found >= 0 );
+   
    TString prefix;
-   if(option == 0) prefix.Form("C_");
-   if(option == 1) prefix.Form("X_");
+   if(option  < 2 ) prefix.Form("C_");
+   if(option >= 2 ) prefix.Form("X_");
    
    saveFileName = prefix + saveFileName;
    totnumEntry = tree->GetEntries();
@@ -184,32 +196,50 @@ void Cali_root::Init(TTree *tree)
    
    numDet = 24;
    //===================================================== loading parameter
-   printf("----- loading sensor position.");
+   string detGeoFileName = "detectorGeo_upstream.txt";
+   
+   //========================================= detector Geometry
+   printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file;
-   file.open("nearPos.dat");
+   file.open(detGeoFileName.c_str());
+   string line;
+   int i = 0;
    if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i <6 ) nearPos[i] = a;
-         if( i > 8) break;
-         if( i == 6) length = a;
-         if( i == 7) posToTarget = a;
+      string x;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" )  continue;
+         if( i == 6 ) length   = atof(x.c_str());
+         if( i == 8 ) firstPos = atof(x.c_str());
+         if( i >= 9 ) {
+            pos.push_back(atof(x.c_str()));
+         }
          i = i + 1;
       }
+      
+      int nDet = pos.size();
       file.close();
       printf("... done.\n");
       
-      for(int i = 0; i < 5 ; i++){
-         //nearPos[i] = nearPos[i] + posToTarget;
-         printf("%6.2f mm, ", nearPos[i]);
+      for(int id = 0; id < nDet; id++){
+         pos[id] = firstPos + pos[id];
       }
-      printf("%6.2f mm || length : %6.2f mm || startPos : %8.3f\n", nearPos[5], length, posToTarget);
+      
+      for(int i = 0; i < nDet ; i++){
+         if( firstPos > 0 ){
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
+         }else{
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - length , pos[i]);
+         }
+      }
+      printf("=======================\n");
+      
    }else{
        printf("... fail\n");
+       
    }
    
-   
+   //========================================= xf = xn correction
    printf("----- loading xf-xn correction.");
    file.open("correction_xf_xn.dat");
    if( file.is_open() ){
@@ -228,7 +258,37 @@ void Cali_root::Init(TTree *tree)
    }
    file.close();
    
-   if( option == 1 ){
+   //========================================= e = xf + xn correction
+   
+   if( option >= 1){
+      printf("----- loading xf/xn-e correction.");
+      file.open("correction_xfxn_e.dat");
+      if( file.is_open() ){
+         double a, b;
+         int i = 0;
+         while( file >> a >> b){
+            if( i >= numDet) break;
+            xfxneCorr[i][0] = a;
+            xfxneCorr[i][1] = b;
+            i = i + 1;
+         }
+         printf("... done.\n");
+      }else{
+         printf("... fail.\n");
+      }
+      file.close();
+   }else{
+      for( int i = 0; i < 24; i++){
+         xfxneCorr[i][0] = 0.; 
+         xfxneCorr[i][1] = 1.;
+      }
+   }
+   //for( int i = 0; i < 24; i++){
+   //   printf("%d : %f, %f \n", i, xfxneCorr[i][0], xfxneCorr[i][1]);
+   //}
+   
+   //========================================= 
+   if( option >=2  ){
       printf("----- loading energy calibration for same position. \n");
       for( int i = 0; i < 6; i++){
          TString filename;
@@ -276,144 +336,146 @@ void Cali_root::Init(TTree *tree)
          printf("... fail.\n");
       }
       file.close();
-   }
    
-   cut[0] = 2500;
-   cut[1] = 2000;
-   cut[2] = 2000;
-   cut[3] = 2870;
-   cut[4] = 3000;
-   cut[5] = 2281;
-   cut[6] = 2500;
-   cut[7] = 2000;
-   cut[8] = 2400;
-   cut[9] = 2000;
-   cut[10] = 2000;
-   cut[11] = 1000;
-   cut[12] = 2500;
-   cut[13] = 2500;
-   cut[14] = 2500;
-   cut[15] = 2300;
-   cut[16] = 1800;
-   cut[17] = 2000;
-   cut[18] = 1500;
-   cut[19] = 2200;
-   cut[20] = 2000;
-   cut[21] = 2000;
-   cut[22] = 2000;
-   cut[23] = 1800;
    
-   printf("----- loading tac (mean) calibration.");
-   file.open("tac_correction_mean.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i > 24) break;
-         mean[i] = a;
-         i = i + 1;
-      }
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   printf("----- loading tac (deg) calibration.");
-   file.open("tac_correction_deg.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i > 24) break;
-         polDeg[i] = a;
-         i = i + 1;
-      }
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   printf("----- loading tac calibration.");
-   file.open("tac_correction.dat");
-   
-   fit = new TF1*[24];
-   
-   if( file.is_open() ){
-      for( int i = 0; i < 24; i++){
-         char  line[1000];
-         file.getline(line, 1000, '\n');
-         string sLine(line);
-         TString name;
-         name.Form("fit%d", i);
-         
-         if( polDeg[i] > 1){
-            if( sLine.size() < 20 * (polDeg[i]+1) ) {
-               printf(" error ! missing parameter for fit-%d \n", i);
-               continue;
-            }
-            
-            TString polyName;
-            polyName.Form("pol%d", polDeg[i]);
-            fit[i] = new TF1(name, polyName, -1, 1);
-            
-            for( int j = 0; j <= polDeg[i] ; j++){
-               double aa = atof(sLine.substr(20*j+1, 20).c_str());
-               //printf("(%d, %d), %f \n", i, j, aa);
-               if( j == 0) {
-                  fit[i]->SetParameter(j, 0); 
-               }else{
-                  fit[i]->SetParameter(j, aa);
-               }
-            }
-            
-         }else{
-            fit[i] = new TF1(name, "0");
+      // tac cut
+      cut[0] = 2500;
+      cut[1] = 2000;
+      cut[2] = 2000;
+      cut[3] = 2870;
+      cut[4] = 3000;
+      cut[5] = 2281;
+      cut[6] = 2500;
+      cut[7] = 2000;
+      cut[8] = 2400;
+      cut[9] = 2000;
+      cut[10] = 2000;
+      cut[11] = 1000;
+      cut[12] = 2500;
+      cut[13] = 2500;
+      cut[14] = 2500;
+      cut[15] = 2300;
+      cut[16] = 1800;
+      cut[17] = 2000;
+      cut[18] = 1500;
+      cut[19] = 2200;
+      cut[20] = 2000;
+      cut[21] = 2000;
+      cut[22] = 2000;
+      cut[23] = 1800;
+      
+      printf("----- loading tac (mean) calibration.");
+      file.open("tac_correction_mean.dat");
+      if( file.is_open() ){
+         double a;
+         int i = 0;
+         while( file >> a ){
+            if( i > 24) break;
+            mean[i] = a;
+            i = i + 1;
          }
-      
+         printf("... done.\n");
+      }else{
+         printf("... fail.\n");
       }
+      file.close();
       
-      printf("... done.\n");
+      printf("----- loading tac (deg) calibration.");
+      file.open("tac_correction_deg.dat");
+      if( file.is_open() ){
+         double a;
+         int i = 0;
+         while( file >> a ){
+            if( i > 24) break;
+            polDeg[i] = a;
+            i = i + 1;
+         }
+         printf("... done.\n");
+      }else{
+         printf("... fail.\n");
+      }
+      file.close();
       
-      //for(int i = 0; i < 24; i++){
-      //   fit[i]->Print();
-      //}
+      printf("----- loading tac calibration.");
+      file.open("tac_correction.dat");
       
-   }else{
-      printf("... fail.\n");
+      fit = new TF1*[24];
+      
+      if( file.is_open() ){
+         for( int i = 0; i < 24; i++){
+            char  line[1000];
+            file.getline(line, 1000, '\n');
+            string sLine(line);
+            TString name;
+            name.Form("fit%d", i);
+            
+            if( polDeg[i] > 1){
+               if( sLine.size() < 20 * (polDeg[i]+1) ) {
+                  printf(" error ! missing parameter for fit-%d \n", i);
+                  continue;
+               }
+               
+               TString polyName;
+               polyName.Form("pol%d", polDeg[i]);
+               fit[i] = new TF1(name, polyName, -1, 1);
+               
+               for( int j = 0; j <= polDeg[i] ; j++){
+                  double aa = atof(sLine.substr(20*j+1, 20).c_str());
+                  //printf("(%d, %d), %f \n", i, j, aa);
+                  if( j == 0) {
+                     fit[i]->SetParameter(j, 0); 
+                  }else{
+                     fit[i]->SetParameter(j, aa);
+                  }
+               }
+               
+            }else{
+               fit[i] = new TF1(name, "0");
+            }
+         
+         }
+         
+         printf("... done.\n");
+         
+         //for(int i = 0; i < 24; i++){
+         //   fit[i]->Print();
+         //}
+         
+      }else{
+         printf("... fail.\n");
+      }
+      file.close();
+      
+      
+      tcut[0][0] = -200 ; tcut[0][1] = 400 ;
+      tcut[1][0] = -200 ; tcut[1][1] = 400 ;
+      tcut[2][0] = -200 ; tcut[2][1] = 400 ;
+      tcut[3][0] = -600 ; tcut[3][1] = 400 ;
+      tcut[4][0] =  100 ; tcut[4][1] = 500 ;
+      tcut[5][0] = -400 ; tcut[5][1] = 400 ;
+      
+      tcut[6][0] = -200 ; tcut[6][1] = 400 ;
+      tcut[7][0] = -200 ; tcut[7][1] = 400 ;
+      tcut[8][0] = -200 ; tcut[8][1] = 400 ;
+      tcut[9][0] =  -500 ; tcut[9][1] = 500 ;
+      tcut[10][0] =  100 ; tcut[10][1] = 500 ;
+      tcut[11][0] = -200 ; tcut[11][1] = -200 ;
+      
+      tcut[12][0] = -300 ; tcut[12][1] = 400 ;
+      tcut[13][0] = -300 ; tcut[13][1] = 400 ;
+      tcut[14][0] = -200 ; tcut[14][1] = 400 ;
+      tcut[15][0] = -200 ; tcut[15][1] = 400 ;
+      tcut[16][0] =  100 ; tcut[16][1] = 500 ;
+      tcut[17][0] =  100 ; tcut[17][1] = 800 ;
+      
+      tcut[18][0] = -200 ; tcut[18][1] = 400 ;
+      tcut[19][0] = -300 ; tcut[19][1] = 400 ;
+      tcut[20][0] = -200 ; tcut[20][1] = 600 ;
+      tcut[21][0] = -300 ; tcut[21][1] = 600 ;
+      tcut[22][0] =   50 ; tcut[22][1] = 500 ;
+      tcut[23][0] =  200 ; tcut[23][1] = 700 ;
+      
    }
-   file.close();
-   
-   
-   tcut[0][0] = -200 ; tcut[0][1] = 400 ;
-   tcut[1][0] = -200 ; tcut[1][1] = 400 ;
-   tcut[2][0] = -200 ; tcut[2][1] = 400 ;
-   tcut[3][0] = -600 ; tcut[3][1] = 400 ;
-   tcut[4][0] =  100 ; tcut[4][1] = 500 ;
-   tcut[5][0] = -400 ; tcut[5][1] = 400 ;
-   
-   tcut[6][0] = -200 ; tcut[6][1] = 400 ;
-   tcut[7][0] = -200 ; tcut[7][1] = 400 ;
-   tcut[8][0] = -200 ; tcut[8][1] = 400 ;
-   tcut[9][0] =  -500 ; tcut[9][1] = 500 ;
-   tcut[10][0] =  100 ; tcut[10][1] = 500 ;
-   tcut[11][0] = -200 ; tcut[11][1] = -200 ;
-   
-   tcut[12][0] = -300 ; tcut[12][1] = 400 ;
-   tcut[13][0] = -300 ; tcut[13][1] = 400 ;
-   tcut[14][0] = -200 ; tcut[14][1] = 400 ;
-   tcut[15][0] = -200 ; tcut[15][1] = 400 ;
-   tcut[16][0] =  100 ; tcut[16][1] = 500 ;
-   tcut[17][0] =  100 ; tcut[17][1] = 800 ;
-   
-   tcut[18][0] = -200 ; tcut[18][1] = 400 ;
-   tcut[19][0] = -300 ; tcut[19][1] = 400 ;
-   tcut[20][0] = -200 ; tcut[20][1] = 600 ;
-   tcut[21][0] = -300 ; tcut[21][1] = 600 ;
-   tcut[22][0] =   50 ; tcut[22][1] = 500 ;
-   tcut[23][0] =  200 ; tcut[23][1] = 700 ;
-   
    //===================================================== tree branch
    
    for(int i = 0; i < numDet; i++){
@@ -426,28 +488,32 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    
    newTree->Branch("e" ,  eC, "eC[24]/F");
-   newTree->Branch("energy" ,  &energy, "energy/F");
-   newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");
    newTree->Branch("xf", xfC, "xfC[24]/F");
    newTree->Branch("xn", xnC, "xnC[24]/F");
    newTree->Branch("x" ,   x, "x[24]/F");
    newTree->Branch("z" ,   z, "z[24]/F");
-   newTree->Branch("rdt", rdtC, "rdtC[8]/F");
-   newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
-   newTree->Branch("e_t", eC_t, "e_t[24]/F");
-   newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
-   newTree->Branch("energy_m", &energy_m, "energy_m/I");
-   newTree->Branch("tac_m", &tac_m, "tac_m/I");
-   newTree->Branch("tac", tacC, "tacC[6]/F");
-   newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
-   newTree->Branch("dt", dt, "dt[6]/I");
    newTree->Branch("detID", &det, "det/I");
-   //newTree->Branch("tt", &tt, "tt/F");
-   //newTree->Branch("ttt", &ttt, "ttt/F");
-   newTree->Branch("t4", &t4, "t4/F");
-   newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
-   newTree->Branch("Ex", &Ex, "Ex/F");
-   newTree->Branch("good", &good, "good/I");
+   newTree->Branch("hitID", &hitID, "hitID/I");
+   
+   if( option >= 2 ){
+      newTree->Branch("energy" ,  &energy, "energy/F");
+      newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");
+      newTree->Branch("rdt", rdtC, "rdtC[8]/F");
+      newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
+      newTree->Branch("e_t", eC_t, "e_t[24]/F");
+      newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
+      newTree->Branch("energy_m", &energy_m, "energy_m/I");
+      newTree->Branch("tac_m", &tac_m, "tac_m/I");
+      newTree->Branch("tac", tacC, "tacC[6]/F");
+      newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
+      newTree->Branch("dt", dt, "dt[6]/I");
+      //newTree->Branch("tt", &tt, "tt/F");
+      //newTree->Branch("ttt", &ttt, "ttt/F");
+      newTree->Branch("t4", &t4, "t4/F");
+      newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+      newTree->Branch("Ex", &Ex, "Ex/F");
+      newTree->Branch("good", &good, "good/I");
+   }
    
    printf("=========================================================\n");
    
