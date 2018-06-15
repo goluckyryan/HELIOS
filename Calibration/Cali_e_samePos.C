@@ -67,21 +67,19 @@ void Cali_e_samePos(){
    }
    
    if( detID == 4){
-      cutIntep[0] = 930;
-      cutIntep[1] = 930;
-      cutIntep[2] = 1000;
-      cutIntep[3] = 1050;
+      cutIntep[0] = 1600;
+      cutIntep[1] = 1600;
+      cutIntep[2] = 1600;
+      cutIntep[3] = 1650;
       slope = 4.0; // the slope can be difference.
-      yIntep = 500;
    }
    
    if( detID == 5){
-      cutIntep[0] = 930;
-      cutIntep[1] = 930;
-      cutIntep[2] = 960;
-      cutIntep[3] = 940;
+      cutIntep[0] = 1600;
+      cutIntep[1] = 1600;
+      cutIntep[2] = 1600;
+      cutIntep[3] = 1600;
       slope = 3.7;
-      yIntep = 0;
    }
    
 /**///========================================================  load tree
@@ -112,6 +110,8 @@ void Cali_e_samePos(){
 /**///========================================================= load files
    
    vector<double> pos;
+   double length = 50.5;
+   double firstPos = 0;
 
    string detGeoFileName = "detectorGeo_upstream.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
@@ -122,6 +122,8 @@ void Cali_e_samePos(){
       while( file >> x){
          //printf("%d, %s \n", i,  x.c_str());
          if( x.substr(0,2) == "//" )  continue;
+         if( i == 6 ) length   = atof(x.c_str());
+         if( i == 8 ) firstPos = atof(x.c_str());
          if( i >= 9 ) {
             pos.push_back(atof(x.c_str()));
          }
@@ -168,7 +170,7 @@ void Cali_e_samePos(){
    for( int i = 0; i < numDet; i ++){
       TString name;
       name.Form("b%d", i);
-      b[i] = new TH2F(name, name , 200, xrange[0], xrange[1], 200, -100 , 2000);
+      b[i] = new TH2F(name, name , 200, xrange[0], xrange[1], 200, -100 , 2500);
       b[i]->SetXTitle("z");
       b[i]->SetYTitle("e");
       
@@ -207,7 +209,7 @@ void Cali_e_samePos(){
       traj->Draw("same");
    }
   
-   //============ pause
+   //------ pause
    cScript->Update();
    printf("0 for stop, 1 for continous : ");
    int dummy;
@@ -216,9 +218,10 @@ void Cali_e_samePos(){
    
    
    printf("======= showing flattened energy vs pos \n");
-   //======== create 2-D histogram of projection
+   //============================== create 2-D histogram of projection
    eRange[1] = 300 - slope * pos[detID];
-   eRange[2] = 1500 - slope * pos[detID];
+   eRange[2] = 2500 - slope * pos[detID];
+   
    TH2F ** p = new TH2F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
@@ -246,7 +249,7 @@ void Cali_e_samePos(){
    
    printf("======= showing energy spectrum and find peak\n");
    
-   //======== create 1-D histogram of projection
+   //================================ create 1-D histogram of projection
    TH1F ** g = new TH1F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
@@ -329,7 +332,7 @@ void Cali_e_samePos(){
          }
       
       
-      }else{
+      }else if(dummy == 1){
       
          for( int i = 0; i < numDet; i ++){
             printf("======== for g%d ( 0 = reject, 1 = accept )\n", i);
@@ -340,12 +343,11 @@ void Cali_e_samePos(){
                scanf("%d", &ok);
                if( ok == 1){
                   Upeak[i].push_back(temp);
-               }
-               
+               }  
             }
          }
          
-         numCommonPeaks = Upeak[0].size();
+         numCommonPeaks = Upeak[0].size(); // assume user input is OK.
       
       }
    }else if(dummy == 2){
@@ -355,14 +357,15 @@ void Cali_e_samePos(){
            Upeak[i].push_back(peak[i][j]);
          }
       }
-   
    }
    
    numPeak = numCommonPeaks;   
    for( int i = 0; i < numDet; i ++){
-      printf("-------------------------- g%d \n", i);
-      for(int j = 0; j < numCommonPeaks ; j ++){
-         printf("%d, x: %8.3f \n", j, peak[i][j]);
+      if( Upeak[i].size() > 0 ) {      
+         printf("-------------------------- g%d \n", i);
+         for(int j = 0; j < numCommonPeaks ; j ++){
+            printf("%d, x: %8.3f \n", j, Upeak[i][j]);
+         }
       }
    }
    
@@ -371,14 +374,19 @@ void Cali_e_samePos(){
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    
-   //======== find the scaling paramter respect to d0;
+   //================================ find the scaling paramter respect to d0;
    double c0[numDet], c1[numDet];
    
    if( numPeak == 1 ){
       printf(" numEvent : %d \n", numPeak);
       for( int i = 0; i < numDet; i++){
-         c1[i] = 1.;
-         c0[i] = - Upeak[i][0] + Upeak[0][0];   
+         if( Upeak[i].size() > 0 ){
+            c1[i] = 1.;
+            c0[i] = - Upeak[i][0] + Upeak[0][0];
+         }else{
+            c1[i] = 1.;
+            c0[i] = 0.;
+         }   
          printf("==== %d | c0:%8.3f, c1:%8.3f \n", i, c0[i], c1[i]);
       }
    }else{
@@ -397,7 +405,7 @@ void Cali_e_samePos(){
       }
    }
    
-   //======== scale the energy
+   //===================================== scale the energy
    
    printf("========= plot correted energy. \n");
    

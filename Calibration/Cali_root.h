@@ -66,13 +66,13 @@ public :
    Float_t z[24]; 
    int det;
    int hitID; // is e, xf, xn are all fired.
+   int zMulti; // multipicity of z
       
    Float_t energy;
    Int_t energy_t;
    Float_t rdtC[8];
    int rdt_m ;
    int tac_m;
-   int energy_m ; 
    Float_t eC_t[24];
    Float_t rdtC_t[8];
    Float_t tacC[6];
@@ -287,7 +287,7 @@ void Cali_root::Init(TTree *tree)
    //}
    
    //========================================= 
-   if( option >=2  ){
+   if( option >= 2 ){
       printf("----- loading energy calibration for same position. \n");
       for( int i = 0; i < 6; i++){
          TString filename;
@@ -315,7 +315,8 @@ void Cali_root::Init(TTree *tree)
          }
          file.close();
       }
-      
+   
+   //=========================================   
       printf("----- loading energy calibration for different position.");
       file.open("e_correction_diff.dat");
       if( file.is_open() ){
@@ -336,7 +337,7 @@ void Cali_root::Init(TTree *tree)
       }
       file.close();
    
-   
+   //========================================= 
       // tac cut
       cut[0] = 2500;
       cut[1] = 2000;
@@ -409,7 +410,7 @@ void Cali_root::Init(TTree *tree)
             name.Form("fit%d", i);
             
             if( polDeg[i] > 1){
-               if( sLine.size() < 20 * (polDeg[i]+1) ) {
+               if( (int) sLine.size() < 20 * (polDeg[i]+1) ) {
                   printf(" error ! missing parameter for fit-%d \n", i);
                   continue;
                }
@@ -493,15 +494,17 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("z" ,   z, "z[24]/F");
    newTree->Branch("detID", &det, "det/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
+   newTree->Branch("zMulti", &zMulti, "zMulti/I");
    
    if( option >= 2 ){
+      newTree->Branch("Ex", &Ex, "Ex/F");
       newTree->Branch("energy" ,  &energy, "energy/F");
       newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");
       newTree->Branch("rdt", rdtC, "rdtC[8]/F");
       newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
       newTree->Branch("e_t", eC_t, "e_t[24]/F");
       newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
-      newTree->Branch("energy_m", &energy_m, "energy_m/I");
+      
       newTree->Branch("tac_m", &tac_m, "tac_m/I");
       newTree->Branch("tac", tacC, "tacC[6]/F");
       newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
@@ -510,7 +513,6 @@ void Cali_root::Init(TTree *tree)
       //newTree->Branch("ttt", &ttt, "ttt/F");
       newTree->Branch("t4", &t4, "t4/F");
       newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
-      newTree->Branch("Ex", &Ex, "Ex/F");
       newTree->Branch("good", &good, "good/I");
    }
    
