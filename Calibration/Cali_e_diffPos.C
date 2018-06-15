@@ -49,6 +49,8 @@ void Cali_e_diffPos(){
    vector<double> pos;
    double length = 50.5;
    double firstPos = 0;
+   int iDet = 6; // number of detector at different position
+   int jDet = 4; // number of detector at same position
 
    string detGeoFileName = "detectorGeo_upstream.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
@@ -61,21 +63,22 @@ void Cali_e_diffPos(){
          if( x.substr(0,2) == "//" )  continue;
          if( i == 6 ) length   = atof(x.c_str());
          if( i == 8 ) firstPos = atof(x.c_str());
-         if( i >= 9 ) {
+         if( i == 9 ) jDet = atoi(x.c_str());
+         if( i >= 10 ) {
             pos.push_back(atof(x.c_str()));
          }
          i = i + 1;
       }
       
-      int nDet = pos.size();
+      iDet = pos.size();
       file.close();
       printf("... done.\n");
       
-      for(int id = 0; id < nDet; id++){
+      for(int id = 0; id < iDet; id++){
          pos[id] = firstPos + pos[id];
       }
       
-      for(int i = 0; i < nDet ; i++){
+      for(int i = 0; i < iDet ; i++){
          if( firstPos > 0 ){
             printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
          }else{
@@ -90,15 +93,15 @@ void Cali_e_diffPos(){
    }
    
    //=================== load energy for same pos
-   double ** c0 = new double*[6];
-   double ** c1 = new double*[6];
-   double * m  = new double[6];
-   for(int i = 0; i < 6; i ++){
-      c0[i] = new double[4];
-      c1[i] = new double[4];
+   double ** c0 = new double*[iDet];
+   double ** c1 = new double*[iDet];
+   double * m  = new double[iDet];
+   for(int i = 0; i < iDet; i ++){
+      c0[i] = new double[jDet];
+      c1[i] = new double[jDet];
    }
    printf("----- loading energy calibration. \n");
-   for( int i = 0; i < 6; i++){
+   for( int i = 0; i < iDet; i++){
       TString filename;
       filename.Form("e_correction_%d.dat", i);
       printf("        %s", filename.Data());
@@ -109,7 +112,7 @@ void Cali_e_diffPos(){
          c0[i][j] = a;
          c1[i][j] = b;
          j = j + 1;
-         if( j >= 4) break;
+         if( j >= jDet) break;
       }
       file >> a;
       m[i] = a;
@@ -117,21 +120,21 @@ void Cali_e_diffPos(){
       file.close();
       printf("... done.\n");
       printf("    --------- detID : %d \n", i );
-      for( int k = 0; k < 4; k++ ){
+      for( int k = 0; k < jDet; k++ ){
          printf(" %d ---- c0 : %7.2f, c1 : %7.2f, m : %7.2f \n", k,  c0[i][k], c1[i][k],  m[i]);
       }
    }
 
 /**///========================================================= Analysis
 
-   TH1F ** h = new TH1F*[6];
-   for( int i = 0; i < 6; i++){
+   TH1F ** h = new TH1F*[iDet];
+   for( int i = 0; i < iDet; i++){
       TString name;
       name.Form("h%d", i);
       h[i] = new TH1F(name, name , eRange[0], eRange[1], eRange[2]);
       h[i]->SetXTitle("Ex [a.u.]");
       
-      for( int j = 0; j < 4; j++){   
+      for( int j = 0; j < jDet; j++){   
          TString expression;
          
          expression.Form("-(e[%d] - %f * z[%d])*%f - %f>>  + h%d" , i + 6*j ,  m[i] ,i + 6*j , c1[i][j], c0[i][j], i);
@@ -145,7 +148,7 @@ void Cali_e_diffPos(){
    vector<double> * peak = new vector<double>[6];
    
    TSpectrum * spec = new TSpectrum(20);
-   for(int i = 0 ; i < 6; i++){
+   for(int i = 0 ; i < iDet; i++){
       int nPeaks = spec->Search(h[i], 1 ,"", 0.10);
       float * xpos = spec->GetPositionX();
       
@@ -167,15 +170,15 @@ void Cali_e_diffPos(){
    printf("============== peaks selections \n");
    vector<double> * Upeak = new vector<double>[6];  
    
-   double * q0 = new double[6];
-   double * q1 = new double[6];
+   double * q0 = new double[iDet];
+   double * q1 = new double[iDet];
    
    q0[0] = 0;
    q1[0] = 1;
    
    bool endFlag = false;
 
-   for( int i = 1; i < 6; i ++){
+   for( int i = 1; i < iDet; i ++){
       
       cScript->cd(1);
       h[i-1]->Draw();
@@ -184,7 +187,7 @@ void Cali_e_diffPos(){
       cScript->Update();
       
       Upeak[i-1].clear();
-      printf("======== for h%d (0 for reject, 1 for accept, 8 for skip the rest, 9 for end)\n", i-1);
+      printf("======== for h%d (0 for reject, 1 for accept, 8 for skip the rest, 9 to exit)\n", i-1);
       for( int j = 0; j < (int) peak[i-1].size(); j++){
          double temp = peak[i-1][j];
          printf(" %8.3f ? ", temp);
@@ -226,7 +229,10 @@ void Cali_e_diffPos(){
          ga->Fit("fit", "q");
          q0[i] = fit->GetParameter(0);
          q1[i] = fit->GetParameter(1);
-      }else{      
+      }else if(numPeak == 1){ // simply shift      
+         q0[i] = Upeak[i][0] - Upeak[i-1][0];
+         q1[i] = 1;
+      }else{
          q0[i] = 0;
          q1[i] = 1;
       }
@@ -237,16 +243,17 @@ void Cali_e_diffPos(){
    if(endFlag) return;
    
    printf("========= recalculate the coefficients \n");
-   double * j0 = new double[6];
-   double * j1 = new double[6];
+   double * j0 = new double[iDet];
+   double * j1 = new double[iDet];
    
-   j1[0] = q1[0];          j0[0] = q0[0]; 
-   for( int i = 1 ; i < 6 ; i++){
+   j1[0] = q1[0];          
+   j0[0] = q0[0]; 
+   for( int i = 1 ; i < iDet ; i++){
       j1[i] = j1[i-1] * q1[i];  
       j0[i] = j0[i-1] + q0[i]*j1[i-1];
    }
    
-   for( int i = 0; i < 6; i++){  
+   for( int i = 0; i < iDet; i++){  
       printf("%d === j0: %f, j1: %f\n",i,  j0[i], j1[i]);
    }
    //=========== final spectrum
@@ -255,13 +262,13 @@ void Cali_e_diffPos(){
    
    TH1F * k = new TH1F("k", "k" , eRange[0], eRange[1], eRange[2]);
    k->SetXTitle("Ex [a.u.]");
-   for( int i = 0; i < 6; i++){  
-      for( int j = 0; j < 4; j++){   
+   for( int i = 0; i < iDet; i++){  
+      for( int j = 0; j < jDet; j++){   
          TString expression;
          expression.Form("(-(e[%d] - %f * z[%d])*%f - %f)*%f + %f >>  + k" , 
-                            i + 6*j ,  
+                            i + iDet*j ,  
                             m[i] ,
-                            i + 6*j , 
+                            i + iDet*j , 
                             c1[i][j], 
                             c0[i][j],
                             j1[i],
@@ -287,15 +294,13 @@ void Cali_e_diffPos(){
       paraOut = fopen (filename.Data(), "w+");
       
       printf("=========== save parameters to %s \n", filename.Data());
-      for( int i = 0; i < 6; i++){
+      for( int i = 0; i < iDet; i++){
          fprintf(paraOut, "%9.6f  %9.6f\n", j0[i], j1[i]);
       }
       
       fflush(paraOut);
       fclose(paraOut);
    }
-   
-   
-   /**/
+
 }
 

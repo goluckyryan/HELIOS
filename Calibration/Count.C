@@ -1,6 +1,6 @@
 int nPeaks = 16;
 
-TString gate, gateB, gate_cm;
+TString gate, gate_cm, gate_Aux;
 
 Double_t fpeaks(Double_t *x, Double_t *par) {
    Double_t result = 0;
@@ -18,11 +18,20 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
 
 /**///======================================================== initial input
    
-   //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
+   const char* rootfile="C_gen_run30.root"; const char* treeName="tree";
    
-   const int numDet = 4;
+   double ExRange[2] = {-1, 6};
+   
+   /*// for H052
+   gate_Aux = " && z > -629 + 32 * Ex + 0.67 * Ex * Ex ";
+   gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
+   */
+   bool isH052 = false;
+   
+   // for H060 
+   gate = "hitID == 0 && 5 > detID%6 && detID%6 > 0";
+   gate_cm = "";
+   gate_Aux = "";
    
 /**///========================================================  load tree
 
@@ -51,22 +60,77 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    
 /**///========================================================= load files
 
-   double zMPos[6] = { -538.55, -479.95, -420.65, -361.75, -302.75, -243.75};
+   //=================== load detector geometery
+   vector<double> pos;
+   double length = 50.5;
+   double firstPos = 0;
+   int iDet = 6;
+   int jDet = 4;
+
+   string detGeoFileName = "detectorGeo_upstream.txt";
+   printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
+   ifstream file(detGeoFileName.c_str(), std::ifstream::in);
+   int i = 0;
+   if( file.is_open() ){
+      string x;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" )  continue;
+         if( i == 6 ) length   = atof(x.c_str());
+         if( i == 8 ) firstPos = atof(x.c_str());
+         if( i == 9 ) jDet = atoi(x.c_str());
+         if( i >= 10 ) {
+            pos.push_back(atof(x.c_str()));
+         }
+         i = i + 1;
+      }
+      
+      int iDet = pos.size();
+      file.close();
+      printf("... done.\n");
+      
+      for(int id = 0; id < iDet; id++){
+         pos[id] = firstPos + pos[id];
+      }
+      
+      for(int i = 0; i < iDet ; i++){
+         if( firstPos > 0 ){
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
+         }else{
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - length , pos[i]);
+         }
+      }
+      printf("=======================\n");
+      
+   }else{
+       printf("... fail\n");
+       
+   }
+   
+   double zMPos[6];
+   for(int i = 0; i < iDet ; i++){
+      if(firstPos < 0 ){
+         zMPos[i] = pos[i] - length/2;
+      }else{
+         zMPos[i] = pos[i] + length/2;
+      }
+   } 
 
 /**///========================================================= Analysis
 
-   TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
+   TH1F * spec  = new TH1F("spec" , "spec"  , 400, ExRange[0], ExRange[1]);
    spec ->SetXTitle("Ex [MeV]");   
-   TString gate, gateB, gate_cm, gate_z, gate_Aux ;
    
-   gate_Aux = " && z > -629 + 32 * Ex + 0.67 * Ex * Ex ";
-   gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
-   gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
-   
+   //========define gate_z
+   TString gate_z;
    if( detID >= 0 ){
-      gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+      //gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
       if( splitCtrl == 0 ) {
-         gate_z.Form("&& -600 < z && z < -200");
+         if( firstPos > 0 ){
+            gate_z.Form("&& %f < z && z < %f", pos[0] - 10, pos[iDet-1] + length + 10);
+         }else{
+            gate_z.Form("&& %f < z && z < %f", pos[0] - length - 10, pos[iDet-1] + 10);
+         }
       }
       if( splitCtrl == 1) {
          gate_z.Form("&& z < %f", zMPos[detID]);
@@ -74,32 +138,40 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
       if( splitCtrl == 2) {
          gate_z.Form("&& z > %f", zMPos[detID]);
       }
-      
       //exclude defected detectors
-      if( detID == 0){
-         gate.Form("good == 1 && det%6 == %d && det != 18 && TMath::Abs(t4)<1000", detID);
-      }
-      if( detID == 5){
-         gate.Form("good == 1 && det%6 == %d && det != 11 && TMath::Abs(t4)<1000", detID);
-      }
+      if( isH052 ){
+         if( detID == 0){
+            gate.Form("good == 1 && det%6 == %d && det != 18 && TMath::Abs(t4)<1000", detID);
+         }
+         if( detID == 5){
+            gate.Form("good == 1 && det%6 == %d && det != 11 && TMath::Abs(t4)<1000", detID);
+         }
+      }   
    }else if (detID == -1){
-      gate.Form("good == 1 && det != 11 && det != 18 && TMath::Abs(t4)<1000");
-      gate_z.Form("&& -600 < z && z < -200");
+      //gate.Form("good == 1 && det != 11 && det != 18 && TMath::Abs(t4)<1000");
+      if( firstPos > 0 ){
+         gate_z.Form("&& %f < z && z < %f", pos[0] - 10, pos[iDet-1] + length + 10);
+      }else{
+         gate_z.Form("&& %f < z && z < %f", pos[0] - length - 10, pos[iDet-1] + 10);
+      }
    }
    
    printf("%s\n", gate.Data());
    printf("%s\n", gate_cm.Data());
    printf("%s\n", gate_z.Data());
    printf("%s\n", gate_Aux.Data());
-   
+
    printf(" threshold : %f \n", threshold);
    
-   tree->Draw("Ex>>spec ", gate + gate_cm + gate_z + gate_Aux, "");
+   //================= plot Ex
+   printf("============= plot Ex with gates\n");    
+   tree->Draw("Ex>>spec ", gate + gate_z +  gate_cm + gate_Aux, "");
   
    cCount->cd(1);
    spec ->Draw();
    
-   
+   //=================== find peak and fit
+   printf("============= estimate background and find peak\n");
    TSpectrum * peak = new TSpectrum(50);
    peak->Search(spec, 1, "", threshold);
    TH1 * h1 = peak->Background(spec,10);
@@ -109,12 +181,12 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    cCount->cd(2);
    TH1F * specS = (TH1F*) spec->Clone();
    TString title;
-   if( detID >= 0){
-      title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
-   }else if(detID == -1){
-      title.Form("t4-gate && |e_t| < 20 && TMath::Abs(t4)<1000");
-   }
-   specS->SetTitle(title + gate_cm + gate_z + " && thetaCM > 8");
+   //if( detID >= 0){
+   //   title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
+   //}else if(detID == -1){
+   //   title.Form("t4-gate && |e_t| < 20 && TMath::Abs(t4)<1000");
+   //}
+   //specS->SetTitle(title + gate_cm + gate_z + " && thetaCM > 8");
    specS->SetName("specS");
    specS->Add(h1, -1.);
    specS->Sumw2();
@@ -122,8 +194,9 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    
    
    //========== Fitting 
+   printf("============= Fit.....");
    nPeaks  = peak->Search(specS, 1, "", threshold);
-   printf("======== found %d peaks \n", nPeaks);
+   printf(" found %d peaks \n", nPeaks);
    float * xpos = peak->GetPositionX();
    float * ypos = peak->GetPositionY();
    
@@ -138,34 +211,20 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
       height.push_back(ypos[inX[j]]);
    }
    
-   //int nEPeaks = 0;
-   
-   //const int  n = 3 * (nPeaks + nEPeaks);
    const int  n = 3 * nPeaks;
    double * para = new double[n]; 
    for(int i = 0; i < nPeaks ; i++){
       para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
       para[3*i+1] = energy[i];
       para[3*i+2] = 0.05;
-      //printf("%2d, %f \n", i, para[3*i+1]);
    }
-   
-   //for( int i = nPeaks ; i < nPeaks + nEPeaks; i++){
-   //   para[3*i+0] = 20.; 
-   //   para[3*i+0] = 3.5; 
-   //   para[3*i+0] = 0.05;
-   //}
-   
-   
-   //nPeaks = 16;
-   //TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
+
    TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3* nPeaks );
    fit->SetNpx(1000);
    fit->SetParameters(para);
-   //fit->Draw("same");   
    specS->Fit("fit", "q");
-   
-   
+
+   printf("============= display\n");   
    const Double_t* paraE = fit->GetParErrors();
    const Double_t* paraA = fit->GetParameters();
    
@@ -173,13 +232,10 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    
    double * ExPos = new double[nPeaks];
    
-   //for(int i = 0; i < nPeaks + nEPeaks; i++){
    for(int i = 0; i < nPeaks ; i++){
       ExPos[i] = paraA[3*i+1];
    }
-   //sort ExPos
-
-   //for(int i = 0; i < nPeaks + nEPeaks; i++){
+   
    for(int i = 0; i < nPeaks ; i++){
       ExPos[i] = paraA[3*i+1];
       printf("%2d , count: %8.0f(%3.0f), mean: %8.4f(%8.4f), sigma: %8.4f(%8.4f) \n", 

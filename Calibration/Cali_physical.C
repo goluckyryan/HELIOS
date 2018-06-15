@@ -1,11 +1,15 @@
 {
 /**///======================================================== initial input
    
-   //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
+   const char* rootfile="C_gen_run11.root"; const char* treeName="tree";
    
-   const int numDet = 4;
+   double eRange[2] = {-3500, -500};
+   
+   vector<double> knownE;
+   knownE.push_back(0);
+   knownE.push_back(1567.1);
+   knownE.push_back(2032.2);
+   knownE.push_back(2500.0);
    
 /**///========================================================  load tree
 
@@ -32,82 +36,7 @@
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load files
-   double nearPos[6];
-   double length;
-   printf("----- loading sensor position.");
-   ifstream file;
-   file.open("nearPos.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= 7) break;
-         if( i == 6) length = a;
-         nearPos[i] = a;
-         i = i + 1;
-      }
-      file.close();
-      printf("... done.\n");
-      for(int i = 0; i < 5 ; i++){
-         printf("%6.2f mm, ", nearPos[i]);
-      }
-      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
-   }else{
-       printf("... fail\n");
-   }
-   
-   double c1[6][4];
-   double c0[6][4];
-   double m[6]  ;
-   printf("----- loading energy calibration for same position. \n");
-   for( int i = 0; i < 6; i++){
-      TString filename;
-      filename.Form("e_correction_%d.dat", i);
-      printf("        %s", filename.Data());
-      file.open(filename.Data());
-      if( file.is_open() ){
-         double a, b;
-         int j = 0;
-         while( file >> a >> b ){
-            c0[i][j] = a;
-            c1[i][j] = b;
-            j = j + 1;
-            if( j >= 4) break;
-         }
-         file >> a;
-         m[i] = a;
-         
-         printf("... done.\n");
-         //printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
-      }else{
-         printf("... fail.\n");
-      }
-      file.close();
-   }
-   
-   double p0[6];
-   double p1[6];
-   printf("----- loading energy calibration for different position.");
-   file.open("e_correction_diff.dat");
-   if( file.is_open() ){
-      double a, b;
-      int i = 0;
-      while( file >> a >> b ){
-         p0[i] = a;
-         p1[i] = b;
-         i = i+ 1;
-      }
-      file.close();
-      printf("... ok.\n");
-      //for(int i = 0; i < 6 ; i++){
-      //   printf("                    p0: %f, p1: %f \n", p0[i], p1[i]);
-      //}
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-      
+
    
 /**///========================================================= Analysis
    
@@ -143,26 +72,19 @@
    tcut[22][0] =   50 ; tcut[22][1] = 500 ;
    tcut[23][0] =  200 ; tcut[23][1] = 700 ;
    
+   
+   //=================== plot aligned energy   
    printf("========== plotting final spectrum \n");
    
    TString name, expression, gate;
    
-   TH1F * spec = new TH1F("spec", "specG" , 400, -2000, 1500);
+   TH1F * spec = new TH1F("spec", "specG" , 400, eRange[0], eRange[1]);
    spec->SetXTitle("Ex [a.u.]");
-   for( int i = 0 ; i < 6 ; i++){
-      for(int j = 0; j < 4 ; j++){
-         
-         if( i == 5 ) continue;
-         expression.Form("energy >> + spec");
-         
-         int id = i + 6*j ;
-         gate.Form("det == %d && (%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000 && TMath::Abs(energy_t)<20 ", id, tcut[id][1], tcut[id][0] );
-                
-         tree->Draw(expression, gate , "");
-      }
-   }
    
-   cScript->cd(2);
+   tree->Draw("energy >> spec", "hitID == 0 && 5 > detID%6 && detID%6 > 0 ");
+   
+   //================== find peak
+   
    TSpectrum * specPeak = new TSpectrum(20);
    int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
    float * xpos = specPeak->GetPositionX();
@@ -176,22 +98,10 @@
       energy.push_back(xpos[inX[j]]);
    }
    
-   vector<double> knownE;
-   knownE.push_back(0);
-   knownE.push_back(1808.74);
-   knownE.push_back(2938.33);
-   knownE.push_back(3941.57);
-   knownE.push_back(4318.89);
-   knownE.push_back(4901);
-   knownE.push_back(5291);
-   knownE.push_back(5476);
-   knownE.push_back(5691);
-   knownE.push_back(6125);
-   knownE.push_back(7099);
-   
-   
-   // convert to real energy 
+   //=============== convert to real energy 
    int numPeak = knownE.size();
+   TCanvas * cGa = new TCanvas("cGa", "cGa", 1000, 0, 500, 500);
+   cGa->cd(1);
    TGraph * ga = new TGraph(numPeak, &energy[0], &knownE[0] );
    ga->Draw("*ap");
    ga->Fit("pol1", "");
@@ -205,29 +115,40 @@
       printf(" %d , e: %8.3f \n", j, realEnergy[j]);
    }
    
-   
+   //=================== plot corrected Ex
+   cScript->cd(2);
    TH1F * z = new TH1F("z", "z" , 500, -500, 10000);
    z->SetXTitle("Ex [keV]");
-   for( int i = 0 ; i < 6 ; i++){
-      for(int j = 0; j < 4 ; j++){
-         
-         if( i == 5 ) continue;
-         expression.Form("energy*%f + %f >> + z", eC1, eC0);
-         
-         int id = i + 6*j ;
-         gate.Form("det == %d && (%f > t4 && t4 > %f ) && TMath::Abs(t4) < 1000 && TMath::Abs(energy_t)<20", id, tcut[id][1], tcut[id][0] );
-                
-         tree->Draw(expression, gate , "");
-      }
-   }
    
-   
+   expression.Form("energy*%f + %f >> + z", eC1, eC0);
+   tree->Draw(expression, "hitID == 0 && 5 > detID%6 && detID%6 > 0 ");
+
+   //====== draw   
    cScript->cd(1);
    spec->Draw();
    
    cScript->cd(2);
    z->Draw();
    
+   cScript->Update();
+   cGa->Update();
+   //===== save correction parameter   
+   printf("0 for end, 1 for saving parameters: ");
+   int dummy;
+   scanf("%d", &dummy);
+   if( dummy == 0 ) return;
+   if( dummy == 1 ){
+      FILE * paraOut;
+      TString filename;
+      filename.Form("e_to_Ex_correction.dat");
+      paraOut = fopen (filename.Data(), "w+");
+      
+      printf("=========== save parameters to %s \n", filename.Data());
+      fprintf(paraOut, "%9.6f  %9.6f\n", eC0, eC1);
+      
+      fflush(paraOut);
+      fclose(paraOut);
+   }
    
    
 }

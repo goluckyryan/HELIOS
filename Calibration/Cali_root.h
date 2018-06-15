@@ -39,6 +39,8 @@ public :
    
    //correction parameters
    int numDet;
+   int iDet; // number of detector at different position
+   int jDet; // number of detector at same position
    vector<double> pos;
    double length;
    double firstPos;
@@ -50,6 +52,8 @@ public :
    double m[6]  ;   
    double j0[6]; // different position e_correction 
    double j1[6]; 
+   double p0, p1; // e_to_Ex correction
+   
    double cut[24]; // tac cut 
    double tc[24][5]; // tac correction parameter
    double mean[24]; // tt mean
@@ -68,24 +72,24 @@ public :
    int hitID; // is e, xf, xn are all fired.
    int zMulti; // multipicity of z
       
+   Float_t thetaCM;
+   Float_t Ex;   
    Float_t energy;
    Int_t energy_t;
    Float_t rdtC[8];
    int rdt_m ;
-   int tac_m;
    Float_t eC_t[24];
    Float_t rdtC_t[8];
+   
+   int tac_m;
    Float_t tacC[6];
    Float_t tacC_t[6];
    Int_t dt[6];
    Float_t tt; // corrected tac[4];
    Float_t ttt; // next corrected tac[4];
    Float_t t4; // ttt correction with energy 
-   Float_t thetaCM;
-   Float_t Ex;
+   
    int good; // good event = 1, else = 0;
-   
-   
    
    // Declaration of leaf types
    Float_t         e[100];
@@ -153,22 +157,23 @@ void Cali_root::Init(TTree *tree)
    fChain->SetMakeClass(1);
 
    fChain->SetBranchAddress("e", e, &b_Energy);
-   fChain->SetBranchAddress("e_t", e_t, &b_EnergyTimestamp);
    fChain->SetBranchAddress("xf", xf, &b_XF);
-   fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);
    fChain->SetBranchAddress("xn", xn, &b_XN);
-   fChain->SetBranchAddress("xn_t", xn_t, &b_XNTimestamp);
-   if( option >= 2){
-      fChain->SetBranchAddress("rdt", rdt, &b_RDT);
-      fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);
-      fChain->SetBranchAddress("tac", tac, &b_TAC);
-      fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
-      fChain->SetBranchAddress("elum", elum, &b_ELUM);
-      fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
-   }
+   
+   fChain->SetBranchAddress("e_t", e_t, &b_EnergyTimestamp);
+   fChain->SetBranchAddress("rdt", rdt, &b_RDT);
+   fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);   
+   //fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);
+   //fChain->SetBranchAddress("xn_t", xn_t, &b_XNTimestamp);
+
+   fChain->SetBranchAddress("tac", tac, &b_TAC);
+   fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
+   fChain->SetBranchAddress("elum", elum, &b_ELUM);
+   fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
+
    //===================== custom code
    printf( "========== Coverting root to Calibrated root.\n");
-   printf(" 0 = after alpha source,\n 1 = after xf/xn - e,\n 2 = final cali : ");
+   printf(" 0 = after alpha source,\n 1 = after xf/xn - e cali.,\n 2 = after e cali.,\n 3 = with gates: ");
    scanf("%d", &option);
    saveFileName = fChain->GetDirectory()->GetName();
    
@@ -180,8 +185,8 @@ void Cali_root::Init(TTree *tree)
    }while( found >= 0 );
    
    TString prefix;
-   if(option  < 2 ) prefix.Form("C_");
-   if(option >= 2 ) prefix.Form("X_");
+   if(option  < 3 ) prefix.Form("C_");
+   if(option >= 3 ) prefix.Form("X_");
    
    saveFileName = prefix + saveFileName;
    totnumEntry = tree->GetEntries();
@@ -194,7 +199,6 @@ void Cali_root::Init(TTree *tree)
    shown = 0;
    count = 0;
    
-   numDet = 24;
    //===================================================== loading parameter
    
    //========================================= detector Geometry
@@ -210,21 +214,22 @@ void Cali_root::Init(TTree *tree)
          if( x.substr(0,2) == "//" )  continue;
          if( i == 6 ) length   = atof(x.c_str());
          if( i == 8 ) firstPos = atof(x.c_str());
-         if( i >= 9 ) {
+         if( i == 9 ) jDet = atoi(x.c_str());
+         if( i >= 10 ) {
             pos.push_back(atof(x.c_str()));
          }
          i = i + 1;
       }
       
-      int nDet = pos.size();
+      iDet = pos.size();
       file.close();
       printf("... done.\n");
       
-      for(int id = 0; id < nDet; id++){
+      for(int id = 0; id < iDet; id++){
          pos[id] = firstPos + pos[id];
       }
       
-      for(int i = 0; i < nDet ; i++){
+      for(int i = 0; i < iDet ; i++){
          if( firstPos > 0 ){
             printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
          }else{
@@ -235,8 +240,9 @@ void Cali_root::Init(TTree *tree)
       
    }else{
        printf("... fail\n");
-       
    }
+   
+   numDet = iDet * jDet;
    
    //========================================= xf = xn correction
    printf("----- loading xf-xn correction.");
@@ -277,7 +283,7 @@ void Cali_root::Init(TTree *tree)
       }
       file.close();
    }else{
-      for( int i = 0; i < 24; i++){
+      for( int i = 0; i < numDet; i++){
          xfxneCorr[i][0] = 0.; 
          xfxneCorr[i][1] = 1.;
       }
@@ -289,7 +295,7 @@ void Cali_root::Init(TTree *tree)
    //========================================= 
    if( option >= 2 ){
       printf("----- loading energy calibration for same position. \n");
-      for( int i = 0; i < 6; i++){
+      for( int i = 0; i < iDet; i++){
          TString filename;
          filename.Form("e_correction_%d.dat", i);
          printf("        %s", filename.Data());
@@ -301,13 +307,13 @@ void Cali_root::Init(TTree *tree)
                c0[i][j] = a;
                c1[i][j] = b;
                j = j + 1;
-               if( j >= 4) break;
+               if( j >= jDet) break;
             }
             file >> a;
             m[i] = a;
             
             printf("... done.\n");
-            for(int j = 0; j < 4; j++){ 
+            for(int j = 0; j < jDet; j++){ 
                printf("                %d,  c0 : %8.3f,  c1 : %8.3f, m : %5.2f \n", j, c0[i][j], c1[i][j], m[i]);
             }
          }else{
@@ -316,7 +322,7 @@ void Cali_root::Init(TTree *tree)
          file.close();
       }
    
-   //=========================================   
+      //=========================================   
       printf("----- loading energy calibration for different position.");
       file.open("e_correction_diff.dat");
       if( file.is_open() ){
@@ -329,14 +335,36 @@ void Cali_root::Init(TTree *tree)
          }
          file.close();
          printf("... ok.\n");
-         for(int i = 0; i < 6 ; i++){
-            printf("                  %d, j0: %7.3f, j1: %7.3f \n", i, j0[i], j1[i]);
+         for(int i = 0; i < iDet ; i++){
+            printf("                %d, j0: %9.3f, j1: %9.3f \n", i, j0[i], j1[i]);
          }
       }else{
          printf("... fail.\n");
       }
       file.close();
+      
+      //=========================================   
+      printf("----- loading energy to Ex correction parameters.");
+      file.open("e_to_Ex_correction.dat");
+      if( file.is_open() ){
+         double a, b;
+         while( file >> a >> b){
+            p0 = a;
+            p1 = b;
+         }
+         file.close();
+         printf("... ok.\n");
+         printf("                p0: %9.3f, p1: %9.3f \n", p0, p1);
+         
+      }else{
+         printf("... fail.\n");
+         p0 = 0;
+         p1 = 1;
+      }
+      file.close();
+   }
    
+   if( option >= 3 ){
    //========================================= 
       // tac cut
       cut[0] = 2500;
@@ -478,13 +506,6 @@ void Cali_root::Init(TTree *tree)
    }
    //===================================================== tree branch
    
-   for(int i = 0; i < numDet; i++){
-      eC[i]  = TMath::QuietNaN();
-      xfC[i] = TMath::QuietNaN();
-      xnC[i] = TMath::QuietNaN();
-      x[i]   = TMath::QuietNaN();
-   }
-   
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    
    newTree->Branch("e" ,  eC, "eC[24]/F");
@@ -497,14 +518,18 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("zMulti", &zMulti, "zMulti/I");
    
    if( option >= 2 ){
-      newTree->Branch("Ex", &Ex, "Ex/F");
       newTree->Branch("energy" ,  &energy, "energy/F");
+      newTree->Branch("Ex", &Ex, "Ex/F");
+      newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+      
+      newTree->Branch("e_t", eC_t, "e_t[24]/F");
       newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");
       newTree->Branch("rdt", rdtC, "rdtC[8]/F");
       newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
-      newTree->Branch("e_t", eC_t, "e_t[24]/F");
       newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
-      
+   }   
+   
+   if( option >= 3 ){   
       newTree->Branch("tac_m", &tac_m, "tac_m/I");
       newTree->Branch("tac", tacC, "tacC[6]/F");
       newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
@@ -512,7 +537,6 @@ void Cali_root::Init(TTree *tree)
       //newTree->Branch("tt", &tt, "tt/F");
       //newTree->Branch("ttt", &ttt, "ttt/F");
       newTree->Branch("t4", &t4, "t4/F");
-      newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
       newTree->Branch("good", &good, "good/I");
    }
    
