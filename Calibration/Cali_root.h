@@ -196,13 +196,12 @@ void Cali_root::Init(TTree *tree)
    
    numDet = 24;
    //===================================================== loading parameter
-   string detGeoFileName = "detectorGeo_upstream.txt";
    
    //========================================= detector Geometry
+   string detGeoFileName = "detectorGeo_upstream.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file;
    file.open(detGeoFileName.c_str());
-   string line;
    int i = 0;
    if( file.is_open() ){
       string x;

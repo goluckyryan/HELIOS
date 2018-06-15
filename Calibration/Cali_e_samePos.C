@@ -1,70 +1,69 @@
-{
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TSpectrum.h>
+#include <TGraph.h>
+#include <fstream>
+
+void Cali_e_samePos(){
 /**///======================================================== initial input
+   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run11.root"; const char* treeName="tree";
    
-   //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   
-   const char* rootfile="C_H052_Mg25.root"; const char* treeName="tree";
-   
-      // pause
+   // pause
    int detID;
    printf("which detector ? ");
    scanf("%d", &detID);
 
    const int numDet = 4;
-   int eRange[3] = {150, -300, 1000};
+   int eRange[3] = {150, -300, 1000}; //the range of Ex
 
-   double cutSlope = -2.35;
+   double cutSlope = 4.0; //redline, for cut
    double cutIntep[4] = {920, 900, 880, 920}; 
-   double slope = 4.75;
-   double yIntep = 700;
+   double slope = 4.0; //blueline, for fit
+   double yIntep = 2400;
    int numPeak = 10;
    eRange[0]=  80;   
    
    if( detID == 0){
-      cutIntep[0] = 950;
-      cutIntep[1] = 980;
-      cutIntep[2] = 800;
-      cutIntep[3] = 900;
-      slope = 4.75;
-   
-      eRange[1]=  400;
-      eRange[2]= 1800;
+      cutIntep[0] = 2400;
+      cutIntep[1] = 2400;
+      cutIntep[2] = 2400;
+      cutIntep[3] = 2400;
+      slope = 4;
    }
    
    if( detID == 1 ){
-      cutIntep[0] = 930;
-      cutIntep[1] = 930;
-      cutIntep[2] = 930;
-      cutIntep[3] = 940; 
-      slope = 4.75;
-
-      eRange[1]=  200;
-      eRange[2]= 1600;
+      cutIntep[0] = 2000;
+      cutIntep[1] = 2000;
+      cutIntep[2] = 2000;
+      cutIntep[3] = 2000; 
+      slope = 4.2;
    }
    
    if( detID == 2) {
-      cutIntep[0] = 1000;
-      cutIntep[1] = 880;
-      cutIntep[2] = 820;
-      cutIntep[3] = 950;
-      slope = 4.45;
+      cutIntep[0] = 1800;
+      cutIntep[1] = 1800;
+      cutIntep[2] = 1800;
+      cutIntep[3] = 1900;
+      slope = 4.5;
       
       eRange[0]=  60;   
-      eRange[1]= -300;
-      eRange[2]= 1200;
    }
    
    if( detID == 3){
-      cutIntep[0] = 930;
-      cutIntep[1] = 930;
-      cutIntep[2] = 930;
-      cutIntep[3] = 920;
+      cutIntep[0] = 1600;
+      cutIntep[1] = 1600;
+      cutIntep[2] = 1600;
+      cutIntep[3] = 1600;
       slope = 4.3;
       
       eRange[0]=  100;
-      eRange[1]= -500;
-      eRange[2]= 1000;
    }
    
    if( detID == 4){
@@ -74,9 +73,6 @@
       cutIntep[3] = 1050;
       slope = 4.0; // the slope can be difference.
       yIntep = 500;
-      
-      eRange[1]= -800;
-      eRange[2]=  800;
    }
    
    if( detID == 5){
@@ -86,9 +82,6 @@
       cutIntep[3] = 940;
       slope = 3.7;
       yIntep = 0;
-      
-      eRange[1]= -1000;
-      eRange[2]=  800;
    }
    
 /**///========================================================  load tree
@@ -117,56 +110,86 @@
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load files
-   double nearPos[6];
-   double length;
-   printf("----- loading sensor position.");
-   ifstream file;
-   file.open("nearPos.dat");
-   double a;
+   
+   vector<double> pos;
+
+   string detGeoFileName = "detectorGeo_upstream.txt";
+   printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
+   ifstream file(detGeoFileName.c_str(), std::ifstream::in);
    int i = 0;
-   while( file >> a ){
-      if( i >= 7) break;
-      if( i == 6) length = a;
-      nearPos[i] = a;
-      i = i + 1;
+   if( file.is_open() ){
+      string x;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" )  continue;
+         if( i >= 9 ) {
+            pos.push_back(atof(x.c_str()));
+         }
+         i = i + 1;
+      }
+      
+      int nDet = pos.size();
+      file.close();
+      printf("... done.\n");
+      
+      for(int id = 0; id < nDet; id++){
+         pos[id] = firstPos + pos[id];
+      }
+      
+      for(int i = 0; i < nDet ; i++){
+         if( firstPos > 0 ){
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
+         }else{
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - length , pos[i]);
+         }
+      }
+      printf("=======================\n");
+      
+   }else{
+       printf("... fail\n");
+       
    }
-   file.close();
-   printf("... done.\n      ");
-   for(int i = 0; i < 5 ; i++){
-      printf("%6.2f mm, ", nearPos[i]);
-   }
-   printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
+
    
 /**///========================================================= Analysis
    
-   
+   double xrange[2];
+   if( firstPos > 0 ){
+      xrange[0] = pos[detID] - 2;
+      xrange[1] = pos[detID] + length + 2;   
+   }else{
+      xrange[0] = pos[detID] - length - 2;
+      xrange[1] = pos[detID] + 2;
+   }
    
    printf("======= showing cut line(red) and slope (blue)\n");
    
-   TH2F ** b = new TH2F[numDet];
+   TH2F ** b = new TH2F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
       name.Form("b%d", i);
-      b[i] = new TH2F(name, name , 200, nearPos[detID]-2 , nearPos[detID]+length+2 , 200, -100 , 2000);
-      b[i]->SetXTitle("pos(xf,xn)");
+      b[i] = new TH2F(name, name , 200, xrange[0], xrange[1], 200, -100 , 2000);
+      b[i]->SetXTitle("z");
       b[i]->SetYTitle("e");
       
       TString expression;
-      expression.Form("e[%d]:x[%d]>> b%d" , detID + 6*i, detID + 6*i ,i);
+      expression.Form("e[%d]:z[%d]>> b%d" , detID + 6*i, detID + 6*i ,i);
+      
+      //printf("%s \n", expression.Data());
+      
       TString gate;
-      gate.Form("");
+      gate.Form("hitID == 0");
       
       cScript->cd(i+1);
       
       tree->Draw(expression, gate , "");
    }
    
-   TF1 ** line = new TF1[numDet];
-   
+   TF1 ** line = new TF1*[numDet];
    for( int i = 0; i < numDet; i++){
       TString name;
       name.Form("line%d", i);
-      line[i] = new TF1(name, "[0] + x* [1]", nearPos[detID]-2 , nearPos[detID]+length+2);
+      line[i] = new TF1(name, "[0] + x* [1]", xrange[0] , xrange[1]);
       line[i]->SetParameter(1, cutSlope);
       line[i]->SetLineColor(2);
       line[i]->SetParameter(0, cutIntep[i]);
@@ -174,9 +197,8 @@
       line[i]->Draw("same");
    }
    
-   
-   TF1 * traj = new TF1("traj", "[0] + x * [1]", nearPos[detID]-2 , nearPos[detID]+length+2);
-   traj->SetLineColor(4);
+   TF1 * traj = new TF1("traj", "[0] + x * [1]", xrange[0] , xrange[1]);
+   traj->SetLineColor(4); // blue
    traj->SetParameter(1, slope);
    traj->SetParameter(0, yIntep);
    
@@ -185,28 +207,30 @@
       traj->Draw("same");
    }
   
-   // pause
+   //============ pause
    cScript->Update();
    printf("0 for stop, 1 for continous : ");
    int dummy;
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    
-   printf("======= showing tilted energy vs pos \n");
    
+   printf("======= showing flattened energy vs pos \n");
    //======== create 2-D histogram of projection
-   TH2F ** p = new TH2F[numDet];
+   eRange[1] = 300 - slope * pos[detID];
+   eRange[2] = 1500 - slope * pos[detID];
+   TH2F ** p = new TH2F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
       name.Form("p%d", i);
-      p[i] = new TH2F(name, name ,200, nearPos[detID]-2 , nearPos[detID]+length+2, eRange[0], eRange[1], eRange[2]);
+      p[i] = new TH2F(name, name ,200, xrange[0] , xrange[1], eRange[0], eRange[1], eRange[2]);
       p[i]->SetYTitle("Ex [a.u.]");
-      p[i]->SetXTitle("pos(xf,xn)");
+      p[i]->SetXTitle("z");
       
       TString expression;
-      expression.Form("e[%d] - %f * x[%d] : x[%d] >> p%d" , detID + 6*i, slope ,detID + 6*i ,detID + 6*i,  i);
+      expression.Form("e[%d] - %f * z[%d] : z[%d] >> p%d" , detID + 6*i, slope ,detID + 6*i ,detID + 6*i,  i);
       TString gate;
-      gate.Form("e[%d] > %f + %f * x[%d] ", detID + 6*i, cutIntep[i], cutSlope, detID + 6*i);
+      gate.Form("e[%d] > %f + %f * z[%d] && hitID == 0 ", detID + 6*i, cutIntep[i], cutSlope, detID + 6*i);
       
       cScript->cd(i + 1);
       tree->Draw(expression, gate , "");
@@ -223,7 +247,7 @@
    printf("======= showing energy spectrum and find peak\n");
    
    //======== create 1-D histogram of projection
-   TH1F ** g = new TH1F[numDet];
+   TH1F ** g = new TH1F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
       name.Form("g%d", i);
@@ -231,9 +255,9 @@
       g[i]->SetXTitle("Ex [a.u.]");
       
       TString expression;
-      expression.Form("e[%d] - %f * x[%d]>> g%d" , detID + 6*i, slope ,detID + 6*i , i);
+      expression.Form("e[%d] - %f * z[%d]>> g%d" , detID + 6*i, slope ,detID + 6*i , i);
       TString gate;
-      gate.Form("e[%d] > %f + %f * x[%d] ", detID + 6*i,cutIntep[i], cutSlope, detID + 6*i);
+      gate.Form("e[%d] > %f + %f * z[%d] && hitID == 0", detID + 6*i,cutIntep[i], cutSlope, detID + 6*i);
       
       cScript->cd(i + 1);
       
@@ -241,17 +265,19 @@
    }
    
    cScript->Update();
+   printf("================= find peak\n");
    
    vector<double> * peak = new vector<double>[numDet];
    int numCommonPeaks = 10;
    
-   int ** index = new int[numDet];
+   int ** index = new int*[numDet];
    
    if( dummy == 1){
       //======== find peak using TSpectrum
-      TSpectrum * spec = new TSpectrum(20);
+      TSpectrum * spec = new TSpectrum(10);
    
       for( int i = 0; i < numDet; i ++){
+         //printf("------------- %d\n", i);
          cScript->cd(i+1);
          int nPeaks = spec->Search(g[i], 1 ,"", 0.10);
          if( nPeaks < numCommonPeaks ) numCommonPeaks = nPeaks;
@@ -263,7 +289,6 @@
          for( int j = 0; j < nPeaks; j++){
             peak[i].push_back(xpos[index[i][j]]);
          }
-         
       }
    
    }else{
@@ -308,7 +333,7 @@
       
          for( int i = 0; i < numDet; i ++){
             printf("======== for g%d ( 0 = reject, 1 = accept )\n", i);
-            for( int j = 0; j < peak[i].size(); j++){
+            for( int j = 0; j < (int) peak[i].size(); j++){
                double temp = peak[i][j];
                printf(" %8.3f ? ", temp);
                int ok;
@@ -349,30 +374,44 @@
    //======== find the scaling paramter respect to d0;
    double c0[numDet], c1[numDet];
    
-   TGraph ** ga = new TGraph[numDet];
-   
-   for( int i = 0; i < numDet; i++){
-      ga[i] = new TGraph(numPeak, &Upeak[i][0], &Upeak[0][0] );
-      ga[i]->Draw("*ap");
-      ga[i]->Fit("pol1", "q");
-      c0[i] = pol1->GetParameter(0);
-      c1[i] = pol1->GetParameter(1);
-      printf("==== %d | c0:%8.3f, c1:%8.3f \n", i, c0[i], c1[i]);
+   if( numPeak == 1 ){
+      printf(" numEvent : %d \n", numPeak);
+      for( int i = 0; i < numDet; i++){
+         c1[i] = 1.;
+         c0[i] = - Upeak[i][0] + Upeak[0][0];   
+         printf("==== %d | c0:%8.3f, c1:%8.3f \n", i, c0[i], c1[i]);
+      }
+   }else{
+      printf(" numEvent : %d \n", numPeak);
+      TGraph ** ga = new TGraph*[numDet];
+      
+      TF1 * fit = new TF1("fit", "pol1" );
+      
+      for( int i = 0; i < numDet; i++){
+         ga[i] = new TGraph(numPeak, &Upeak[i][0], &Upeak[0][0] );
+         ga[i]->Draw("*ap");
+         ga[i]->Fit("fit", "q");
+         c0[i] = fit->GetParameter(0);
+         c1[i] = fit->GetParameter(1);
+         printf("==== %d | c0:%8.3f, c1:%8.3f \n", i, c0[i], c1[i]);
+      }
    }
    
    //======== scale the energy
-
-   TH1F ** h = new TH1F[numDet];
+   
+   printf("========= plot correted energy. \n");
+   
+   TH1F ** h = new TH1F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
       name.Form("h%d", i);
       h[i] = new TH1F(name, name , eRange[0], eRange[1], eRange[2]);
       h[i]->SetXTitle("Ex [a.u.]");
-      
+      //printf("--------%d \n", i);
       TString expression;
-      expression.Form("(e[%d] - %f * x[%d])*%f + %f>> h%d" , detID + 6*i , slope ,detID + 6*i , c1[i], c0[i], i);
+      expression.Form("(e[%d] - %f * z[%d])*%f + %f>> h%d" , detID + 6*i , slope ,detID + 6*i , c1[i], c0[i], i);
       TString gate;
-      gate.Form("e[%d] > %f + %f * x[%d] ", detID + 6*i ,cutIntep[i], cutSlope, detID + 6*i);
+      gate.Form("e[%d] > %f + %f * z[%d] && hitID == 0", detID + 6*i ,cutIntep[i], cutSlope, detID + 6*i);
       
       cScript->cd(1);
       
@@ -381,24 +420,25 @@
    }
    
    // ======== d with correction  
-   TH2F ** k = new TH2F[numDet];
-   TH2F * kall = new TH2F("kall", "kall",   200, nearPos[detID]-2 , nearPos[detID]+length+2 , 200, 100 , 2000);
+   printf("========= plot new-e vs z. \n");
+   TH2F ** k = new TH2F*[numDet];
+   TH2F * kall = new TH2F("kall", "kall",   200, xrange[0] , xrange[1] , 200, 100 , 2000);
    for( int i = 0; i < numDet; i ++){
       TString name;
       name.Form("k%d", i);
-      k[i] = new TH2F(name, name , 200, nearPos[detID]-2 , nearPos[detID]+length+2 , 200, 100 , 2000);
+      k[i] = new TH2F(name, name , 200, xrange[0] , xrange[1] , 200, 100 , 2000);
       k[i]->SetXTitle("pos(xf,xn)");
       k[i]->SetYTitle("e");
       
       TString expression;
       cScript->cd(2);
-      expression.Form("e[%d] * %f + %f + %f * x[%d]  : x[%d] >> + kall" , detID + 6*i, c1[i], c0[i], (1.0 - c1[i])*slope, detID + 6*i, detID + 6*i);      
-      tree->Draw(expression, "" , "");
+      expression.Form("e[%d] * %f + %f + %f * z[%d]  : z[%d] >> + kall" , detID + 6*i, c1[i], c0[i], (1.0 - c1[i])*slope, detID + 6*i, detID + 6*i);      
+      tree->Draw(expression, "hitID == 0" , "");
       
       
-      expression.Form("e[%d] * %f + %f + %f * x[%d]  : x[%d] >> k%d" , detID + 6*i, c1[i], c0[i], (1.0 - c1[i])*slope, detID + 6*i, detID + 6*i, i);
+      expression.Form("e[%d] * %f + %f + %f * z[%d]  : z[%d] >> k%d" , detID + 6*i, c1[i], c0[i], (1.0 - c1[i])*slope, detID + 6*i, detID + 6*i, i);
       TString gate;
-      gate.Form("");
+      gate.Form("hitID == 0");
       
       cScript->cd(3);
       if( i == 0) tree->Draw(expression, gate , "");
