@@ -312,7 +312,7 @@ private:
    double support;
    double firstPos; // m 
    vector<double> pos; // near position in m
-   int nDet;
+   int nDet, mDet; // nDet = number of different pos, mDet, number of same pos
 };
 
 HELIOS::HELIOS(){
@@ -348,6 +348,7 @@ HELIOS::HELIOS(){
    firstPos = 0;
    pos.clear();
    nDet = 0;
+   mDet = 0;
 }
 
 HELIOS::~HELIOS(){
@@ -377,7 +378,8 @@ void HELIOS::SetDetectorGeometry(string filename){
          if( i == 6 ) l    = atof(x.c_str());
          if( i == 7 ) support = atof(x.c_str());
          if( i == 8 ) firstPos = atof(x.c_str());
-         if( i >= 9 ) {
+         if( i == 9 ) mDet = atoi(x.c_str());
+         if( i >= 10 ) {
             pos.push_back(atof(x.c_str()));
          }
          i = i + 1;
@@ -466,6 +468,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       if( rhoBHit > rhoRecoil ) return -4;
       
       //====================== calculate rotation angle
+      //TODO add dependent on mDet
       dphi = TMath::TwoPi() + TMath::ASin(-a/rho);  // exact position
       double hit_y = rho - TMath::Sqrt(rho*rho - a*a); // always positive
       if( hit_y > w/2.  ) {
@@ -481,7 +484,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
          if( minDis/2. < z0 &&  z0 < minNoBlock ) {
             loop = 2;
             dphi += TMath::TwoPi() * (loop - 1);
-         }else if( pos[0] < z0 && z0 < pos[5] + l ){
+         }else if( pos[0] < z0 && z0 < pos[nDet-1] + l ){
             loop = 1;
          }else{
             loop = 0;
@@ -489,12 +492,12 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
             return -5;
          }
       }else{ // for upstream setting
-         double minNoBlock = pos[5] + support ;
-         double minDis = pos[5];
+         double minNoBlock = pos[nDet-1] + support ;
+         double minDis = pos[nDet-1];
          if( minNoBlock < z0 &&  z0 < minDis/2. ) {
             loop = 2;
             dphi += TMath::TwoPi() * (loop - 1);
-         }else if( pos[0]-l < z0 && z0 < pos[5] ){
+         }else if( pos[0]-l < z0 && z0 < pos[nDet-1] ){
             loop = 1;
          }else{
             loop = 0;

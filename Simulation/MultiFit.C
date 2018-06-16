@@ -17,10 +17,10 @@ void MultiFit(){
 
 /**///======================================================== initial input
    
-   //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   //const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
    const char* rootfile="test_3.root"; const char* treeName="tree";
+   
+   double xrange[2] = {-550, -160};
+   double exrange[2] = {-1, 4};
    
 /**///========================================================  load tree
 
@@ -48,14 +48,11 @@ void MultiFit(){
    gStyle->SetStatH(0.1);
    
 /**///========================================================= Analysis
-   
-   double xrange[2] = {550, 1000};
-   double exrange[2] = {-1, 10};
 
    //============ found the loop of e:z plot
    cMultiFit->cd(1);
    TH2F * ez = new TH2F("ez", "ez", 400, xrange[0], xrange[1], 400, 0, 20);
-   tree->Draw("e:z >> ez", "loop == 1 && ExID == 0 && ExAID == 0");
+   tree->Draw("e:z >> ez", "hit == 1 && loop == 1 && ExID == 0 && ExAID == 0 && detID>0");
    
    TProfile * ezpx = new TProfile("ezpx", "ezpx", 400, xrange[0], xrange[1], 0, 20);
    ez->ProfileX("ezpx")->Draw("same");
@@ -71,8 +68,8 @@ void MultiFit(){
    
    //######################################
    // better to fix this number
-   a0 = -14.815453;
-   a1 = 0.038235;
+   //a0 = -14.815453;
+   //a1 = 0.038235;
       
    //=========== adjust energy
    cMultiFit->cd(2);
@@ -81,19 +78,20 @@ void MultiFit(){
    TString expression;
    expression.Form("%f * z + %f - e : z >> Ez", a1, a0);
    
-   tree->Draw(expression, "loop==1", "colz");
+   tree->Draw(expression, "hit == 1 && loop==1", "colz");
 
 
    //=========== energy
    cMultiFit->cd(3);
    
-   TH1F * spec = new TH1F("spec", "energy", 400, exrange[0], exrange[1]);
+   TH1F * spec = new TH1F("spec", "energy", 200, exrange[0], exrange[1]);
    
    expression.Form("%f * z + %f - e >> spec", a1, a0);
    
-   tree->Draw(expression, "loop==1 && detID == 5 && ExAID == 0", "colz");
+   tree->Draw(expression, "hit == 1 && loop==1 && detID == 5 && ExAID == 0", "colz");
 
    
+   //=========== find peaks
    TSpectrum * specPeak = new TSpectrum(20);
    int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
    //float * xpos = specPeak->GetPositionX();
@@ -140,6 +138,11 @@ void MultiFit(){
    // convert to real energy 
    cMultiFit->cd(4);
    int numPeak = ExKnown.size();
+   if( energy.size() < ExKnown.size()){
+      numPeak = energy.size();
+   }else{
+      numPeak = ExKnown.size();
+   }
    TGraph * ga = new TGraph(numPeak, &energy[0], &ExKnown[0] );
    ga->Draw("*ap");
    

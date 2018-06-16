@@ -2,6 +2,7 @@
 *.pdf
 *.d
 *.so
+*.pcm
 
 .svn/
 RUNs/
