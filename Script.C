@@ -1,19 +1,5 @@
-int nPeaks = 16;
-
-TString gate, gateB, gate_cm;
-
-Double_t fpeaks(Double_t *x, Double_t *par) {
-   Double_t result = 0;
-   for (Int_t p=0;p<nPeaks;p++) {
-      Double_t norm  = par[3*p+0];
-      Double_t mean  = par[3*p+1];
-      Double_t sigma = par[3*p+2];
-      result += norm * TMath::Gaus(x[0],mean,sigma, 1);
-   }
-   return result;
-}
-
-void Script(){   
+//void Script(){   
+{
 
 /**///======================================================== initial input
    
@@ -21,6 +7,9 @@ void Script(){
    //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
    //const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
    const char* rootfile="test_3.root"; const char* treeName="tree";
+   
+   const string detGeoFileName = "detectorGeo_upstream.txt";
+   bool isLoadDetGeo = false;
    
 /**///========================================================  load tree
 
@@ -48,241 +37,66 @@ void Script(){
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load files
-/*
-   double nearPos[6];
-   double length;
-   printf("----- loading sensor position.");
-   ifstream file;
-   file.open("nearPos.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i >= 7) break;
-         if( i == 6) length = a;
-         nearPos[i] = a;
-         i = i + 1;
-      }
-      file.close();
-      printf("... done.\n");
-      for(int i = 0; i < 5 ; i++){
-         printf("%6.2f mm, ", nearPos[i]);
-      }
-      printf("%6.2f mm || length : %6.2f mm \n", nearPos[5], length);
-   }else{
-       printf("... fail\n");
-   }
+   double Bfield, bore;
+   double a, w, l, support, firstPos;
+   double posRecoil, rhoRecoil;
+   vector<double> pos;
+   int nDet;
    
-   double xnCorr[24];
-   printf("----- loading xf-xn correction.");
-   file.open("correction_xf_xn.dat");
-   if( file.is_open() ){
-      double a;
+   if( isLoadDetGeo ){
+      printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
+      ifstream file;
+      file.open(detGeoFileName.c_str());
+      string line;
       int i = 0;
-      while( file >> a ){
-         if( i >= 4) break;
-         xnCorr[i] = a;
-         //xnCorr[i] = 1;
-         i = i + 1;
-      }
-      
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   double c1[6][4];
-   double c0[6][4];
-   double m[6]  ;
-   printf("----- loading energy calibration for same position. \n");
-   for( int i = 0; i < 6; i++){
-      TString filename;
-      filename.Form("e_correction_%d.dat", i);
-      printf("        %s", filename.Data());
-      file.open(filename.Data());
       if( file.is_open() ){
-         double a, b;
-         int j = 0;
-         while( file >> a >> b ){
-            c0[i][j] = a;
-            c1[i][j] = b;
-            j = j + 1;
-            if( j >= 4) break;
+         string x;
+         while( file >> x){
+            //printf("%d, %s \n", i,  x.c_str());
+            if( x.substr(0,2) == "//" )  continue;
+            
+            if( i == 0 ) Bfield = atof(x.c_str());
+            if( i == 1 ) bore = atof(x.c_str());
+            if( i == 2 ) a    = atof(x.c_str());
+            if( i == 3 ) w    = atof(x.c_str());
+            if( i == 4 ) posRecoil = atof(x.c_str());
+            if( i == 5 ) rhoRecoil   = atof(x.c_str());
+            if( i == 6 ) l    = atof(x.c_str());
+            if( i == 7 ) support = atof(x.c_str());
+            if( i == 8 ) firstPos = atof(x.c_str());
+            if( i >= 9 ) {
+               pos.push_back(atof(x.c_str()));
+            }
+            i = i + 1;
          }
-         file >> a;
-         m[i] = a;
          
+         nDet = pos.size();
+         file.close();
          printf("... done.\n");
-         //printf("                 c0 : %f, m : %f \n", c0[i][2], m[i]);
+         
+         for(int id = 0; id < nDet; id++){
+            pos[id] = firstPos + pos[id];
+         }
+         
+         printf("========== B-field: %6.2f T \n", Bfield);
+         printf("========== Recoil detector: %6.2f mm, radius: %6.2f mm \n", posRecoil, rhoRecoil);
+         printf("========== gap of multi-loop: %6.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
+         for(int i = 0; i < nDet ; i++){
+            if( firstPos > 0 ){
+               printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + l);
+            }else{
+               printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - l , pos[i]);
+            }
+         }
+         printf("=======================\n");
+         
       }else{
-         printf("... fail.\n");
+          printf("... fail\n");
+          
       }
-      file.close();
    }
-   
-   double p0[6];
-   double p1[6];
-   printf("----- loading energy calibration for different position.");
-   file.open("e_correction_diff.dat");
-   if( file.is_open() ){
-      double a, b;
-      int i = 0;
-      while( file >> a >> b ){
-         p0[i] = a;
-         p1[i] = b;
-         i = i+ 1;
-      }
-      file.close();
-      printf("... ok.\n");
-      //for(int i = 0; i < 6 ; i++){
-      //   printf("                    p0: %f, p1: %f \n", p0[i], p1[i]);
-      //}
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
-   
-   double mean[24];
-   printf("----- loading tac (mean) calibration.");
-   file.open("tac_correction_mean.dat");
-   if( file.is_open() ){
-      double a;
-      int i = 0;
-      while( file >> a ){
-         if( i > 24) break;
-         mean[i] = a;
-         i = i + 1;
-      }
-      printf("... done.\n");
-   }else{
-      printf("... fail.\n");
-   }
-   file.close();
    
 /**///========================================================= Analysis
-   
-   tree->Draw("0.03815* z - 14.76 - e >> spec(400, -1, 9)", "loop==1 && detID == 5", "colz");
-
-   TSpectrum * specPeak = new TSpectrum(20);
-   int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
-   float * xpos = specPeak->GetPositionX();
-   
-   int * inX = new int[nPeaks];
-   TMath::Sort(nPeaks, xpos, inX, 0 );  
-   vector<double> energy;   
-   for( int j = 0; j < nPeaks; j++){
-      printf(" %d , x: %8.3f \n", j, xpos[inX[j]]);
-      energy.push_back(xpos[inX[j]]);
-   }
-   
-   vector<double> knownE;
-   knownE.push_back(0);
-   knownE.push_back(0.74);
-   knownE.push_back(4.78);
-   knownE.push_back(5.83);
-   knownE.push_back(6.36);
-   knownE.push_back(8.0);
-   knownE.push_back(9.0);
-   
-   // convert to real energy 
-   int numPeak = knownE.size();
-   TGraph * ga = new TGraph(numPeak, &energy[0], &knownE[0] );
-   ga->Draw("*ap");
-   ga->Fit("pol1", "");
-   double eC0 = pol1->GetParameter(0);
-   double eC1 = pol1->GetParameter(1);
-   printf("====  eC0:%8.3f, eC1:%8.3f \n", eC0, eC1);
-   
-   vector<double> realEnergy;
-   for( int j = 0; j < nPeaks; j++){
-      realEnergy.push_back(energy[j] * eC1 + eC0);
-      printf(" %d , e: %8.3f \n", j, realEnergy[j]);
-   }
-   
-   tree->Draw("(0.03815* z - 14.76 - e)*1.3164 +0.0056 >> spec2(400, -1, 10)", "loop==1 && detID == 5", "colz");
-
-   //========== Fitting 
-   TSpectrum * peak = new TSpectrum(20);
-   double threshold = 0.1;
-   nPeaks  = peak->Search(spec2, 1, "", threshold);
-   printf("======== found %d peaks \n", nPeaks);
-   float * xpos = peak->GetPositionX();
-   float * ypos = peak->GetPositionY();
-   
-   int * inX = new int[nPeaks];
-   TMath::Sort(nPeaks, xpos, inX, 0 );
-   vector<double> energy, height;
-   for( int j = 0; j < nPeaks; j++){
-      energy.push_back(xpos[inX[j]]);
-      height.push_back(ypos[inX[j]]);
-   }
-   
-   const int  n = 3 * nPeaks;
-   double * para = new double[n]; 
-   for(int i = 0; i < nPeaks ; i++){
-      para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
-      para[3*i+1] = energy[i];
-      para[3*i+2] = 0.05;
-   }
-   
-   TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3* nPeaks );
-   fit->SetNpx(1000);
-   fit->SetParameters(para);
-   spec2->Fit("fit", "q");
-   
-   const Double_t* paraE = fit->GetParErrors();
-   const Double_t* paraA = fit->GetParameters();
-   
-   double bw = spec2->GetBinWidth(1);
-   
-   double * ExPos = new double[nPeaks];
-   
-   //for(int i = 0; i < nPeaks + nEPeaks; i++){
-   for(int i = 0; i < nPeaks ; i++){
-      ExPos[i] = paraA[3*i+1];
-   }
-   //sort ExPos
-
-   //for(int i = 0; i < nPeaks + nEPeaks; i++){
-   for(int i = 0; i < nPeaks ; i++){
-      ExPos[i] = paraA[3*i+1];
-      printf("%2d , count: %8.0f(%3.0f), mean: %8.4f(%8.4f), sigma: %8.4f(%8.4f) \n", 
-              i, 
-              paraA[3*i] / bw,   paraE[3*i] /bw, 
-              paraA[3*i+1], paraE[3*i+1],
-              paraA[3*i+2], paraE[3*i+2]);
-   }
-   
-   /*
-   TH2F ** h = new TH2F**[24];
-   
-   TString expression, gate, name ;
-   
-   for( int i = 0; i < 24; i++){
-      name.Form("h%d", i);
-      h[i] = new TH2F(name, name, 100, -1, 1, 100, 0, 2000);
-      
-      expression.Form("e[%d]:(xf[%d]-xn[%d])/(xf[%d]+xn[%d]) >> h%d", i, i, i, i, i, i);
-      
-      gate.Form("e[%d] > 0 && xf[%d] > 0 && xn[%d] > 0", i, i, i);
-      
-      tree->Draw(expression, gate);
-      
-      cScript->Update();
-      printf("===== %d ", i);
-   }
-   
-   /*
-   TString expression, gate, gateB;
-   
-   //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
-   gate  = "good == 1 && TMath::Abs(t4)<1000";
-   gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
-   
-   expression = "thetaCM : x >>j(400,-600, -200, 400, 0, 50) ";
-   tree->Draw(expression, gate , "");
-   /**/
    
    
 }

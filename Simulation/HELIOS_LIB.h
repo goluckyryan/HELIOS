@@ -25,6 +25,7 @@ public:
       AA = A;
       zA = Z;
       ExA = Ex;
+      nameA = temp.Name;
       isReady = false;
       isBSet = true;
    }
@@ -33,6 +34,7 @@ public:
       ma = temp.Mass;
       Aa = A;
       za = Z;
+      namea = temp.Name;
       isReady = false;
       isBSet = false;
    }
@@ -41,6 +43,7 @@ public:
       mb = temp.Mass;
       Ab = A;
       zb = Z;
+      nameb = temp.Name;
       isReady = false;
       isBSet = false;
    }
@@ -49,6 +52,7 @@ public:
       mB = temp.Mass;
       AB = A;
       zB = Z;
+      nameB = temp.Name;
       isReady = false;
       isBSet = true;
    }
@@ -66,6 +70,12 @@ public:
    void SetExB(double Ex){
       this->ExB = Ex;
       isReady = false;
+   }
+   
+   TString GetReactionName(){
+      TString rName;
+      rName.Form("%s(%s,%s)%s", nameA.c_str(), namea.c_str(), nameb.c_str(), nameB.c_str()); 
+      return rName;
    }
    
    int GetAtomicNumber_A(){return AA;}
@@ -91,6 +101,7 @@ public:
    TLorentzVector * Event(double thetaCM, double phiCM);
    
 private:
+   string nameA, namea, nameb, nameB;
    double thetaIN, phiIN;
    double mA, ma, mb, mB;
    int AA, Aa, Ab, AB;
