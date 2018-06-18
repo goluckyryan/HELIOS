@@ -154,6 +154,7 @@ void Cali_root::Init(TTree *tree)
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
+   //printf("========== number of tree loaded : %d \n", fChain->GetNTree());
    fChain->SetMakeClass(1);
 
    fChain->SetBranchAddress("e", e, &b_Energy);

@@ -1,4 +1,17 @@
-{
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TSpectrum.h>
+#include <TGraph.h>
+#include <fstream>
+
+void Cali_physical(){
 /**///======================================================== initial input
    
    const char* rootfile="C_gen_run11.root"; const char* treeName="tree";
@@ -16,6 +29,7 @@
    TFile *f0 = new TFile (rootfile, "read"); 
    TTree *tree = (TTree*)f0->Get(treeName);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
    
 /**///======================================================== Browser or Canvas
 
@@ -103,10 +117,11 @@
    TCanvas * cGa = new TCanvas("cGa", "cGa", 1000, 0, 500, 500);
    cGa->cd(1);
    TGraph * ga = new TGraph(numPeak, &energy[0], &knownE[0] );
+   TF1 * fit = new TF1("fit", "pol1");
    ga->Draw("*ap");
-   ga->Fit("pol1", "");
-   double eC0 = pol1->GetParameter(0);
-   double eC1 = pol1->GetParameter(1);
+   ga->Fit("fit", "");
+   double eC0 = fit->GetParameter(0);
+   double eC1 = fit->GetParameter(1);
    printf("====  eC0:%8.3f, eC1:%8.3f \n", eC0, eC1);
    
    vector<double> realEnergy;

@@ -38,7 +38,8 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    TFile *f0 = new TFile (rootfile, "read"); 
    TTree *tree = (TTree*)f0->Get(treeName);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
-   
+   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
+
 /**///======================================================== Browser or Canvas
 
    //TBrowser B ;   
