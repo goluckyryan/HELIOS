@@ -5,6 +5,10 @@
    chain->Add("data/gen_run32.root");
    chain->Add("data/gen_run33.root");
    chain->Add("data/gen_run34.root");
+   chain->Add("data/gen_run35.root");
+   
+   //TTree * tree = chain;
+   chain.GetListOfFiles()->Print();
    
    chain.Process("~/ANALYSIS/Calibration/Cali_root.C+");
 

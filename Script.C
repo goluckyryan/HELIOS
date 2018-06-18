@@ -3,10 +3,7 @@
 
 /**///======================================================== initial input
    
-   //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
-   //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   //const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
-   const char* rootfile="test_3.root"; const char* treeName="tree";
+   const char* rootfile="C_gen_run11.root"; const char* treeName="tree";
    
    const string detGeoFileName = "detectorGeo_upstream.txt";
    bool isLoadDetGeo = false;

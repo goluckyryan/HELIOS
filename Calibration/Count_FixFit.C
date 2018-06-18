@@ -1,6 +1,6 @@
-int nPeaks = 16;
-
 TString gate, gate_cm, gate_Aux;
+
+int nPeaks = 16;
 
 Double_t fpeaks(Double_t *x, Double_t *par) {
    Double_t result = 0;
@@ -13,8 +13,7 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
    return result;
 }
 
-
-void Count(int detID, int splitCtrl = 0, double threshold = 0.1){   
+void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){   
 
 /**///======================================================== initial input
    
@@ -32,6 +31,15 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    gate = "hitID == 0 && 5 > detID%6 && detID%6 > 0";
    gate_cm = "";
    gate_Aux = "";
+   
+   
+   vector<double> knownE;
+   knownE.push_back(0);
+   knownE.push_back(1.5671);
+   knownE.push_back(2.0322);
+   knownE.push_back(2.5000);
+   
+   double avgPeakHeigh = 100.;
    
 /**///========================================================  load tree
 
@@ -116,6 +124,8 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
          zMPos[i] = pos[i] + length/2;
       }
    } 
+   
+   
 
 /**///========================================================= Analysis
 
@@ -171,8 +181,8 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    cCount->cd(1);
    spec ->Draw();
    
-   //=================== find peak and fit
-   printf("============= estimate background and find peak\n");
+   //=================== estimate BG
+   printf("============= estimate background \n");
    TSpectrum * peak = new TSpectrum(50);
    peak->Search(spec, 1, "", threshold);
    TH1 * h1 = peak->Background(spec,10);
@@ -193,37 +203,30 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    specS->Sumw2();
    specS->Draw();
    
-   
    //========== Fitting 
-   printf("============= Fit.....");
-   nPeaks  = peak->Search(specS, 1, "", threshold);
-   printf(" found %d peaks \n", nPeaks);
-   float * xpos = peak->GetPositionX();
-   float * ypos = peak->GetPositionY();
+   printf("============= Fit..... \n");
+
+   const int nPeaks = knownE.size();
+   const int  n = 3*nPeaks;
+   double * para = new double[n];
    
-   //Double_t * xpos = peak->GetPositionX();
-   //Double_t * ypos = peak->GetPositionY();
-   
-   int * inX = new int[nPeaks];
-   TMath::Sort(nPeaks, xpos, inX, 0 );
-   vector<double> energy, height;
-   for( int j = 0; j < nPeaks; j++){
-      energy.push_back(xpos[inX[j]]);
-      height.push_back(ypos[inX[j]]);
-   }
-   
-   const int  n = 3 * nPeaks;
-   double * para = new double[n]; 
    for(int i = 0; i < nPeaks ; i++){
-      para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
-      para[3*i+1] = energy[i];
-      para[3*i+2] = 0.05;
+      para[3*i+0] = avgPeakHeigh;
+      para[3*i+1] = knownE[i];
+      para[3*i+2] = 0.1;
    }
 
    TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3* nPeaks );
    fit->SetNpx(1000);
    fit->SetParameters(para);
-   specS->Fit("fit", "q");
+   //fix mean, set limits
+   for(int i = 0; i < nPeaks ; i++){
+      fit->FixParameter(3*i+1, knownE[i]);
+      fit->SetParLimits(3*i+0, 0, 2000);
+      fit->SetParLimits(3*i+2, 0, 2);
+   }
+   
+   specS->Fit("fit", "");
 
    printf("============= display\n");   
    const Double_t* paraE = fit->GetParErrors();

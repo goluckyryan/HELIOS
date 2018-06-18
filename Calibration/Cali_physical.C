@@ -14,14 +14,14 @@
 void Cali_physical(){
 /**///======================================================== initial input
    
-   const char* rootfile="C_gen_run11.root"; const char* treeName="tree";
+   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32.root"; const char* treeName="tree";
    
-   double eRange[2] = {-3500, -500};
+   double eRange[3] = {200, -3500, -500};
    
    vector<double> knownE;
    knownE.push_back(0);
    knownE.push_back(1567.1);
-   knownE.push_back(2032.2);
+   //knownE.push_back(2032.2);
    knownE.push_back(2500.0);
    
 /**///========================================================  load tree
@@ -92,7 +92,7 @@ void Cali_physical(){
    
    TString name, expression, gate;
    
-   TH1F * spec = new TH1F("spec", "specG" , 400, eRange[0], eRange[1]);
+   TH1F * spec = new TH1F("spec", "specG" , eRange[0], eRange[1], eRange[2]);
    spec->SetXTitle("Ex [a.u.]");
    
    tree->Draw("energy >> spec", "hitID == 0 && 5 > detID%6 && detID%6 > 0 ");
@@ -155,7 +155,7 @@ void Cali_physical(){
    if( dummy == 1 ){
       FILE * paraOut;
       TString filename;
-      filename.Form("e_to_Ex_correction.dat");
+      filename.Form("correction_e_to_Ex.dat");
       paraOut = fopen (filename.Data(), "w+");
       
       printf("=========== save parameters to %s \n", filename.Data());

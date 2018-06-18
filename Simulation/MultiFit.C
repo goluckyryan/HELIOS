@@ -1,3 +1,17 @@
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TProfile.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TSpectrum.h>
+#include <TGraph.h>
+#include <fstream>
+
 int nPeaks = 16;
 
 TString gate, gateB, gate_cm;
@@ -19,8 +33,8 @@ void MultiFit(){
    
    const char* rootfile="test_3.root"; const char* treeName="tree";
    
-   double xrange[2] = {-550, -160};
-   double exrange[2] = {-1, 4};
+   double xrange[2] = {-450, -100};
+   double exrange[3] = {100, -1, 4}; // number of bin, eMin, eMax
    
 /**///========================================================  load tree
 
@@ -73,7 +87,7 @@ void MultiFit(){
       
    //=========== adjust energy
    cMultiFit->cd(2);
-   TH2F * Ez = new TH2F("Ez", "Ez", 400, xrange[0], xrange[1], 400, exrange[0], exrange[1]);
+   TH2F * Ez = new TH2F("Ez", "Ez", 400, xrange[0], xrange[1], 400, exrange[1], exrange[2]);
    
    TString expression;
    expression.Form("%f * z + %f - e : z >> Ez", a1, a0);
@@ -84,7 +98,7 @@ void MultiFit(){
    //=========== energy
    cMultiFit->cd(3);
    
-   TH1F * spec = new TH1F("spec", "energy", 200, exrange[0], exrange[1]);
+   TH1F * spec = new TH1F("spec", "energy", exrange[0], exrange[1], exrange[2]);
    
    expression.Form("%f * z + %f - e >> spec", a1, a0);
    
@@ -94,8 +108,8 @@ void MultiFit(){
    //=========== find peaks
    TSpectrum * specPeak = new TSpectrum(20);
    int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
-   //float * xpos = specPeak->GetPositionX();
-   double * xpos = specPeak->GetPositionX();
+   float * xpos = specPeak->GetPositionX();
+   //double * xpos = specPeak->GetPositionX();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );  
@@ -167,7 +181,7 @@ void MultiFit(){
    
    //======= spectrum
    cMultiFit->cd(5);
-   TH1F * spec2 = new TH1F("spec2", "spec2", 400, exrange[0], exrange[1]);
+   TH1F * spec2 = new TH1F("spec2", "spec2", exrange[0], exrange[1], exrange[2]);
 
    expression.Form("(%f * z + %f - e) * %f + %f >> spec2", a1, a0, eC1, eC0);
    tree->Draw(expression, "loop == 1 && detID == 5");

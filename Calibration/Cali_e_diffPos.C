@@ -11,13 +11,13 @@
 #include <TGraph.h>
 #include <fstream>
 
-void Cali_e_diffPos(TTree *tree){
+void Cali_e_diffPos(){
 /**///======================================================== User initial input
    
-   const char* rootfile="C_gen_run11.root"; const char* treeName="tree";
+   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32.root"; const char* treeName="tree";
    
    //setting the range of the flatted energy;
-   int eRange[3] = {400, -4000, -1000};
+   int eRange[3] = {100, -4000, -1000};
    
 /**///========================================================  load tree
 
@@ -90,7 +90,7 @@ void Cali_e_diffPos(TTree *tree){
       
    }else{
        printf("... fail\n");
-       
+       return;
    }
    
    //=================== load energy for same pos
@@ -104,7 +104,7 @@ void Cali_e_diffPos(TTree *tree){
    printf("----- loading energy calibration. \n");
    for( int i = 0; i < iDet; i++){
       TString filename;
-      filename.Form("e_correction_%d.dat", i);
+      filename.Form("correction_e%d.dat", i);
       printf("        %s", filename.Data());
       file.open(filename.Data());
       double a, b;
@@ -291,7 +291,7 @@ void Cali_e_diffPos(TTree *tree){
    if( dummy == 1 ){
       FILE * paraOut;
       TString filename;
-      filename.Form("e_correction_diff.dat");
+      filename.Form("correction_e_diff.dat");
       paraOut = fopen (filename.Data(), "w+");
       
       printf("=========== save parameters to %s \n", filename.Data());

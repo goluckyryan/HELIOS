@@ -32,7 +32,6 @@ public :
    Int_t totnumEntry;
    int option;
    
-   
    TBenchmark clock;
    Bool_t shown;
    Int_t count;
@@ -191,7 +190,7 @@ void Cali_root::Init(TTree *tree)
    
    saveFileName = prefix + saveFileName;
    totnumEntry = tree->GetEntries();
-   printf("Converting %s ------> %s , total Entry : %d \n", fChain->GetDirectory()->GetName(), saveFileName.Data(), totnumEntry);
+   printf("Converting ------> %s , total Entry : %d \n", saveFileName.Data(), totnumEntry);
    saveFile = new TFile( saveFileName,"recreate");
    newTree =  new TTree("tree","tree");
    
@@ -241,6 +240,7 @@ void Cali_root::Init(TTree *tree)
       
    }else{
        printf("... fail\n");
+       return;
    }
    
    numDet = iDet * jDet;
@@ -261,6 +261,7 @@ void Cali_root::Init(TTree *tree)
       printf("... done.\n");
    }else{
       printf("... fail.\n");
+      return;
    }
    file.close();
    
@@ -281,6 +282,7 @@ void Cali_root::Init(TTree *tree)
          printf("... done.\n");
       }else{
          printf("... fail.\n");
+         return;
       }
       file.close();
    }else{
@@ -298,7 +300,7 @@ void Cali_root::Init(TTree *tree)
       printf("----- loading energy calibration for same position. \n");
       for( int i = 0; i < iDet; i++){
          TString filename;
-         filename.Form("e_correction_%d.dat", i);
+         filename.Form("correction_e%d.dat", i);
          printf("        %s", filename.Data());
          file.open(filename.Data());
          if( file.is_open() ){
@@ -319,13 +321,14 @@ void Cali_root::Init(TTree *tree)
             }
          }else{
             printf("... fail.\n");
+            return;
          }
          file.close();
       }
    
       //=========================================   
       printf("----- loading energy calibration for different position.");
-      file.open("e_correction_diff.dat");
+      file.open("correction_e_diff.dat");
       if( file.is_open() ){
          double a, b;
          int i = 0;
@@ -341,12 +344,13 @@ void Cali_root::Init(TTree *tree)
          }
       }else{
          printf("... fail.\n");
+         return;
       }
       file.close();
       
       //=========================================   
       printf("----- loading energy to Ex correction parameters.");
-      file.open("e_to_Ex_correction.dat");
+      file.open("correction_e_to_Ex.dat");
       if( file.is_open() ){
          double a, b;
          while( file >> a >> b){

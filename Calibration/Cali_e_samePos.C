@@ -13,8 +13,17 @@
 
 void Cali_e_samePos(){
 /**///======================================================== initial input
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run11.root"; const char* treeName="tree";
+   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32.root"; const char* treeName="tree";
+
+/**///========================================================  load tree
+
+   TFile *f0 = new TFile (rootfile, "read"); 
+   TTree *tree = (TTree*)f0->Get(treeName);
+   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
    
+/**///========================================================  cont. User input
+
    // pause
    int detID;
    printf("which detector ? ");
@@ -85,12 +94,7 @@ void Cali_e_samePos(){
       slope = 3.7;
    }
    
-/**///========================================================  load tree
 
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
-   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas
 
@@ -156,7 +160,7 @@ void Cali_e_samePos(){
       
    }else{
        printf("... fail\n");
-       
+       return ;
    }
 
    
@@ -470,7 +474,7 @@ void Cali_e_samePos(){
    if( dummy == 1 ){
       FILE * paraOut;
       TString filename;
-      filename.Form("e_correction_%d.dat", detID);
+      filename.Form("correction_e%d.dat", detID);
       paraOut = fopen (filename.Data(), "w+");
       
       printf("=========== save parameters to %s \n", filename.Data());
