@@ -17,7 +17,7 @@ void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){
 
 /**///======================================================== initial input
    
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32_cali32.root"; const char* treeName="tree";
+   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run40.root"; const char* treeName="tree";
    
    double ExRange[3] = {100, -1, 6};
    

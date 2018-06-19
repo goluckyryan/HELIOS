@@ -11,18 +11,8 @@
 #include <TGraph.h>
 #include <fstream>
 
-void Cali_e_samePos(){
+void Cali_e_samePos(TTree *tree){
 /**///======================================================== initial input
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32.root"; const char* treeName="tree";
-
-/**///========================================================  load tree
-
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
-   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
-   
-/**///========================================================  cont. User input
 
    // pause
    int detID;
@@ -34,10 +24,11 @@ void Cali_e_samePos(){
 
    double cutSlope = 4.0; //redline, for cut
    double cutIntep[4] = {2000, 2000, 2000, 2000}; 
+
    double slope = 4.0;   //blueline, for fit
    double yIntep = 2400; //blueline
    
-   eCRange[0]=  80;   
+   eCRange[0]=  30;   // number of bin for eC
    
    if( detID == 0){
       cutIntep[0] = 2400;
@@ -62,7 +53,7 @@ void Cali_e_samePos(){
       cutIntep[3] = 1900;
       slope = 4.5;
       
-      eCRange[0]=  60;   
+      //eCRange[0]=  60;   
    }
    
    if( detID == 3){
@@ -72,7 +63,7 @@ void Cali_e_samePos(){
       cutIntep[3] = 1600;
       slope = 4.3;
       
-      eCRange[0]=  100;
+      //eCRange[0]=  100;
    }
    
    if( detID == 4){
@@ -82,7 +73,7 @@ void Cali_e_samePos(){
       cutIntep[3] = 1650;
       slope = 4.0; // the slope can be difference.
       
-      eCRange[0]=  100;
+      //eCRange[0]=  100;
       eRange[1] = 2500;
    }
    
@@ -95,6 +86,9 @@ void Cali_e_samePos(){
    }
    
 
+/**///========================================================  load tree
+
+   printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas
 
@@ -191,7 +185,7 @@ void Cali_e_samePos(){
       //printf("%s \n", expression.Data());
       
       TString gate;
-      gate.Form("hitID == 0");
+      gate.Form("hitID >= 0");
       
       cScript->cd(i+1);
       

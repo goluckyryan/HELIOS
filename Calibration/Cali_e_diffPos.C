@@ -11,20 +11,13 @@
 #include <TGraph.h>
 #include <fstream>
 
-void Cali_e_diffPos(){
+void Cali_e_diffPos(TTree *tree){
 /**///======================================================== User initial input
    
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32.root"; const char* treeName="tree";
-   
-   //setting the range of the flatted energy;
    int eRange[3] = {100, -4000, -1000};
    
 /**///========================================================  load tree
-
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
-   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
+   printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
    
 /**///======================================================== Browser or Canvas
 

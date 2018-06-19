@@ -1,7 +1,5 @@
 int nPeaks = 16;
 
-TString gate, gate_cm, gate_Aux;
-
 Double_t fpeaks(Double_t *x, Double_t *par) {
    Double_t result = 0;
    for (Int_t p=0;p<nPeaks;p++) {
@@ -14,13 +12,13 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 }
 
 
-void Count(int detID, int splitCtrl = 0, double threshold = 0.1){   
+void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.1){   
 
 /**///======================================================== initial input
    
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run32_cali32.root"; const char* treeName="tree";
+   double ExRange[3] = {200, -1, 6};
    
-   double ExRange[3] = {100, -1, 6};
+   TString gate, gate_cm, gate_Aux;
    
    /*// for H052
    gate_Aux = " && z > -629 + 32 * Ex + 0.67 * Ex * Ex ";
@@ -35,10 +33,7 @@ void Count(int detID, int splitCtrl = 0, double threshold = 0.1){
    
 /**///========================================================  load tree
 
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
-   //printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
+   printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas
 

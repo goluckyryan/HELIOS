@@ -1,18 +1,33 @@
-{
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TSpectrum.h>
+#include <TGraph.h>
+#include <fstream>
+
+void Cali_xf_xn_to_e(TTree *tree){
    gStyle->SetOptStat(1111111111111111);
    
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run11.root";
+   //const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run11.root";
    
 	//###########################  load tree
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get("tree");
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   //TFile *f0 = new TFile (rootfile, "read"); 
+   //TTree *tree = (TTree*)f0->Get("tree");
+   //printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   
+   printf("=========== Total #Entry: %10d \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas
 
    Int_t Div[2] = {6,4};  //x,y
    Int_t size[2] = {230,230}; //x,y
-   TCanvas * cCali_xf_xn_e = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   TCanvas * cCali_xf_xn_e = new TCanvas("cCali_xf_xn_e", "cCali_xf_xn_e", 0, 0, size[0]*Div[0], size[1]*Div[1]);
    cCali_xf_xn_e->Divide(Div[0],Div[1]);
    
    for( int i = 1; i <= Div[0]*Div[1] ; i++){
@@ -70,6 +85,7 @@
       
    }
    
+   cCali_xf_xn_e->Update();
    //===== save correction parameter
    int dummy = 0;
    printf("0 for end, 1 for save e-xf+xn correction & Canvas: ");
