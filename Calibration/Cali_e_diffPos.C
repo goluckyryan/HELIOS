@@ -16,6 +16,8 @@ void Cali_e_diffPos(TTree *tree){
    
    int eRange[3] = {100, -4000, -1000};
    
+   string detGeoFileName = "/home/ttang/ANALYSIS/H060_ana/detectorGeo_upstream.txt";
+   
 /**///========================================================  load tree
    printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
    
@@ -46,7 +48,6 @@ void Cali_e_diffPos(TTree *tree){
    int iDet = 6; // number of detector at different position
    int jDet = 4; // number of detector at same position
 
-   string detGeoFileName = "detectorGeo_upstream.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file(detGeoFileName.c_str(), std::ifstream::in);
    int i = 0;

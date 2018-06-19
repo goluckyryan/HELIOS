@@ -14,6 +14,8 @@
 void Cali_e_samePos(TTree *tree){
 /**///======================================================== initial input
 
+   string detGeoFileName = "/home/ttang/ANALYSIS/H060_ana/detectorGeo_upstream.txt";
+
    // pause
    int detID;
    printf("which detector ? ");
@@ -117,7 +119,6 @@ void Cali_e_samePos(TTree *tree){
    int iDet = 6;
    int jDet = 4;
 
-   string detGeoFileName = "detectorGeo_upstream.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file(detGeoFileName.c_str(), std::ifstream::in);
    int i = 0;

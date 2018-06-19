@@ -110,8 +110,11 @@ Bool_t Cali_root::Process(Long64_t entry)
       }
    }
    //#################################################################### processing
-   eventID = entry;
+   //eventID = entry;
+   eventID += 1;
    //if(eventID > 100) return kTRUE;
+   
+   if( entry == 1 ) run += 1;
    
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);

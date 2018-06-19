@@ -13,13 +13,13 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
    return result;
 }
 
-void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){   
+void Count_MaualFit(int detID = -1, int splitCtrl = 0){   
 
 /**///======================================================== initial input
    
-   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run40.root"; const char* treeName="tree";
+   const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run11.root"; const char* treeName="tree";
    
-   double ExRange[3] = {100, -1, 6};
+   double ExRange[3] = {200, -1, 6};
    
    /*// for H052
    gate_Aux = " && z > -629 + 32 * Ex + 0.67 * Ex * Ex ";
@@ -33,13 +33,18 @@ void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){
    gate_Aux = "";
    
    
+   bool isFixMean = false;
+   
    vector<double> knownE;
    knownE.push_back(0);
+   knownE.push_back(0.779);
    knownE.push_back(1.5671);
    knownE.push_back(2.0322);
    knownE.push_back(2.5000);
    
-   double avgPeakHeigh = 100.;
+   double avgPeakHeigh = 10.;
+   
+   double backgroundFactor = 11; // smaller = more curve 
    
 /**///========================================================  load tree
 
@@ -171,8 +176,6 @@ void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){
    printf("%s\n", gate_cm.Data());
    printf("%s\n", gate_z.Data());
    printf("%s\n", gate_Aux.Data());
-
-   printf(" threshold : %f \n", threshold);
    
    //================= plot Ex
    printf("============= plot Ex with gates\n");    
@@ -184,9 +187,7 @@ void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){
    //=================== estimate BG
    printf("============= estimate background \n");
    TSpectrum * peak = new TSpectrum(50);
-   peak->Search(spec, 1, "", threshold);
-   TH1 * h1 = peak->Background(spec,10);
-   //h1->Sumw2();
+   TH1 * h1 = peak->Background(spec,backgroundFactor);
    h1->Draw("same");
    
    cCount->cd(2);
@@ -198,6 +199,7 @@ void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){
    //   title.Form("t4-gate && |e_t| < 20 && TMath::Abs(t4)<1000");
    //}
    //specS->SetTitle(title + gate_cm + gate_z + " && thetaCM > 8");
+   specS->SetName("spectrum");
    specS->SetName("specS");
    specS->Add(h1, -1.);
    specS->Sumw2();
@@ -221,12 +223,12 @@ void Count_FixFit(int detID, int splitCtrl = 0, double threshold = 0.1){
    fit->SetParameters(para);
    //fix mean, set limits
    for(int i = 0; i < nPeaks ; i++){
-      fit->FixParameter(3*i+1, knownE[i]);
+      if( isFixMean ) fit->FixParameter(3*i+1, knownE[i]);
       fit->SetParLimits(3*i+0, 0, 2000);
       fit->SetParLimits(3*i+2, 0, 2);
    }
    
-   specS->Fit("fit", "");
+   specS->Fit("fit", "q");
 
    printf("============= display\n");   
    const Double_t* paraE = fit->GetParErrors();

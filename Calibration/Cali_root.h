@@ -62,6 +62,7 @@ public :
      
    //tree  
    Int_t eventID;
+   Int_t run;
    Float_t eC[24];
    Float_t xfC[24];
    Float_t xnC[24];
@@ -510,8 +511,10 @@ void Cali_root::Init(TTree *tree)
       
    }
    //===================================================== tree branch
-   
+   eventID = 0;
+   run = 0;
    newTree->Branch("eventID",&eventID,"eventID/I"); 
+   newTree->Branch("run",&run,"run/I"); 
    
    newTree->Branch("e" ,  eC, "eC[24]/F");
    newTree->Branch("xf", xfC, "xfC[24]/F");

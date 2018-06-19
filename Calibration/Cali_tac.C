@@ -1,17 +1,18 @@
-{   
+void Cali_tac(TTree * tree){   
 /**///======================================================== initial input
    
    //const char* rootfile="psd_run38.root"; const char* treeName="psd_tree";
    //const char* rootfile="H052_Mg25.root"; const char* treeName="gen_tree";
-   const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
+   //const char* rootfile="X_H052_Mg25.root"; const char* treeName="tree";
    
    const int numDet = 4;
    
 /**///========================================================  load tree
 
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   //TFile *f0 = new TFile (rootfile, "read"); 
+   //TTree *tree = (TTree*)f0->Get(treeName);
+   //printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   printf("=========>  Total #Entry: %10d \n", tree->GetEntries());
    
 /**///======================================================== Browser or Canvas
 

@@ -31,6 +31,8 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    gate_cm = "";
    gate_Aux = "";
    
+   string detGeoFileName = "/home/ttang/ANALYSIS/H060_ana/detectorGeo_upstream.txt";
+   
 /**///========================================================  load tree
 
    printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
@@ -63,7 +65,6 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    int iDet = 6;
    int jDet = 4;
 
-   string detGeoFileName = "detectorGeo_upstream.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file(detGeoFileName.c_str(), std::ifstream::in);
    int i = 0;
@@ -166,6 +167,8 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    cCount->cd(1);
    spec ->Draw();
    
+   TH1F * specS = (TH1F*) spec->Clone();
+   
    //=================== find peak and fit
    printf("============= estimate background and find peak\n");
    TSpectrum * peak = new TSpectrum(50);
@@ -175,7 +178,7 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    h1->Draw("same");
    
    cCount->cd(2);
-   TH1F * specS = (TH1F*) spec->Clone();
+   //TH1F * specS = (TH1F*) spec->Clone();
    TString title;
    //if( detID >= 0){
    //   title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
