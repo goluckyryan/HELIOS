@@ -71,6 +71,8 @@ public :
    int det;
    int hitID; // is e, xf, xn are all fired.
    int zMulti; // multipicity of z
+   
+   Float_t ddt; // downstream detector for deuteron, for H060_208Pb  
       
    Float_t thetaCM;
    Float_t Ex;   
@@ -547,6 +549,9 @@ void Cali_root::Init(TTree *tree)
       newTree->Branch("t4", &t4, "t4/F");
       newTree->Branch("good", &good, "good/I");
    }
+   
+   //special for H060_208Pb
+   newTree->Branch("ddt", &ddt, "ddt/F");
    
    printf("=========================================================\n");
    

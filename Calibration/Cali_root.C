@@ -82,6 +82,8 @@ Bool_t Cali_root::Process(Long64_t entry)
    hitID = -4;
    zMulti = 0;
    
+   ddt = TMath::QuietNaN(); // H060
+   
    if( option >= 2){
       Ex  = TMath::QuietNaN();
       thetaCM  = TMath::QuietNaN();
@@ -120,6 +122,8 @@ Bool_t Cali_root::Process(Long64_t entry)
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);
    
+   b_ELUM->GetEntry(entry, 0); // for H060_208Pb
+   
    if( option >= 2){
       b_EnergyTimestamp->GetEntry(entry,0);
       b_RDT->GetEntry(entry,0);
@@ -130,6 +134,7 @@ Bool_t Cali_root::Process(Long64_t entry)
       b_TAC->GetEntry(entry,0);
       b_TACTimestamp->GetEntry(entry,0);
    }
+   
    
    //gate on rdt, a kind of recoil detector, total has 8 of them
    //if( rdt[0] < 5000 && rdt[1] < 5000 && rdt[2] < 5000 && rdt[3] < 5000 && rdt[4] < 5000 && rdt[5] < 5000 && rdt[6] < 5000 && rdt[7] < 5000  ) return kTRUE; 
@@ -303,6 +308,10 @@ Bool_t Cali_root::Process(Long64_t entry)
       
    }
    
+   //for H060
+   ddt = elum[0];
+   
+   //disable for H060, for 
    if( zMulti == 0 ) return kTRUE;
    
    //#################################################################### Timer  
@@ -316,10 +325,10 @@ Bool_t Cali_root::Process(Long64_t entry)
    if ( !shown ) {
       if (fmod(time, 10) < 1 ){
          printf( "%10d[%2d%%]|%3d min %5.2f sec | expect:%5.1fmin %10d\n", 
-               entry, 
-               TMath::Nint((entry+1)*100./totnumEntry),
-               TMath::Floor(time/60), time - TMath::Floor(time/60)*60,
-               totnumEntry*time/(entry+1)/60.,
+               eventID, 
+               TMath::Nint((eventID+1)*100./totnumEntry),
+               TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
+               totnumEntry*time/(eventID+1)/60.,
                count);
                shown = 1;
       }
@@ -328,7 +337,6 @@ Bool_t Cali_root::Process(Long64_t entry)
          shown = 0;
       }
    }
-
 
    return kTRUE;
 }

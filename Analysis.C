@@ -42,25 +42,26 @@ void Analysis(){
 
    if( option == 0 ){
       TChain * chain = new TChain("gen_tree");
-      chain->Add("data/gen_run11.root");
-      chain->Add("data/gen_run12.root");
-      chain->Add("data/gen_run13.root");
-      chain->Add("data/gen_run15.root");
-      chain->Add("data/gen_run16.root");
-      chain->Add("data/gen_run17.root");
-      chain->Add("data/gen_run18.root");
-      chain->Add("data/gen_run19.root");
-      chain->Add("data/gen_run20.root");
-      chain->Add("data/gen_run21.root");
-      chain->Add("data/gen_run22.root");
-      chain->Add("data/gen_run23.root");
-      chain->Add("data/gen_run24.root");
-      chain->Add("data/gen_run25.root");
-      chain->Add("data/gen_run26.root");
-      chain->Add("data/gen_run27.root");
-      chain->Add("data/gen_run28.root");
-      chain->Add("data/gen_run29.root");
-      chain->Add("data/gen_run30.root");
+      chain->Add("data/gen_run11.root");  //01
+/*
+      chain->Add("data/gen_run12.root");  //02
+      chain->Add("data/gen_run13.root");  //03
+      chain->Add("data/gen_run15.root");  //04
+      chain->Add("data/gen_run16.root");  //05
+      chain->Add("data/gen_run17.root");  //06
+      chain->Add("data/gen_run18.root");  //07
+      chain->Add("data/gen_run19.root");  //08
+      chain->Add("data/gen_run20.root");  //09
+      chain->Add("data/gen_run21.root");  //10
+      chain->Add("data/gen_run22.root");  //11
+      chain->Add("data/gen_run23.root");  //12
+      chain->Add("data/gen_run24.root");  //13
+      chain->Add("data/gen_run25.root");  //14
+      chain->Add("data/gen_run27.root");  //15
+      chain->Add("data/gen_run28.root");  //16
+      chain->Add("data/gen_run29.root");  //17
+      chain->Add("data/gen_run30.root");  //18
+*/      
       
       chain->GetListOfFiles()->Print();
       

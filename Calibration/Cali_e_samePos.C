@@ -32,6 +32,9 @@ void Cali_e_samePos(TTree *tree){
    
    eCRange[0]=  30;   // number of bin for eC
    
+   TString gate;
+   gate.Form("hitID == 0");
+   
    if( detID == 0){
       cutIntep[0] = 2400;
       cutIntep[1] = 2400;
@@ -184,9 +187,6 @@ void Cali_e_samePos(TTree *tree){
       expression.Form("e[%d]:z[%d]>> b%d" , detID + iDet*i, detID + iDet*i ,i);
       
       //printf("%s \n", expression.Data());
-      
-      TString gate;
-      gate.Form("hitID >= 0");
       
       cScript->cd(i+1);
       
