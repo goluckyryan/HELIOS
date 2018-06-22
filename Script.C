@@ -130,7 +130,7 @@ void Script(){
    //tree->Draw("eventID/1000.>>k(100, 3100, 3400)"," -5300 < ddt && ddt < -4000 && 6 <= run && run <= 10", "colz" );
    //tree->Draw("eventID/1000.>>h(100, 3100, 3400)"," -1 < Ex && Ex < 1 && 6 <= run && run <= 10", "colz" );
    
-   int detID = 3;
+   int detID = 4;
    
    int eRange[2] = {600,1800};
    
@@ -154,13 +154,7 @@ void Script(){
    
    TString expression;
    expression.Form("e[%d]:z[%d]>> b1" , detID + iDet*i, detID + iDet*i);
-   
-   //printf("%s \n", expression.Data());
-   
-   cScript->cd(i+1);
-   
    gate.Form("hitID >= 0");
-   
    tree->Draw(expression, gate , "");
    
    
@@ -223,11 +217,92 @@ void Script(){
       }
    }
    
-   //=============== 
+   cScript->Update();
    
    
+   //=============== select peaks
+   bool endFlag = false;
+   
+   vector<double> Upeak2;
+   printf("======== for p2 (0 for reject, 1 for accept, 8 for skip the rest, 9 to exit)\n");
+   for( int j = 0; j < (int) peak2.size(); j++){
+      double temp = peak2[j];
+      printf(" %8.3f ? ", temp);
+      int ok;
+      scanf("%d", &ok);
+      if( ok == 1){
+         Upeak2.push_back(temp);
+      }else if( ok == 8){
+         break;
+      }else if( ok == 9){
+         endFlag = true;
+         break;
+      }
+   }
+   if( endFlag ) return;
    
    
+   //=============== select peaks
+   vector<double> Upeak3;
+   printf("======== for p3 (0 for reject, 1 for accept, 8 for skip the rest, 9 to exit)\n");
+   for( int j = 0; j < (int) peak3.size(); j++){
+      double temp = peak3[j];
+      printf(" %8.3f ? ", temp);
+      int ok;
+      scanf("%d", &ok);
+      if( ok == 1){
+         Upeak3.push_back(temp);
+      }else if( ok == 8){
+         break;
+      }else if( ok == 9){
+         endFlag = true;
+         break;
+      }
+   }
+   
+   if( endFlag ) return;
+   
+   //====== print selection
+   printf("======== p2 \n");
+   for(int k = 0; k < Upeak2.size(); k++){
+      printf("%d, x: %f \n", k, Upeak2[k]);
+   }
+   
+   printf("======== p3 \n");
+   for(int k = 0; k < Upeak3.size(); k++){
+      printf("%d, x: %f \n", k, Upeak3[k]);
+   }
+   
+   if( Upeak2.size() != Upeak3.size() ) {
+      printf(" number of peaks must be the same ! \n");
+      return;
+   }
+   
+   //======= calculate slope
+   double xdist = length * (3./4. );
+   
+   double slope = 0;
+   for(int k = 0; k < Upeak2.size();k++){
+      slope += (Upeak3[k] - Upeak2[k])/ xdist;   
+   } 
+   slope = slope / Upeak2.size();
+   
+   printf("average slope : %f \n", slope);
+   
+   //======= plot the flatten e
+   double eCRange[3];
+   eCRange[0] = 100;
+   eCRange[1] = eRange[0] - slope * pos[detID];
+   eCRange[2] = eRange[1] - slope * pos[detID];
+
+   name = "q1";
+   i = 0;
+   TH2F * q1 = new TH2F(name, name , 200, xrange[0], xrange[1],  eCRange[0], eCRange[1], eCRange[2]);
+   q1->SetXTitle("eC");
+   expression.Form("e[%d] - %f * z[%d] : z[%d] >> q1" , detID + iDet*i, slope ,detID + iDet*i, detID + iDet*i);
+   cScript->cd(3);      
+   tree->Draw(expression, "" , "");
+
    
    
 //############################################################################   
