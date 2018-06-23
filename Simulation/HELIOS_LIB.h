@@ -477,32 +477,33 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       
       //====================== calculate number of loop
       t0 = dphi * rho / vt0; // nano-second   
-      z0 = vp0 * t0; // mm 
+      z0 = vp0 * t0; // mm, the positon for an imaginary finite detector
+      double zloop = TMath::TwoPi() * rho * vp0 / vt0 * t0; // the position for complete cycle
       if( firstPos > 0 ){ // for downstream setting
          double minNoBlock = pos[0] - support ;
          double minDis = pos[0];
-         if( minDis/2. < z0 &&  z0 < minNoBlock ) {
-            loop = 2;
-            dphi += TMath::TwoPi() * (loop - 1);
-         }else if( pos[0] < z0 && z0 < pos[nDet-1] + l ){
-            loop = 1;
+         int loopA = TMath::Ceil((minNoBlock-z0)/zloop);
+         double zLoopA = loopA * zloop + z0;
+         if( zLoopA > minDis ) {
+            loop = TMath::Ceil((minDis-z0)/zloop) + 1;
          }else{
             loop = 0;
-            dphi = 0;
+            z = z0;
+            e = Pb.E() - Pb.M();
             return -5;
          }
       }else{ // for upstream setting
          double minNoBlock = pos[nDet-1] + support ;
          double minDis = pos[nDet-1];
-         if( minNoBlock < z0 &&  z0 < minDis/2. ) {
-            loop = 2;
-            dphi += TMath::TwoPi() * (loop - 1);
-         }else if( pos[0]-l < z0 && z0 < pos[nDet-1] ){
-            loop = 1;
+         int loopA = TMath::Ceil((minNoBlock-z0)/zloop);
+         double zLoopA = loopA * zloop + z0;
+         if( zLoopA < minDis ) {
+            loop = TMath::Ceil((minDis-z0)/zloop) + 1;
          }else{
             loop = 0;
-            dphi = 0;
-            return -6;
+            z= z0;
+            e = Pb.E() - Pb.M();
+            return -5;
          }
       }
       
@@ -511,6 +512,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       
       //====================== final calculation for light particle
       e = Pb.E() - Pb.M();
+      dphi += (loop - 1)*TMath::TwoPi();
       t = dphi * rho / vt0;
       z = vp0 * t;
       

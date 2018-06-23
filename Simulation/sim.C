@@ -43,7 +43,7 @@ void sim(){
    
    bool isTargetScattering = true;
    bool isDecay = false;
-   bool isReDo = true; // redo calculation until detected. 
+   bool isReDo = false; // redo calculation until detected. 
    
    //---- target
    double density = 0.913; // 0.913 g/cm3
