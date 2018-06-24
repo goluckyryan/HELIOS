@@ -524,10 +524,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
          // when zHit is less then min detector distance, redo
          // if zHit is larger then min detector distance, and if hit from inside, redo
          
-         if(firstPos > 0 &&  zHit > pos[nDet-1] + l) return -5; 
-         if(firstPos < 0 &&  zHit < pos[0] ) return -6; 
-         
-         
          // if zHit is lager, and hit from outside, use that zHit
          loop = n / 2 + 1 ; // number of loop
          double xHit = GetXPos(zHit);
@@ -546,6 +542,9 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       }
       
       if( !isHit ) return -1;
+      
+      if(firstPos > 0 &&  zHit > pos[nDet-1] + l) return -5; 
+      if(firstPos < 0 &&  zHit < pos[0] - l) return -6; 
       
       //printf("#################### is Hit: %d \n", hitMDetID);
       
