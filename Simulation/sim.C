@@ -112,7 +112,7 @@ void sim(){
    TTree * tree = new TTree("tree", "tree");
    
    double thetaCM;
-   double thetab, Tb;
+   double thetab, phib, Tb;
    double thetaB, TB;
    
    int hit;
@@ -132,6 +132,7 @@ void sim(){
    
    tree->Branch("hit", &hit, "hit/I");
    tree->Branch("thetab", &thetab, "thetab/D");
+   tree->Branch("phib", &phib, "phib/D");
    tree->Branch("Tb", &Tb, "Tb/D");
    tree->Branch("thetaB", &thetaB, "thetaB/D");
    tree->Branch("TB", &TB, "Tb/D");
@@ -282,6 +283,7 @@ void sim(){
          Tb = Pb.E() - Pb.M();
          TB = PB.E() - PB.M();
          
+         phib = Pb.Phi() * TMath::RadToDeg();
          
          //==== Helios
          hit = helios.CalHit(Pb, zb, PB, zB);
