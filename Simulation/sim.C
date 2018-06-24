@@ -105,6 +105,7 @@ void sim(){
    //======== Set HELIOS   
    HELIOS helios;
    helios.SetDetectorGeometry(heliosDetGeoFile);
+   int mDet = helios.GetNumberOfDetectorsInSamePos();
    
    //====================== build tree
    TFile * saveFile = new TFile(saveFileName, "recreate");
@@ -125,6 +126,8 @@ void sim(){
 
    double rhoHit, rhoBHit;
    double decayTheta;
+   
+   double xHit, yHit;
    //double zzb[100], xb[100], yb[100];
    
    tree->Branch("hit", &hit, "hit/I");
@@ -154,6 +157,10 @@ void sim(){
    tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
    tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
    tree->Branch("decayTheta", &decayTheta, "decayTheta/D");
+   
+   
+   tree->Branch("xHit", &xHit, "xHit/D");
+   tree->Branch("yHit", &yHit, "yHit/D");
    //tree->Branch("xb", xb, "xb[100]/D");
    //tree->Branch("yb", yb, "yb[100]/D");
    //tree->Branch("zb", zzb, "zb[100]/D");
@@ -233,8 +240,10 @@ void sim(){
          
          //==== Calculate reaction
          thetaCM = TMath::ACos(2 * gRandom->Rndm() - 1) ; 
+         //double phiCM = TMath::TwoPi() / mDet * ( gRandom->Rndm() - 0.5); // reduce the range of phiCM for faster calculation
+         double phiCM = TMath::TwoPi() * gRandom->Rndm(); 
          
-         TLorentzVector * output = reaction.Event(thetaCM, 0);
+         TLorentzVector * output = reaction.Event(thetaCM, phiCM);
       
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];
@@ -278,7 +287,7 @@ void sim(){
          hit = helios.CalHit(Pb, zb, PB, zB);
          
          e = helios.GetEnergy() + gRandom->Gaus(0, eSigma);
-         z = helios.GetZ() + gRandom->Gaus(0, xSigma);
+         z = helios.GetZ() ;//+ gRandom->Gaus(0, xSigma);
          x = helios.GetX() + gRandom->Gaus(0, xSigma);
          t = helios.GetTime();
          loop = helios.GetLoop();
@@ -287,6 +296,8 @@ void sim(){
          rho = helios.GetRho();
          rhoHit = helios.GetRhoHit();
          rhoBHit = helios.GetRecoilRhoHit();
+         xHit = helios.GetXPos(z);
+         yHit = helios.GetYPos(z);
          /*
          for(int i = 0; i < 100 ; i++){
             double theta = Pb.Theta();
