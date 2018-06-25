@@ -200,7 +200,7 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
 
    TVector3 ub = vb.Orthogonal();
    vb.Rotate(thetaCM, ub);
-   vb.Rotate(phiCM, va);
+   vb.Rotate(phiCM + TMath::PiOver2(), va); // somehow, the calculation turn the vector 90 degree.
    
    Pbc.SetVectM(vb, mb);
    
@@ -211,7 +211,7 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
 
    TVector3 uB = vB.Orthogonal();
    vB.Rotate(-thetaCM, uB);
-   vB.Rotate(-phiCM, vA);
+   vB.Rotate(-phiCM - TMath::PiOver2(), vA);
    
    PBc.SetVectM(vB, mB + ExB);
    
@@ -246,11 +246,14 @@ public:
    
    int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
    void SetDetectorGeometry(string filename);
+   
+   int GetNumberOfDetectorsInSamePos(){return mDet;}
 
    double GetEnergy(){return e;}
    double GetZ(){return z;}
    double GetX(){return x;} // position in each detector, range from -1, 1
    int GetDetID(){return detID;}
+   int GetMDetID(){return hitMDetID;}
    double GetTime(){return t;}
    double GetRho(){return rho;}
    double GetRhoHit(){return rhoHit;} // radius of particle-b hit recoil detector 
@@ -259,10 +262,10 @@ public:
    double GetVt(){return vt0;}
    double GetVp(){return vp0;}
    double GetXPos(double ZPos){
-      return rho * (1 - TMath::Cos(TMath::Tan(theta) * ZPos / rho) );
+      return rho * (TMath::Cos(phi) - TMath::Cos(TMath::Tan(theta) * ZPos / rho + phi) );
    }
    double GetYPos(double ZPos){
-      return rho * TMath::Sin(TMath::Tan(theta) * ZPos / rho);
+      return rho * (TMath::Sin(TMath::Tan(theta) * ZPos / rho + phi) - TMath::Sin(phi)) ;
    }
    double GetR(double ZPos){
       return rho * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(theta) * ZPos / rho));
@@ -275,10 +278,10 @@ public:
    double GetRecoilVt(){return vt0B;}
    double GetRecoilVp(){return vp0B;}
    double GetRecoilXPos(double ZPos){
-      return rhoB * (1 - TMath::Cos(TMath::Tan(thetaB) * ZPos / rhoB) );
+      return rhoB * (TMath::Cos(phiB) - TMath::Cos(TMath::Tan(thetaB) * ZPos / rhoB + phiB) );
    }
    double GetRecoilYPos(double ZPos){
-      return rhoB * TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB);
+      return rhoB * (TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB) - TMath::Sin(phiB));
    }   
    double GetRecoilR(double ZPos){
       return rhoB * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(thetaB) * ZPos / rhoB));
@@ -287,13 +290,13 @@ public:
    double GetZ0(){return z0;}
    double GetTime0(){return t0;}
 private:
-   double theta;
+   double theta, phi; // polar angle of particle 
    double e, z, x, rho, dphi, t;
    double vt0, vp0;
    double rhoHit; // radius of particle-b hit on recoil detector
-   int detID, loop;   // multiloop
+   int detID, loop, hitMDetID;   // multiloop
    
-   double thetaB;
+   double thetaB, phiB;
    double eB, rhoB, tB;
    double vt0B, vp0B;
    double rhoBHit; // particle-B hit radius
@@ -317,6 +320,7 @@ private:
 
 HELIOS::HELIOS(){
    theta = TMath::QuietNaN();
+   phi = TMath::QuietNaN();
    e = TMath::QuietNaN();
    z = TMath::QuietNaN();
    x = TMath::QuietNaN();
@@ -325,9 +329,11 @@ HELIOS::HELIOS(){
    rhoHit = TMath::QuietNaN();
    dphi = TMath::QuietNaN();
    detID = -1;
+   hitMDetID = -1;
    loop = -1;
    
    thetaB = TMath::QuietNaN();
+   phiB = TMath::QuietNaN();
    eB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
    rhoBHit = TMath::QuietNaN();
@@ -430,6 +436,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    dphi = TMath::QuietNaN();
    detID = -1;
    loop = -1;
+   hitMDetID = -1;
    eB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
    tB = TMath::QuietNaN();
@@ -437,83 +444,114 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    //====================== X-Y plane
    rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
    theta = Pb.Theta();
+   phi = Pb.Phi();
    //printf("bore:%f, rho:%f, firstPos:%f, theta:%f < %f \n", bore, rho, firstPos, theta, TMath::PiOver2() );
    
-   if( bore > 2 * rho && rho > a && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
+   if( bore > 2 * rho && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
       //====================== infinite small detector   
       vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
       vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
       t0 = TMath::TwoPi() * rho / vt0; // nano-second   
       z0 = vp0 * t0; // mm        
       //printf("====== z0: %f \n",  z0);
-
+      
       //======================  recoil detector
-      thetaB = Pb.Theta();
+      thetaB = PB.Theta();
+      phiB = PB.Phi();
       rhoB = PB.Pt() / Bfield / ZB / c * 1000; //mm
       tB   = posRecoil / (PB.Beta() * TMath::Cos(thetaB) * c ); // nano-second
       eB   = PB.E() - PB.M();
       
-      // check particle-b 
+      //========= check particle-b 
       rhoHit = GetR(posRecoil) ;// radius of light particle b at recoil detector
       if( z0 > 0 && posRecoil > 0 && z0 > posRecoil && rhoHit < rhoRecoil) {
-          return -2 ;
+          return -1 ;  // when particle-b blocked by recoil detector
       }
       if( z0 < 0 && posRecoil < 0 && z0 < posRecoil && rhoHit < rhoRecoil) {
-          return -3 ;
+          return -1 ;
       }
-      // calculate particle-B hit radius on recoil dectector
+      //========== calculate particle-B hit radius on recoil dectector
       vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
       vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
       rhoBHit = GetRecoilR(posRecoil);
-      if( rhoBHit > rhoRecoil ) return -4;
+      if( rhoBHit > rhoRecoil ) return -2; // when particle-B miss the recoil detector
       
-      //====================== calculate rotation angle
-      //TODO add dependent on mDet
-      dphi = TMath::TwoPi() + TMath::ASin(-a/rho);  // exact position
-      double hit_y = rho - TMath::Sqrt(rho*rho - a*a); // always positive
-      if( hit_y > w/2.  ) {
-         return -1;
-      }
+
+      //================ Calulate z hit
+      double zHit = TMath::QuietNaN();
+      bool isHit = false;
+      bool isHitFromOutside = false;
+      bool redoFlag = false;
       
-      //====================== calculate number of loop
-      t0 = dphi * rho / vt0; // nano-second   
-      z0 = vp0 * t0; // mm 
-      if( firstPos > 0 ){ // for downstream setting
-         double minNoBlock = pos[0] - support ;
-         double minDis = pos[0];
-         if( minDis/2. < z0 &&  z0 < minNoBlock ) {
-            loop = 2;
-            dphi += TMath::TwoPi() * (loop - 1);
-         }else if( pos[0] < z0 && z0 < pos[nDet-1] + l ){
-            loop = 1;
-         }else{
-            loop = 0;
-            dphi = 0;
-            return -5;
+      loop = 0;
+      int startJ = (int) fmod(TMath::Ceil(mDet*phi/TMath::TwoPi() - 0.5) ,mDet) ;
+
+      do{      
+         
+         loop += 1;
+         int n = 2*loop -1;
+         
+         if( loop > 4 ) {
+            return -3;  // when loop > 4
+            break; // maximum 4 loops
          }
-      }else{ // for upstream setting
-         double minNoBlock = pos[nDet-1] + support ;
-         double minDis = pos[nDet-1];
-         if( minNoBlock < z0 &&  z0 < minDis/2. ) {
-            loop = 2;
-            dphi += TMath::TwoPi() * (loop - 1);
-         }else if( pos[0]-l < z0 && z0 < pos[nDet-1] ){
-            loop = 1;
-         }else{
-            loop = 0;
-            dphi = 0;
-            return -6;
-         }
-      }
+         
+         for( int j = startJ ; j < startJ + mDet; j++){
+         
+            double phiDet = TMath::TwoPi() / mDet * (j); // detector plane angle 
+            redoFlag = false;
+            isHitFromOutside = false;
+            
+            //========== calculate zHit
+            
+            zHit = rho / TMath::Tan(theta) * ( phiDet - phi + TMath::Power(-1, n) * TMath::ASin(a/rho + TMath::Sin(phi-phiDet)) + TMath::Pi() * n );
+            if( firstPos > 0 ){
+               if( zHit < pos[0] )  redoFlag = true;
+               if(zHit > pos[nDet-1] + l) return -4; // since the zHit is mono-increse, when zHit shoot over the detector
+            }else{
+               if( pos[nDet-1] < zHit )redoFlag = true;
+               if( zHit < pos[0] - l) return -4; 
+            }
+            
+            //======== this is the particel direction (normalized) dot normal vector of the detector plane
+            double dir = TMath::Cos( TMath::Tan(theta) * zHit/ rho + phi - phiDet);
+            if( dir < 0) isHitFromOutside = true;
+            // when dir == 0, no solution
+
+            // calculate the distance from middle of detector
+            double xHit = GetXPos(zHit);
+            double yHit = GetYPos(zHit);      
+            double sHit = TMath::Sqrt(xHit*xHit + yHit*yHit - a*a);
+         
+            //======= check Block
+            if( firstPos > 0 ){
+               if( pos[0] > zHit && zHit > pos[0] - support && sHit < a/2. ) return -5; // blocked by support
+            }else{
+               if( pos[nDet-1] < zHit && zHit < pos[nDet-1] + support && sHit < a/2.) return -5;
+            }
+            
+            //====== check hit
+            if( !redoFlag && isHitFromOutside && sHit < w/2.){      
+               isHit = true;
+               redoFlag = false;
+               hitMDetID = (j+mDet) % mDet;
+               break;     // if isHit, break, don't calculate for the rest of the detector
+            }else{
+               redoFlag = true;
+            }
       
-      //printf("====== theta: %f deg, z0: %f \n", theta * TMath::RadToDeg(), z0); 
-      //printf("         Loop : %d , dphi: %4.2fpi \n", loop, dphi/ TMath::Pi());
+         } 
+            
+      }while(redoFlag); 
       
-      //====================== final calculation for light particle
-      e = Pb.E() - Pb.M();
-      t = dphi * rho / vt0;
-      z = vp0 * t;
+      if( !isHit ) return -6; // zHit falls outside the detector, but could be in the gap of detector
       
+      //===== final calculation for light particle
+      z = zHit;
+      t = zHit / vp0;
+      dphi = t * vt0 / rho;
+      
+      //=========== check hit on detector gap
       for( int i = 0 ; i < nDet ; i++){
          if( firstPos > 0 ){
             if( pos[i] < z  && z < pos[i] + l ){
@@ -531,14 +569,10 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       if( detID >=0  ){
          hit = 1;      
       }else{
-         hit = -7;
+         hit = -7; // particle-b hit the gap
       }
-      //printf("%d, %f, %f, %f, %d\n", hit, e, z, t, detID);
-      
-      
    }else{
-      hit = 0;
-      //printf(" theta: %f deg \n", theta*TMath::RadToDeg());
+      hit = -8;
    }
 
    return hit;
