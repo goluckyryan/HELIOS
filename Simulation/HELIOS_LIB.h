@@ -12,7 +12,12 @@
 
 //=======================================================
 //#######################################################
-//Class for Transfer Reaction
+// Class for Transfer Reaction
+// reaction notation A(a,b)B
+// A = incident particle
+// a = target
+// b = light scattered particle
+// B = heavy scattered particle
 //======================================================= 
 class TransferReaction {
 public:
@@ -482,7 +487,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
       rhoBHit = GetRecoilR(posRecoil);
       if( rhoBHit > rhoRecoil ) return -2; // when particle-B miss the recoil detector
-      
 
       //================ Calulate z hit
       double zHit = TMath::QuietNaN();
@@ -493,8 +497,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       loop = 0;
       int startJ = (int) fmod(TMath::Ceil(mDet*phi/TMath::TwoPi() - 0.5) ,mDet) ;
 
-      do{      
-         
+      do{
          loop += 1;
          int n = 2*loop -1;
          
@@ -510,7 +513,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
             isHitFromOutside = false;
             
             //========== calculate zHit
-            
             zHit = rho / TMath::Tan(theta) * ( phiDet - phi + TMath::Power(-1, n) * TMath::ASin(a/rho + TMath::Sin(phi-phiDet)) + TMath::Pi() * n );
             if( firstPos > 0 ){
                if( zHit < pos[0] )  redoFlag = true;
@@ -546,9 +548,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
             }else{
                redoFlag = true;
             }
-      
-         } 
-            
+         }      
       }while(redoFlag); 
       
       if( !isHit ) return -6; // zHit falls outside the detector, but could be in the gap of detector
@@ -590,10 +590,11 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
 //#######################################################
 // Class for multi-scattering of the beam inside target
 // using SRIM to generate stopping power
+// input : TLorentzVector, data_files
+// output : scattered TLorentzVector
 //=======================================================
 class TargetScattering{
-//input : TLorentzVector, data_files
-//output : scattered TLorentzVector
+
 public:
    TargetScattering();
    ~TargetScattering();
@@ -676,7 +677,7 @@ TargetScattering::~TargetScattering(){
 
 void TargetScattering::LoadStoppingPower(string filename){
    
-   printf("##### loading Stopping power: %s.", filename.c_str());
+   printf("===== loading Stopping power: %s.", filename.c_str());
    
    ifstream file;
    file.open(filename.c_str());
@@ -692,17 +693,14 @@ void TargetScattering::LoadStoppingPower(string filename){
          file.getline(lineChar, 16635, '\n');
          line = lineChar;
 
-         //printf("%s \n", line.c_str());
          size_t found = line.find("Target Density");
          if( found != string::npos ){
             printf("    %s\n", line.c_str());
-            //density = atof(line.substr(18,12).c_str()); 
          }
-         
          
          found = line.find("Stopping Units =");
          if( found != string::npos){         
-            printf("      %s\n", line.c_str());
+            printf("    %s\n", line.c_str());
             if( line.find("MeV / mm") != string::npos ) { 
                unitID = 0;
             }else if( line.find("keV / micron") != string::npos ){
@@ -716,24 +714,19 @@ void TargetScattering::LoadStoppingPower(string filename){
          
          found = line.find("keV   ");
          if ( found != string::npos){
-            //printf("%s \n", line.c_str());
             energy.push_back( atof(line.substr(0,7).c_str()) * 0.001);
             double a = atof(line.substr(14,10).c_str());
             double b = atof(line.substr(25,10).c_str());
             stopping.push_back(a+b);
-            //printf("%f , %f \n", a, b);
          }
          
          found = line.find("MeV   ");
          if ( found != string::npos){
-            //printf("%s \n", line.c_str());
             energy.push_back( atof(line.substr(0,7).c_str()));
             double a = atof(line.substr(14,10).c_str());
             double b = atof(line.substr(25,10).c_str());
             stopping.push_back(a+b);
-            //printf("%f \n", energy.back());   
          }
-         
       }
       
    }else{
@@ -747,10 +740,10 @@ void TargetScattering::LoadStoppingPower(string filename){
 //#######################################################
 // Class for Particle Decay
 // B --> d + D
+//  input : TLorentzVector, emitting particle
+// output : scattered TLorentzVector
 //=======================================================
 class Decay{
-//input : TLorentzVector, emitting particle
-//output : scattered TLorentzVector
 public:
    Decay();
    ~Decay();
@@ -824,8 +817,7 @@ public:
       PD.Boost(boost);
       Pd.Boost(boost);
       
-      return 1;
-      
+      return 1;      
    }
    
 private:
@@ -836,9 +828,7 @@ private:
    bool isMotherSet;
    double Q;
    double k; // momentum in B-frame
-   
-   double dTheta;
-   
+   double dTheta; // change of angle
 };
 
 Decay::Decay(){
@@ -856,7 +846,6 @@ Decay::Decay(){
    Q = TMath::QuietNaN();
    dTheta = TMath::QuietNaN();
    isMotherSet = false;
-
 }
 
 Decay::~Decay(){

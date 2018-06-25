@@ -156,7 +156,7 @@ void sim(){
    double thetab, phib, Tb;
    double thetaB, TB;
    
-   int hit;
+   int hit; // the output of Helios.CalHit
    double e, z, x, t, TbLoss;
    int loop, detID;
    double dphi, rho;
@@ -165,8 +165,8 @@ void sim(){
    double ExA;
    int ExAID;
 
-   double rhoHit, rhoBHit;
-   double decayTheta;
+   double rhoHit, rhoBHit; // rhoHit = radius of particle-b hit on z-pos of recoil detector
+   double decayTheta; // the change of thetaB due to decay
    
    double xHit, yHit;
    
@@ -320,7 +320,6 @@ void sim(){
          if( hit == 1) {
             count ++;
          }
-         
          
          if( isReDo ){
             if( hit == 1) {
