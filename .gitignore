@@ -4,6 +4,8 @@
 *.so
 *.pcm
 
+output.txt
+
 .svn/
 RUNs/
 H060_ana/

@@ -100,6 +100,11 @@ public:
    void CalReactioConstant();
    TLorentzVector * Event(double thetaCM, double phiCM);
    
+   double GetMomentumbCM(){return p;}
+   double GetReactionBeta(){return beta;}
+   double GetReactionGamma(){return gamma;}
+   double GetCMTotalEnergy(){return Etot;}
+   
 private:
    string nameA, namea, nameb, nameB;
    double thetaIN, phiIN;
@@ -245,7 +250,7 @@ public:
    ~HELIOS();
    
    int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
-   void SetDetectorGeometry(string filename);
+   bool SetDetectorGeometry(string filename);
    
    int GetNumberOfDetectorsInSamePos(){return mDet;}
 
@@ -360,7 +365,7 @@ HELIOS::HELIOS(){
 HELIOS::~HELIOS(){
 }
 
-void HELIOS::SetDetectorGeometry(string filename){
+bool HELIOS::SetDetectorGeometry(string filename){
    
    pos.clear();
    
@@ -399,9 +404,9 @@ void HELIOS::SetDetectorGeometry(string filename){
          pos[id] = firstPos + pos[id];
       }
       
-      printf("========== B-field: %6.2f T \n", Bfield);
-      printf("========== Recoil detector: %6.2f mm, radius: %6.2f mm \n", posRecoil, rhoRecoil);
-      printf("========== gap of multi-loop: %6.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
+      printf("================ B-field: %8.2f T \n", Bfield);
+      printf("==== Recoil detector pos: %8.2f mm, radius: %6.2f mm \n", posRecoil, rhoRecoil);
+      printf("====== gap of multi-loop: %8.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
       for(int i = 0; i < nDet ; i++){
          if( firstPos > 0 ){
             printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + l);
@@ -416,6 +421,8 @@ void HELIOS::SetDetectorGeometry(string filename){
        isReady = false;
    }
    isReady = true;
+   
+   return isReady;  
 }
 
 int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
@@ -547,6 +554,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       if( !isHit ) return -6; // zHit falls outside the detector, but could be in the gap of detector
       
       //===== final calculation for light particle
+      e = Pb.E() - Pb.M();
       z = zHit;
       t = zHit / vp0;
       dphi = t * vt0 / rho;
@@ -798,7 +806,7 @@ public:
       k = TMath::Sqrt((MB+MD+md)*(MB+MD-md)*(MB-MD+md)*(MB-MD-md))/2./MB;
       
       //in mother's frame, assume isotropic decay
-      double theta = TMath::Pi() * gRandom->Rndm();
+      double theta = TMath::ACos(2 * gRandom->Rndm() - 1) ; 
       double phi = TMath::TwoPi() * gRandom->Rndm();
       PD.SetE(TMath::Sqrt(mD * mD + k * k ));
       PD.SetPz(k);

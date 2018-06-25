@@ -8,9 +8,13 @@
 #include <vector>
 #include <fstream>
 
+//----------- usage 
+// $root sim.C+ | tee output.txt
+// this will same the massage to output.txt
+
 void sim(){
 
-   //================================================= Setting
+   //================================================= User Setting
    //---- reaction
    int AA = 208, zA = 82;
    int Aa = 2,  za = 1;
@@ -22,27 +26,27 @@ void sim(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000;
+   int numEvent = 100;
    
-   //HELIOS detector geometry
+   //---- HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo_upstream.txt";
    double eSigma = 0.0001 ; // detector energy sigma MeV
-   double xSigma = 0.1 ; // detector position sigma mm
+   double zSigma = 0.1 ; // detector position sigma mm
    
    //---- excitation of Beam 
    double ExAList[1];
    ExAList[0] = 0.000; // MeV
    //ExAList[1] = 1.567;
     
-   
    //---- excitation of recoil
    string excitationFile = "excitation_energies.txt";
    
    //---- save root file name
-   TString saveFileName = "test_3.root";
+   TString saveFileName = "test.root";
    
+   //---- Auxiliary setting
    bool isTargetScattering = true;
-   bool isDecay = false;
+   bool isDecay = true;
    bool isReDo = false; // redo calculation until detected. 
    
    //---- target
@@ -53,26 +57,58 @@ void sim(){
    string stoppingPowerForB = "209Pb_in_CD2.txt";
    
    //=============================================================
+   //=============================================================
+   //=============================================================
    //===== Set Reaction
    TransferReaction reaction;
-  
    int AB = AA+Aa-Ab, zB = zA+za-zb;
-   
    reaction.SetA(AA,zA);
    reaction.Seta(Aa,za);
    reaction.Setb(Ab,zb);
    reaction.SetB(AB,zB);
-   
    reaction.SetIncidentEnergyAngle(KEAmean, 0, 0);
    reaction.CalReactioConstant();
+   
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
-   printf("=========== KE: %5.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
-   printf("=========== theta: %5.2f +- %5.2f MeV/u \n", thetaMean, thetaSigma);
-   printf("=========== Q-value : %6.3f MeV, Max Ex: %6.3f MeV \n", reaction.GetQValue(), reaction.GetMaxExB());
+   printf("=========== KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
+   printf("======== theta: %7.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
+   printf("===== Q-value : %7.4f MeV \n", reaction.GetQValue() );
+   printf("======= Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
    printf("===================================================\n");
    
-   //-----loading excitation energy
+   //======== Set HELIOS
+   printf("############################################## HELIOS configuration\n");   
+   HELIOS helios;
+   bool sethelios = helios.SetDetectorGeometry(heliosDetGeoFile);
+   if( !sethelios) return;
+   int mDet = helios.GetNumberOfDetectorsInSamePos();
+   printf("========== energy resol.: %f MeV\n", eSigma);
+   printf("=========== pos-Z resol.: %f mm \n", zSigma);
+      
+   //==== Target scattering, only energy loss
+   if(isTargetScattering) printf("############################################## Target Scattering\n");
+   TargetScattering msA;
+   TargetScattering msB;
+   TargetScattering msb;
+
+   if(isTargetScattering) printf("======== Target : (thickness : %6.2f um) x (density : %6.2f g/cm3) = %6.2f ug/cm2\n", 
+                        targetThickness * 1e+4, 
+                        density, 
+                        targetThickness * density * 1e+6);  
+            
+   if( isTargetScattering ){
+      msA.LoadStoppingPower(stoppingPowerForA);
+      msb.LoadStoppingPower(stoppingPowerForb);
+      msB.LoadStoppingPower(stoppingPowerForB);
+   }
+   
+   //======= Decay of particle-B
+   Decay decay;
+   decay.SetMotherDaugther(AB, zB, AB-1,zB); //neutron decay
+   
+   //======= loading excitation energy
+   printf("############################################## excitation energies\n");
    vector<double> ExKnown;
    printf("----- loading excitation energy levels.");
    ifstream file;
@@ -95,17 +131,22 @@ void sim(){
       printf("========== %s\n", isotopeName.c_str());
       int n = ExKnown.size();
       for(int i = 0; i < n ; i++){
-         printf("%d, %6.2f MeV \n", i, ExKnown[i]);
+         if( isDecay ) {
+            TLorentzVector temp(0,0,0,0);
+            int decayID = decay.CalDecay(temp, ExKnown[i], 0);
+            if( decayID == 1) {
+               printf("%d, %6.2f MeV --> Decay. \n", i, ExKnown[i]);
+            }else{
+               printf("%d, %6.2f MeV\n", i, ExKnown[i]);
+            }
+         }else{
+            printf("%d, %6.2f MeV \n", i, ExKnown[i]);
+         }
       }
-       printf("===================\n");
    }else{
        printf("... fail\n");
+       return;
    }
-   
-   //======== Set HELIOS   
-   HELIOS helios;
-   helios.SetDetectorGeometry(heliosDetGeoFile);
-   int mDet = helios.GetNumberOfDetectorsInSamePos();
    
    //====================== build tree
    TFile * saveFile = new TFile(saveFileName, "recreate");
@@ -128,7 +169,6 @@ void sim(){
    double decayTheta;
    
    double xHit, yHit;
-   //double zzb[100], xb[100], yb[100];
    
    tree->Branch("hit", &hit, "hit/I");
    tree->Branch("thetab", &thetab, "thetab/D");
@@ -159,33 +199,8 @@ void sim(){
    tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
    tree->Branch("decayTheta", &decayTheta, "decayTheta/D");
    
-   
    tree->Branch("xHit", &xHit, "xHit/D");
    tree->Branch("yHit", &yHit, "yHit/D");
-   //tree->Branch("xb", xb, "xb[100]/D");
-   //tree->Branch("yb", yb, "yb[100]/D");
-   //tree->Branch("zb", zzb, "zb[100]/D");
-   
-   //==== Target scattering, only energy loss
-   TargetScattering msA;
-   TargetScattering msB;
-   TargetScattering msb;
-
-   printf("======== Target : (thickness : %6.2f um) x (density : %6.2f g/cm3) = %6.2f ug/cm2\n", 
-                        targetThickness * 1e+4, 
-                        density, 
-                        targetThickness * density * 1e+6);  
-            
-   if( isTargetScattering ){
-      msA.LoadStoppingPower(stoppingPowerForA);
-      msb.LoadStoppingPower(stoppingPowerForb);
-      msB.LoadStoppingPower(stoppingPowerForB);
-   }
-   
-   //======= Decay of particle-B
-   //TODO show which states will decay
-   Decay decay;
-   decay.SetMotherDaugther(AB, zB, AB-1,zB);
    
    //========timer
    TBenchmark clock;
@@ -193,7 +208,7 @@ void sim(){
    clock.Reset();
    clock.Start("timer");
    shown = false;
-   printf("================= generating %d events \n", numEvent);
+   printf("############################################## generating %d events \n", numEvent);
    
    //====================================================== calculate 
    int count = 0;
@@ -249,8 +264,8 @@ void sim(){
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];
          
+         //==== Calculate energy loss of scattered and recoil in target
          if( isTargetScattering ){
-            //==== Calculate energy loss of scattered and recoil in target
             if( Pb.Theta() < TMath::PiOver2() ){
                msb.SetTarget(density, targetThickness - depth);
             }else{
@@ -264,11 +279,10 @@ void sim(){
             TbLoss = 0;
          }
          
-         
+         //======= Decay of particle-B
          if( isDecay){
-            //======= Decay of particle-B
-            int isDecay = decay.CalDecay(PB, Ex, 0); // decay to ground state
-            if( isDecay == 1 ){
+            int decayID = decay.CalDecay(PB, Ex, 0); // decay to ground state
+            if( decayID == 1 ){
                PB = decay.GetDaugther_D();
                decayTheta = decay.GetAngleChange();
             }else{
@@ -276,7 +290,8 @@ void sim(){
             }
          }
          
-         //------------- 
+         //################################### tree branches
+         //===== reaction
          thetab = Pb.Theta() * TMath::RadToDeg();
          thetaB = PB.Theta() * TMath::RadToDeg();
       
@@ -290,7 +305,7 @@ void sim(){
          
          e = helios.GetEnergy() + gRandom->Gaus(0, eSigma);
          z = helios.GetZ() ; 
-         x = helios.GetX() + gRandom->Gaus(0, xSigma);
+         x = helios.GetX() + gRandom->Gaus(0, zSigma);
          t = helios.GetTime();
          loop = helios.GetLoop();
          detID = helios.GetDetID();
@@ -300,15 +315,7 @@ void sim(){
          rhoBHit = helios.GetRecoilRhoHit();
          xHit = helios.GetXPos(z);
          yHit = helios.GetYPos(z);
-         z += gRandom->Gaus(0, xSigma);
-         /*
-         for(int i = 0; i < 100 ; i++){
-            double theta = Pb.Theta();
-            zzb[i] = z/100.*( i + gRandom->Rndm() - 0.5 );
-            xb[i] = rho * (1- TMath::Cos( TMath::Tan(theta) * zzb[i]/rho) );
-            yb[i] = rho * TMath::Sin( TMath::Tan(theta) * zzb[i]/rho);
-         }
-         */
+         z += gRandom->Gaus(0, zSigma);
          
          if( hit == 1) {
             count ++;
@@ -349,6 +356,6 @@ void sim(){
    saveFile->Write();
    saveFile->Close();
    
-   printf("=============== done. saved as %s. count : %d\n", saveFileName.Data(), count);
+   printf("=============== done. saved as %s. count(hit==1) : %d\n", saveFileName.Data(), count);
 
 }
