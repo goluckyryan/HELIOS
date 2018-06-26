@@ -31,7 +31,7 @@ void MultiFit(){
 
 /**///======================================================== initial input
    
-   const char* rootfile="test_3.root"; const char* treeName="tree";
+   const char* rootfile="test.root"; const char* treeName="tree";
    
    double xrange[2] = {-450, -100};
    double exrange[3] = {100, -1, 4}; // number of bin, eMin, eMax

@@ -88,6 +88,11 @@ public:
    int GetAtomicNumber_b(){return Ab;}
    int GetAtomicNumber_B(){return AB;}
    
+   double GetMass_A(){return mA;}
+   double GetMass_a(){return ma;}
+   double GetMass_b(){return mb;}
+   double GetMass_B(){return mB;}
+   
    int GetCharge_A(){return zA;}
    int GetCharge_a(){return za;}
    int GetCharge_b(){return zb;}
@@ -297,8 +302,10 @@ public:
       return rhoB * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(thetaB) * ZPos / rhoB));
    }
    
-   double GetZ0(){return z0;}
+   double GetZ0(){return z0;}  // infinite detector
    double GetTime0(){return t0;}
+   
+   double GetBField() {return Bfield;}
 private:
    double theta, phi; // polar angle of particle 
    double e, z, x, rho, dphi, t;
@@ -569,7 +576,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
          }else{
             if( pos[i] - l < z  && z < pos[i] ){
                detID = i;
-               x = ( z - (pos[i] + l/2 ))/ l*2 ;// range from -1 , 1 
+               x = ( z - (pos[i] - l/2 ))/ l*2 ;// range from -1 , 1 
             }
          }
       }

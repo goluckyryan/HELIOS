@@ -12,7 +12,6 @@
 #include <TGraph.h>
 #include <fstream>
 
-
 int nPeaks = 16;
 
 Double_t fpeaks(Double_t *x, Double_t *par) {
@@ -36,7 +35,6 @@ void Script(){
    bool isLoadDetGeo = true;
    
    TString gate;
-
 
    
 /**///========================================================  load tree

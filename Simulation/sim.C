@@ -26,7 +26,7 @@ void sim(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100;
+   int numEvent = 1000000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo_upstream.txt";
@@ -85,7 +85,14 @@ void sim(){
    int mDet = helios.GetNumberOfDetectorsInSamePos();
    printf("========== energy resol.: %f MeV\n", eSigma);
    printf("=========== pos-Z resol.: %f mm \n", zSigma);
-      
+   double slope = 299.792458 * zb * helios.GetBField() / TMath::TwoPi() * reaction.GetReactionBeta() / 1000.;
+   printf("====================== e-z slope : %f MeV/mm\n", slope);
+   double mb = reaction.GetMass_b();
+   double gamma = reaction.GetReactionGamma();
+   double pCM = reaction.GetMomentumbCM();
+   double intercept = TMath::Sqrt(mb*mb + pCM*pCM)/gamma - mb;
+   printf("=== e-z intercept (ground state) : %f MeV\n", intercept); 
+   
    //==== Target scattering, only energy loss
    if(isTargetScattering) printf("############################################## Target Scattering\n");
    TargetScattering msA;
