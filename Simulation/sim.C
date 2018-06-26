@@ -3,6 +3,7 @@
 #include "TLorentzVector.h"
 #include "TMath.h"
 #include "TFile.h"
+#include "TF1.h"
 #include "TTree.h"
 #include "TRandom.h"
 #include <vector>
@@ -26,7 +27,7 @@ void sim(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 1000000;
+   int numEvent = 100000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo_upstream.txt";
@@ -85,7 +86,8 @@ void sim(){
    int mDet = helios.GetNumberOfDetectorsInSamePos();
    printf("========== energy resol.: %f MeV\n", eSigma);
    printf("=========== pos-Z resol.: %f mm \n", zSigma);
-   double slope = 299.792458 * zb * helios.GetBField() / TMath::TwoPi() * reaction.GetReactionBeta() / 1000.;
+   double beta = reaction.GetReactionBeta() ;
+   double slope = 299.792458 * zb * helios.GetBField() / TMath::TwoPi() * beta / 1000.;
    printf("====================== e-z slope : %f MeV/mm\n", slope);
    double mb = reaction.GetMass_b();
    double gamma = reaction.GetReactionGamma();
@@ -117,6 +119,7 @@ void sim(){
    //======= loading excitation energy
    printf("############################################## excitation energies\n");
    vector<double> ExKnown;
+   vector<double> y0; // intercept of e-z plot
    printf("----- loading excitation energy levels.");
    ifstream file;
    file.open(excitationFile.c_str());
@@ -138,16 +141,20 @@ void sim(){
       printf("========== %s\n", isotopeName.c_str());
       int n = ExKnown.size();
       for(int i = 0; i < n ; i++){
+         reaction.SetExB(ExKnown[i]);
+         reaction.CalReactioConstant();
+         double kCM = reaction.GetMomentumbCM();
+         y0.push_back(TMath::Sqrt(mb*mb + kCM*kCM)/gamma - mb);
          if( isDecay ) {
             TLorentzVector temp(0,0,0,0);
             int decayID = decay.CalDecay(temp, ExKnown[i], 0);
             if( decayID == 1) {
-               printf("%d, %6.2f MeV --> Decay. \n", i, ExKnown[i]);
+               printf("%d, Ex: %6.2f MeV, y0: %4.2f MeV --> Decay. \n", i, ExKnown[i], y0[i]);
             }else{
-               printf("%d, %6.2f MeV\n", i, ExKnown[i]);
+               printf("%d, Ex: %6.2f MeV, y0: %4.2f MeV\n", i, ExKnown[i], y0[i]);
             }
          }else{
-            printf("%d, %6.2f MeV \n", i, ExKnown[i]);
+            printf("%d, Ex: %6.2f MeV, y0: %4.2f MeV \n", i, ExKnown[i], y0[i]);
          }
       }
    }else{
@@ -208,6 +215,26 @@ void sim(){
    
    tree->Branch("xHit", &xHit, "xHit/D");
    tree->Branch("yHit", &yHit, "yHit/D");
+   
+   //======= function for e-z plot for ideal case
+   TF1* f0 = new TF1("f0", "TMath::Sqrt([0] + [1] * x*x) - [2]", -1000, 1000);
+   f0->SetParameter(0, mb*mb);
+   f0->SetParameter(1, TMath::Power(slope/beta,2));
+   f0->SetParameter(2, mb);
+   f0->SetNpx(1000);
+   f0->Write();
+
+   int n = ExKnown.size();
+   TF1** f1 = new TF1*[n];
+   TString name;
+   for( int i = 0; i< n ; i++){
+      name.Form("f1%d", i);     
+      f1[i] = new TF1(name, "[0] + [1] * x", -1000, 1000);      
+      f1[i]->SetParameter(0, y0[i]);
+      f1[i]->SetParameter(1, slope);
+      f1[i]->SetNpx(1000);
+      f1[i]->Write();
+   }
    
    //========timer
    TBenchmark clock;
@@ -323,6 +350,9 @@ void sim(){
          xHit = helios.GetXPos(z);
          yHit = helios.GetYPos(z);
          z += gRandom->Gaus(0, zSigma);
+         
+         //change thetaCM into deg
+         thetaCM = thetaCM * TMath::RadToDeg();
          
          if( hit == 1) {
             count ++;
