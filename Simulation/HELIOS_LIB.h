@@ -306,6 +306,7 @@ public:
    double GetTime0(){return t0;}
    
    double GetBField() {return Bfield;}
+   double GetDetectorA() {return a;}
 private:
    double theta, phi; // polar angle of particle 
    double e, z, x, rho, dphi, t;
@@ -858,7 +859,7 @@ Decay::Decay(){
 Decay::~Decay(){
    
 }
-
+/*
 //=======================================================
 //#######################################################
 // Class for Knockout Reaction
@@ -1066,3 +1067,5 @@ Knockout::CalReactionConstant(){
    
       
 }
+
+*/

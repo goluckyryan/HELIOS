@@ -18,11 +18,11 @@ void sim(){
    //================================================= User Setting
    //---- reaction
    int AA = 208, zA = 82;
-   int Aa = 2,  za = 1;
-   int Ab = 1,  zb = 1;
+   int Aa = 1,  za = 1;
+   int A2 = 1,  z2 = 1;
    
    //---- beam
-   double KEAmean = 8; // MeV/u 
+   double KEAmean = 100; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
@@ -30,24 +30,25 @@ void sim(){
    int numEvent = 100000;
    
    //---- HELIOS detector geometry
-   string heliosDetGeoFile = "detectorGeo_upstream.txt";
-   double eSigma = 0.0001 ; // detector energy sigma MeV
-   double zSigma = 0.1 ; // detector position sigma mm
+   //string heliosDetGeoFile = "detectorGeo_upstream.txt";
+   //double eSigma = 0.0001 ; // detector energy sigma MeV
+   //double zSigma = 0.1 ; // detector position sigma mm
    
    //---- excitation of Beam 
    double ExAList[1];
    ExAList[0] = 0.000; // MeV
    //ExAList[1] = 1.567;
     
-   //---- excitation of recoil
-   string excitationFile = "excitation_energies.txt";
+   //---- Separation energy
+   
+   //string excitationFile = "excitation_energies.txt";
    
    //---- save root file name
    TString saveFileName = "test.root";
    
    //---- Auxiliary setting
-   bool isTargetScattering = true;
-   bool isDecay = true;
+   bool isTargetScattering = false;
+   bool isDecay = false;
    bool isReDo = false; // redo calculation until detected. 
    
    //---- target
@@ -77,7 +78,8 @@ void sim(){
    printf("===== Q-value : %7.4f MeV \n", reaction.GetQValue() );
    printf("======= Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
    printf("===================================================\n");
-   
+
+/*   
    //======== Set HELIOS
    printf("############################################## HELIOS configuration\n");   
    HELIOS helios;
@@ -87,12 +89,13 @@ void sim(){
    printf("========== energy resol.: %f MeV\n", eSigma);
    printf("=========== pos-Z resol.: %f mm \n", zSigma);
    double beta = reaction.GetReactionBeta() ;
-   double slope = 299.792458 * zb * helios.GetBField() / TMath::TwoPi() * beta / 1000.;
-   printf("====================== e-z slope : %f MeV/mm\n", slope);
-   double mb = reaction.GetMass_b();
    double gamma = reaction.GetReactionGamma();
+   double mb = reaction.GetMass_b();
    double pCM = reaction.GetMomentumbCM();
-   double intercept = TMath::Sqrt(mb*mb + pCM*pCM)/gamma - mb;
+   double q = TMath::Sqrt(mb*mb + pCM*pCM);
+   double slope = 299.792458 * zb * helios.GetBField() / TMath::TwoPi() * beta / 1000.; // MeV/mm
+   printf("====================== e-z slope : %f MeV/mm\n", slope);   
+   double intercept = q/gamma - mb; // MeV
    printf("=== e-z intercept (ground state) : %f MeV\n", intercept); 
    
    //==== Target scattering, only energy loss
@@ -120,6 +123,7 @@ void sim(){
    printf("############################################## excitation energies\n");
    vector<double> ExKnown;
    vector<double> y0; // intercept of e-z plot
+   vector<double> kCM; // momentum of b in CM frame
    printf("----- loading excitation energy levels.");
    ifstream file;
    file.open(excitationFile.c_str());
@@ -143,8 +147,8 @@ void sim(){
       for(int i = 0; i < n ; i++){
          reaction.SetExB(ExKnown[i]);
          reaction.CalReactioConstant();
-         double kCM = reaction.GetMomentumbCM();
-         y0.push_back(TMath::Sqrt(mb*mb + kCM*kCM)/gamma - mb);
+         kCM.push_back(reaction.GetMomentumbCM());
+         y0.push_back(TMath::Sqrt(mb*mb + kCM[i]*kCM[i])/gamma - mb);
          if( isDecay ) {
             TLorentzVector temp(0,0,0,0);
             int decayID = decay.CalDecay(temp, ExKnown[i], 0);
@@ -161,7 +165,8 @@ void sim(){
        printf("... fail\n");
        return;
    }
-   
+*////============================
+
    //====================== build tree
    TFile * saveFile = new TFile(saveFileName, "recreate");
    TTree * tree = new TTree("tree", "tree");
@@ -217,24 +222,70 @@ void sim(){
    tree->Branch("yHit", &yHit, "yHit/D");
    
    //======= function for e-z plot for ideal case
-   TF1* f0 = new TF1("f0", "TMath::Sqrt([0] + [1] * x*x) - [2]", -1000, 1000);
-   f0->SetParameter(0, mb*mb);
-   f0->SetParameter(1, TMath::Power(slope/beta,2));
-   f0->SetParameter(2, mb);
-   f0->SetNpx(1000);
-   f0->Write();
+   printf("##################  generate functions and save to *root");
+   
+   TF1* g0 = new TF1("g0", "TMath::Sqrt([0] + [1] * x*x) - [2]", -1000, 1000);
+   g0->SetParameter(0, mb*mb);
+   g0->SetParameter(1, TMath::Power(slope/beta,2));
+   g0->SetParameter(2, mb);
+   g0->SetNpx(1000);
+   g0->Write();
+   printf("/");
+   
+   TF1 ** gx = new TF1*[20];
+   TString name;
+   for( int i = 1; i <= 20; i++){
+      name.Form("g%d", i);     
+      gx[i] = new TF1(name, "([0]*TMath::Sqrt([1]+[2]*x*x)+[5]*x)/([3]) - [4]", -1000, 1000);      
+      double thetacm = i * TMath::DegToRad();
+      double gS2 = TMath::Power(TMath::Sin(thetacm)*gamma,2);
+      gx[i]->SetParameter(0, TMath::Cos(thetacm));
+      gx[i]->SetParameter(1, mb*mb*(1-gS2));
+      gx[i]->SetParameter(2, TMath::Power(slope/beta,2));
+      gx[i]->SetParameter(3, 1-gS2);
+      gx[i]->SetParameter(4, mb);
+      gx[i]->SetParameter(5, -gS2*slope);
+      gx[i]->SetNpx(1000);
+      gx[i]->Write();
+      printf("/");
+   }
+   
 
    int n = ExKnown.size();
-   TF1** f1 = new TF1*[n];
-   TString name;
+   TF1** f = new TF1*[n];
    for( int i = 0; i< n ; i++){
-      name.Form("f1%d", i);     
-      f1[i] = new TF1(name, "[0] + [1] * x", -1000, 1000);      
-      f1[i]->SetParameter(0, y0[i]);
-      f1[i]->SetParameter(1, slope);
-      f1[i]->SetNpx(1000);
-      f1[i]->Write();
+      name.Form("f%d", i);     
+      f[i] = new TF1(name, "[0] + [1] * x", -1000, 1000);      
+      f[i]->SetParameter(0, y0[i]);
+      f[i]->SetParameter(1, slope);
+      f[i]->SetNpx(1000);
+      f[i]->Write();
+      printf(".");
    }
+   
+   //--- cal modified f
+   TGraph ** fx = new TGraph*[n];
+   for( int j = 0 ; j < n; j++){
+      double px[100];
+      double py[100];
+      double a = helios.GetDetectorA();
+      double q = TMath::Sqrt(mb*mb + kCM[j] * kCM[j] );
+      for(int i = 0; i < 100; i++){
+      
+         double thetacm = TMath::Pi()/TMath::Log(100) * (TMath::Log(100) - TMath::Log(100-i)) ;//using log scale, for more point in small angle.
+         double temp = TMath::TwoPi() * slope / beta / kCM[j] * a / TMath::Sin(thetacm); 
+         px[i] = beta /slope * (gamma * beta * q - gamma * kCM[j] * TMath::Cos(thetacm)) * (1 - TMath::ASin(temp)/TMath::TwoPi()) ;
+         py[i] = gamma * q - mb - gamma * beta * kCM[j] * TMath::Cos(thetacm);   
+      }
+      
+      fx[j] = new TGraph(100, px, py);
+      name.Form("fx%d", j);
+      fx[j]->SetName(name);
+      fx[j]->SetLineColor(4);
+      fx[j]->Write();
+      printf(",");
+   }
+   printf("done!\n");
    
    //========timer
    TBenchmark clock;
