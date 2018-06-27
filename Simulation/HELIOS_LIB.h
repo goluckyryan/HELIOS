@@ -858,3 +858,211 @@ Decay::Decay(){
 Decay::~Decay(){
    
 }
+
+//=======================================================
+//#######################################################
+// Class for Knockout Reaction
+// A(a,12)B, A = B + b, a->1, b->2
+// incident particle is A
+// the calculation: 1) go to A's rest frame
+//                  2) calculate the b = A - B
+//                  3) go to CM frame
+//=======================================================
+class Knockout{
+public:
+   Knockout();
+   ~Knockout();
+   
+   void SetA(int A, int Z){
+      Isotope temp(A,Z);
+      mA = temp.Mass;
+      AA = A;
+      ZA = Z;
+      nameA = temp.Name;
+   }
+   
+   void Seta(int A, int Z){
+      Isotope temp(A,Z);
+      ma = temp.Mass;
+      Aa = A;
+      Za = Z;
+      m1 = ma;
+      A1 = A;
+      Z1 = Z;
+      namea = temp.Name;
+      name1 = temp.Name;
+      
+      if( namea == "1H" ) {
+         namaa = "p";
+         name1 = "p";
+      }
+   }
+
+   void Set2(int A, int Z){
+      Isotope temp(A,Z);
+      m2 = temp.Mass;
+      A2 = A;
+      Z2 = Z;
+      name2 = temp.Name;
+      
+      if( name2 == "1H" ) {
+         nama2 = "p";
+      }
+   }
+   
+   void SetSeparation&k(double S, double k, double thetak, double phik){
+      this->S = S;
+      AB = AA + Aa - A1 - A2;
+      ZB = ZA + Za - Z1 - Z2;
+      Isotope temp(A,Z);
+      mB0 = temp.Mass;
+      
+      this->k = k;
+      this->thetak = thetak;
+      this->phik = phik;
+      
+      mB = mA - m2 + S;
+   }   
+   
+   TString GetReactionName(){
+      TString rName;
+      rName.Form("%s(%s,%s%s)%s", nameA.c_str(), namea.c_str(), name1.c_str(), name2.c_str(), nameB.c_str()); 
+      return rName;
+   }
+   
+   void SetIncidentEnergyAngle(double KEA, double theta, double phi){
+      this->KEA = KEA;
+      this->T = KEA * AA;
+      this->thetaIN = theta;
+      this->phiIN = phi;
+   }
+   
+   void CalReactionConstant();
+
+private:   
+   int AA, Aa, A1, A2, AB;
+   int ZA, Za, Z1, Z2, ZB;
+   double mA, ma, m1, m2, mB, mB0, mb;
+   string nameA, namea, name1, name2, nameB;
+   
+   double S; // separation energy
+   double k; // momentum of B
+   double thetak, phik;// direction of B
+   
+   TLorentzVector PA, Pa, P1, P2, PB, Pb; // lab
+   
+   double KEA, thetaIN, phiIN;
+   double T;
+   
+   double kA, beta, gamma, Etot, p; // reaction constant
+   
+}
+
+Knockout::Knockout(){
+   TLorentzVector temp(0,0,0,0);
+   
+   PA = temp;
+   Pa = temp;
+   P1 = temp;
+   P2 = temp;
+   PB = temp;
+   Pb = temp;
+   
+   SetA(12,6);
+   Seta(1,1);
+   Set2(1,1);
+   
+   SetSeparation&k(0, 0, 0, 0);
+   SetIncidentEnergyAngle(10, 0, 0);
+   
+}
+
+Knockout::~Knockout(){
+
+}
+
+Knockout::CalReactionConstant(){
+   //===== construct 4-momentum
+   kA = TMath::Sqrt(TMath::Power(mA + ExA + T, 2) - (mA + ExA) * (mA + ExA)); 
+   PA.SETXYZM(0, 0, kA, mA);
+   PA.RotateY(thetaIN);
+   PA.RotateZ(phiIN);
+   
+   //===== change to A's rest frame
+   TVector3 bA = PA.BoostVector();
+   PA.Boost(-bA);
+   
+   //===== constructe bounded nucleus b
+   PB.SetXYZM(0, 0, k, mB);
+   PB.RotateY(thetak);
+   PB.RotateZ(phik);
+   
+   Pb = PA - PB;
+   mb = Pb.M();
+   
+   //===== change to Lab frame
+   Pb.Boost(bA);
+   PA.Boost(bA);
+   PB.Boost(bA);
+   
+   double thetab = Pb.Theta();
+   double phib = Pb.Phi();
+   double kb = Pb.P();
+
+   Pa.SetXYZM(0, 0, 0, ma);
+   
+   //############################## following is same as Transfer reaction
+   
+   // reaction constant
+   beta = kb / (mb + ma + T);
+   gamma = 1 / TMath::Sqrt(1- beta * beta);   
+   Etot = TMath::Sqrt(TMath::Power(mA + ExA + ma + T,2) - k * k);
+   p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB + ExB,2)) * (Etot*Etot - TMath::Power(mb - mB - ExB,2)) ) / 2 / Etot;
+   
+   
+   
+   //===== construct Pcm
+   TLorentzVector Pc = Pb + Pa;
+   TVector3 bc = Pc.BoostVector();
+
+   TLorentzVector Pac = Pa;
+   Pac.Boost(-bc);
+   TVector3 va = Pac.Vect();
+   
+   TLorentzVector Pbc = Pb;
+   Pbc.Boost(-bc);
+   TVector3 vb = Pbc.Vect();
+   
+   
+   
+   
+   //--- from P1
+   TLorentzVector P1c;
+   TVector3 v1 = va;
+   v1.SetMag(p);
+
+   TVector3 ub = vb.Orthogonal();
+   vb.Rotate(thetaCM, ub);
+   vb.Rotate(phiCM + TMath::PiOver2(), va); // somehow, the calculation turn the vector 90 degree.
+   
+   Pbc.SetVectM(vb, mb);
+   
+   //--- from P2
+   TLorentzVector PBc;
+   TVector3 vB = vA;
+   vB.SetMag(p);
+
+   TVector3 uB = vB.Orthogonal();
+   vB.Rotate(-thetaCM, uB);
+   vB.Rotate(-phiCM - TMath::PiOver2(), vA);
+   
+   PBc.SetVectM(vB, mB + ExB);
+   
+   //---- to Lab Frame
+   TLorentzVector Pb = Pbc;
+   Pb.Boost(b);
+   TLorentzVector PB = PBc;
+   PB.Boost(b);
+   
+      
+}
