@@ -99,7 +99,7 @@ public:
    int GetCharge_B(){return zB;}
    
    double GetCMTotalKE() {return Etot - mA - ma;}
-   double GetQValue() {return mA + ma - mb - mB;}
+   double GetQValue() {return mA + ExA + ma - mb - mB - ExB;}
    double GetMaxExB() {return Etot - mb - mB;}
    
    TLorentzVector GetPA(){return PA;}
@@ -107,7 +107,7 @@ public:
    TLorentzVector GetPb(){return Pb;}
    TLorentzVector GetPB(){return PB;}
    
-   void CalReactioConstant();
+   void CalReactionConstant();
    TLorentzVector * Event(double thetaCM, double phiCM);
    
    double GetMomentumbCM(){return p;}
@@ -127,7 +127,7 @@ private:
    bool isReady;
    bool isBSet;
    
-   double k; // Lab frame momentum mA 
+   double k; // CM Boost momentum
    double beta, gamma;
    double Etot;
    double p; // CM frame momentum of b, B
@@ -148,7 +148,7 @@ TransferReaction::TransferReaction(){
    ExA = 0;
    ExB = 0;
    
-   CalReactioConstant();
+   CalReactionConstant();
    
    TLorentzVector temp (0,0,0,0);
    PA = temp;
@@ -162,7 +162,7 @@ TransferReaction::~TransferReaction(){
 
 }
 
-void TransferReaction::CalReactioConstant(){
+void TransferReaction::CalReactionConstant(){
    if( !isBSet){
       AB = AA + Aa - Ab;
       zB = zA + za - zb;
@@ -189,7 +189,7 @@ void TransferReaction::CalReactioConstant(){
 TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
 {
    if( isReady == false ){
-      CalReactioConstant();
+      CalReactionConstant();
    }
 
    //TLorentzVector Pa(0, 0, 0, ma);
@@ -220,19 +220,10 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
    TLorentzVector Pbc;
    Pbc.SetVectM(vb, mb);
    
-   //--- from vB
-   //TVector3 vB = vA;
-   //vB.SetMag(p);
-
-   //TVector3 uB = vB.Orthogonal();
-   //vB.Rotate(-thetaCM, uB);
-   //vB.Rotate(-phiCM - TMath::PiOver2(), vA);
-  
    //--- from PB
    TLorentzVector PBc;
    //PBc.SetVectM(vB, mB + ExB);
    PBc.SetVectM(-vb, mB + ExB);
-   
    
    //---- to Lab Frame
    TLorentzVector Pb = Pbc;
@@ -915,43 +906,49 @@ public:
       }
    }
    
-   void SetSpk(double S, double k, double thetak, double phik){
+   void SetBSpk(double S, double kb, double thetab, double phib){
       this->S = S;
       AB = AA + Aa - A1 - A2;
       ZB = ZA + Za - Z1 - Z2;
       Isotope temp(AB,ZB);
       mB0 = temp.Mass;
       nameB = temp.Name;
-      this->k = k;
-      this->thetak = thetak;
-      this->phik = phik;
+      this->kb = kb;
+      this->thetab = thetab;
+      this->phib = phib;
       
-      mB = mA - m2 + S;
+      mB = mA + ExA - m2 + S;
       
       ExB = mB - mB0;
 
-      isExPositive = true;
       if( ExB < 0 ){
          printf(" seperation energy is too small. \n");
-         isExPositive = false;
       }
    }   
    
    TString GetReactionName(){
       TString rName;
-      rName.Form("%s(%s,%s%s)%s", nameA.c_str(), namea.c_str(), name1.c_str(), name2.c_str(), nameB.c_str()); 
+      
+      TString normInv;
+      if( isNormalKinematics ){
+         normInv = "Normal Kinematics";
+      }else{
+         normInv = "Inverse Kinematics";
+      }
+      
+      rName.Form("%s(%s,%s%s)%s, %s", nameA.c_str(), namea.c_str(), name1.c_str(), name2.c_str(), nameB.c_str(), normInv.Data()); 
    
       return rName;
    }
    
    void SetIncidentEnergyAngle(double KEA, double theta, double phi){
       this->KEA = KEA;
-      this->T = KEA * AA;
       this->thetaIN = theta;
       this->phiIN = phi;
    }
    
-   void CalReactionConstant(double thetaCM, double phCM);
+   void CalReactionConstant(bool isNormalKinematics);
+   void Event(double thetaCM, double phCM);
    
    TLorentzVector GetPA(){return PA;}
    TLorentzVector GetPa(){return Pa;}
@@ -960,6 +957,15 @@ public:
    TLorentzVector GetP1(){return P1;}
    TLorentzVector GetP2(){return P2;}
    
+   double GetMomentumbNN(){return p;}
+   double GetReactionBeta(){return beta;}
+   double GetReactionGamma(){return gamma;}
+   double GetNNTotalEnergy(){return Etot;}
+   
+   double GetNNTotalKE() {return Etot - mb - ma;}
+   double GetQValue() {return mA + ExA - m2 - mB;}
+   double GetMaxExB() {return Etot - mb - mB0;}
+   
 private:   
    int AA, Aa, A1, A2, AB;
    int ZA, Za, Z1, Z2, ZB;
@@ -967,18 +973,18 @@ private:
    string nameA, namea, name1, name2, nameB;
    
    double S; // separation energy
-   double k; // momentum of B
-   double thetak, phik;// direction of B
+   double kb; // momentum of b
+   double thetab, phib;// direction of b
    
    TLorentzVector PA, Pa, P1, P2, PB, Pb; // lab
    
    double KEA, thetaIN, phiIN;
    double T;
    
-   double kA, beta, gamma, Etot, p; // reaction constant
+   double k, beta, gamma, Etot, p; // reaction constant, in NN frame
    double ExA, ExB;
-   
-   bool isExPositive;
+
+   bool isNormalKinematics;
    
 };
 
@@ -996,69 +1002,87 @@ Knockout::Knockout(){
    Seta(1,1);
    Set2(1,1);
    
-   SetSpk(0, 0, 0, 0);
+   SetBSpk(0, 0, 0, 0);
    SetIncidentEnergyAngle(10, 0, 0);
    
    ExA = 0;
    
+   isNormalKinematics = false;
 }
 
 Knockout::~Knockout(){
 
 }
 
-void Knockout::CalReactionConstant(double thetaCM, double phiCM){
-   //===== construct 4-momentum
-   kA = TMath::Sqrt(TMath::Power(mA + ExA + T, 2) - (mA + ExA) * (mA + ExA)); 
-   PA.SetXYZM(0, 0, kA, mA);
-   PA.RotateY(thetaIN);
-   PA.RotateZ(phiIN);
+void Knockout::CalReactionConstant(bool isNormalKinematics){
+   if( ExB < 0 ) return;
    
-   //===== change to A's rest frame
-   TVector3 bA = PA.BoostVector();
-   PA.Boost(-bA);
+   this->isNormalKinematics = isNormalKinematics;
    
-   //===== constructe bounded nucleus b
-   PB.SetXYZM(0, 0, k, mB);
-   PB.RotateY(thetak);
-   PB.RotateZ(phik);
+   if(!isNormalKinematics){
+      //===== construct Lab frame 4-momentum
+      this->T = KEA * AA;
+      double kA = TMath::Sqrt(TMath::Power(mA + ExA + T, 2) - (mA + ExA) * (mA + ExA)); 
+      PA.SetXYZM(0, 0, kA, mA + ExA);
+      PA.RotateY(thetaIN);
+      PA.RotateZ(phiIN);
+      
+      Pa.SetXYZM(0,0,0,ma);
+      
+      //===== change to A's rest frame
+      TVector3 bA = PA.BoostVector();
+      PA.Boost(-bA);
+      
+      //===== constructe bounded nucleus b
+      PB.SetXYZM(0, 0, -kb, mB);
+      PB.RotateY(thetab);
+      PB.RotateZ(phib);
+      
+      Pb = PA - PB;
+      mb = Pb.M();
    
-   Pb = PA - PB;
-   mb = Pb.M();
+      //===== change to Lab frame
+      Pb.Boost(bA);
+      PA.Boost(bA);
+      PB.Boost(bA);
+      
+   }else{
+      //===== construct 4-momentum
+      this->T = KEA * Aa;
+      double ka = TMath::Sqrt(TMath::Power(ma + T, 2) - (ma) * (ma)); 
+      Pa.SetXYZM(0, 0, ka, ma + T);
+      Pa.RotateY(thetaIN);
+      Pa.RotateZ(phiIN);
+      
+      PA.SetXYZM(0, 0, 0, mA + ExA);
+      
+      //===== constructe bounded nucleus b
+      PB.SetXYZM(0, 0, -kb, mB);
+      PB.RotateY(thetab);
+      PB.RotateZ(phib);
+      
+      Pb = PA - PB;
+      mb = Pb.M();
+      
+   }
    
-   //===== change to Lab frame
-   Pb.Boost(bA);
-   PA.Boost(bA);
-   PB.Boost(bA);
-   
-   double thetab = Pb.Theta();
-   double phib = Pb.Phi();
-   double kb = Pb.P();
-   double Tb = Pb.E() - Pb.M();
-
-   printf("mass of b : %f MeV/c2, mass of 2 : %f MeV/c\n", Pb.M(), m2);
-
-   Pa.SetXYZM(0, 0, 0, ma);
-   
-   printf("mB0: %f, mB: %f\n", mB0, mB);
-   
-   Pb.Print();
-   
-   printf("thetab: %f deg, phib: %f deg, kb: %f MeV/c\n", thetab*TMath::RadToDeg(), phib*TMath::RadToDeg(), kb);
-   
-   //############################## following is same as Transfer reaction
-   
-   // reaction constant
-   beta = kb / (mb + ma + Tb);
+   //====== reaction constant
+   k = (Pa+Pb).P();
+   double E = (Pa+Pb).E();
+   beta = (Pa+Pb).Beta();
    gamma = 1 / TMath::Sqrt(1- beta * beta);   
-   Etot = TMath::Sqrt(TMath::Power(mb + ma + Tb,2) - kb * kb);
+   Etot = TMath::Sqrt(TMath::Power(E,2) - k * k);
    p = TMath::Sqrt( (Etot*Etot - TMath::Power(m1 + m2,2)) * (Etot*Etot - TMath::Power(m1 - m2 ,2)) ) / 2 / Etot;
-   
+
+}
+
+void Knockout::Event(double thetaCM, double phiCM){
+   if( ExB < 0 ) return;
    
    //===== construct Pcm
    TLorentzVector Pc = Pb + Pa;
    TVector3 bc = Pc.BoostVector();
-
+   
    TLorentzVector Pac = Pa;
    Pac.Boost(-bc);
    TVector3 va = Pac.Vect();
@@ -1066,13 +1090,6 @@ void Knockout::CalReactionConstant(double thetaCM, double phiCM){
    TLorentzVector Pbc = Pb;
    Pbc.Boost(-bc);
    TVector3 vb = Pbc.Vect();
-   
-   printf("============= Pac, Pbc\n");
-   Pac.Print();
-   Pbc.Print();
-   (Pac+Pbc).Print();
-   
-   printf("Etot: %f MeV, p : %f \n", Etot, p);
    
    //--- from P1
    TVector3 v1 = va;

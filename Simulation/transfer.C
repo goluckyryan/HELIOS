@@ -10,10 +10,10 @@
 #include <fstream>
 
 //----------- usage 
-// $root sim.C+ | tee output.txt
+// $root transfer.C+ | tee output.txt
 // this will same the massage to output.txt
 
-void sim(){
+void transfer(){
 
    //================================================= User Setting
    //---- reaction
@@ -68,7 +68,7 @@ void sim(){
    reaction.Setb(Ab,zb);
    reaction.SetB(AB,zB);
    reaction.SetIncidentEnergyAngle(KEAmean, 0, 0);
-   reaction.CalReactioConstant();
+   reaction.CalReactionConstant();
    
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
@@ -144,7 +144,7 @@ void sim(){
       int n = ExKnown.size();
       for(int i = 0; i < n ; i++){
          reaction.SetExB(ExKnown[i]);
-         reaction.CalReactioConstant();
+         reaction.CalReactionConstant();
          kCM.push_back(reaction.GetMomentumbCM());
          y0.push_back(TMath::Sqrt(mb*mb + kCM[i]*kCM[i])/gamma - mb);
          if( isDecay ) {
@@ -323,7 +323,7 @@ void sim(){
          phi = 0.;
          //phi = TMath::TwoPi() * gRandom->Rndm();
          reaction.SetIncidentEnergyAngle(KEA, theta, phi);
-         reaction.CalReactioConstant();
+         reaction.CalReactionConstant();
          TLorentzVector PA = reaction.GetPA();            
          
          double depth = 0;

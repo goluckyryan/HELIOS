@@ -21,6 +21,9 @@ void knockout(){
    int Aa = 1,  za = 1;
    int A2 = 1,  z2 = 1;
    
+   bool isNormalKinematics = false;
+   double maxkb = 200.;
+   
    //---- beam
    double KEAmean = 100; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
@@ -40,8 +43,7 @@ void knockout(){
    //ExAList[1] = 1.567;
     
    //---- Separation energy
-   
-   //string excitationFile = "excitation_energies.txt";
+   string separationFile = "separation_energies.txt";
    
    //---- save root file name
    TString saveFileName = "test.root";
@@ -72,19 +74,18 @@ void knockout(){
    double thetak = 30 * TMath::DegToRad();
    double phik = 30 * TMath::DegToRad();
    
-   reaction.SetSpk(10., 100, thetak, phik);
-   
-   double thetaCM = 30 * TMath::DegToRad();
-   double phiCM = 30 * TMath::DegToRad();
-   reaction.CalReactionConstant(thetaCM, phiCM);
+   reaction.SetBSpk(10., 30., 0, 0);
+   reaction.CalReactionConstant(isNormalKinematics);
    
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
    printf("=========== KE: %9.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
    printf("======== theta: %9.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
-   //printf("===== Q-value : %7.4f MeV \n", reaction.GetQValue() );
-   //printf("======= Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
    printf("===================================================\n");
+
+   double thetaNN = 30 * TMath::DegToRad();
+   double phiNN = 30 * TMath::DegToRad();
+   reaction.Event(thetaNN, phiNN);
 
 /*   
    //======== Set HELIOS
@@ -133,7 +134,7 @@ void knockout(){
    vector<double> kCM; // momentum of b in CM frame
    printf("----- loading excitation energy levels.");
    ifstream file;
-   file.open(excitationFile.c_str());
+   file.open(separationFile.c_str());
    string isotopeName;
    if( file.is_open() ){
       string line;
@@ -177,7 +178,7 @@ void knockout(){
    TFile * saveFile = new TFile(saveFileName, "recreate");
    TTree * tree = new TTree("tree", "tree");
    
-   double thetaCM;
+   double thetaNN;
    double thetab, phib, Tb;
    double thetaB, TB;
    
@@ -201,7 +202,7 @@ void knockout(){
    tree->Branch("Tb", &Tb, "Tb/D");
    tree->Branch("thetaB", &thetaB, "thetaB/D");
    tree->Branch("TB", &TB, "Tb/D");
-   tree->Branch("thetaCM", &thetaCM, "thetaCM/D");
+   tree->Branch("thetaNN", &thetaNN, "thetaNN/D");
    tree->Branch("e", &e, "e/D");
    tree->Branch("x", &x, "x/D");
    tree->Branch("z", &z, "z/D");
@@ -243,9 +244,9 @@ void knockout(){
    for( int i = 1; i <= 20; i++){
       name.Form("g%d", i);     
       gx[i] = new TF1(name, "([0]*TMath::Sqrt([1]+[2]*x*x)+[5]*x)/([3]) - [4]", -1000, 1000);      
-      double thetacm = i * TMath::DegToRad();
-      double gS2 = TMath::Power(TMath::Sin(thetacm)*gamma,2);
-      gx[i]->SetParameter(0, TMath::Cos(thetacm));
+      double thetaNN = i * TMath::DegToRad();
+      double gS2 = TMath::Power(TMath::Sin(thetaNN)*gamma,2);
+      gx[i]->SetParameter(0, TMath::Cos(thetaNN));
       gx[i]->SetParameter(1, mb*mb*(1-gS2));
       gx[i]->SetParameter(2, TMath::Power(slope/beta,2));
       gx[i]->SetParameter(3, 1-gS2);
@@ -278,10 +279,10 @@ void knockout(){
       double q = TMath::Sqrt(mb*mb + kCM[j] * kCM[j] );
       for(int i = 0; i < 100; i++){
       
-         double thetacm = TMath::Pi()/TMath::Log(100) * (TMath::Log(100) - TMath::Log(100-i)) ;//using log scale, for more point in small angle.
-         double temp = TMath::TwoPi() * slope / beta / kCM[j] * a / TMath::Sin(thetacm); 
-         px[i] = beta /slope * (gamma * beta * q - gamma * kCM[j] * TMath::Cos(thetacm)) * (1 - TMath::ASin(temp)/TMath::TwoPi()) ;
-         py[i] = gamma * q - mb - gamma * beta * kCM[j] * TMath::Cos(thetacm);   
+         double thetaNN = TMath::Pi()/TMath::Log(100) * (TMath::Log(100) - TMath::Log(100-i)) ;//using log scale, for more point in small angle.
+         double temp = TMath::TwoPi() * slope / beta / kCM[j] * a / TMath::Sin(thetaNN); 
+         px[i] = beta /slope * (gamma * beta * q - gamma * kCM[j] * TMath::Cos(thetaNN)) * (1 - TMath::ASin(temp)/TMath::TwoPi()) ;
+         py[i] = gamma * q - mb - gamma * beta * kCM[j] * TMath::Cos(thetaNN);   
       }
       
       fx[j] = new TGraph(100, px, py);
@@ -346,11 +347,11 @@ void knockout(){
          }
          
          //==== Calculate reaction
-         thetaCM = TMath::ACos(2 * gRandom->Rndm() - 1) ; 
-         //double phiCM = TMath::TwoPi() / mDet * ( gRandom->Rndm() - 0.5); // reduce the range of phiCM for faster calculation
-         double phiCM = TMath::TwoPi() * gRandom->Rndm(); 
+         thetaNN = TMath::ACos(2 * gRandom->Rndm() - 1) ; 
+         //double phiNN = TMath::TwoPi() / mDet * ( gRandom->Rndm() - 0.5); // reduce the range of phiNN for faster calculation
+         double phiNN = TMath::TwoPi() * gRandom->Rndm(); 
          
-         TLorentzVector * output = reaction.Event(thetaCM, phiCM);
+         TLorentzVector * output = reaction.Event(thetaNN, phiNN);
       
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];
@@ -408,8 +409,8 @@ void knockout(){
          yHit = helios.GetYPos(z);
          z += gRandom->Gaus(0, zSigma);
          
-         //change thetaCM into deg
-         thetaCM = thetaCM * TMath::RadToDeg();
+         //change thetaNN into deg
+         thetaNN = thetaNN * TMath::RadToDeg();
          
          if( hit == 1) {
             count ++;
@@ -420,7 +421,7 @@ void knockout(){
                redoFlag = false;
             }else{
                redoFlag = true;
-               //printf("%d, %2d, thetaCM : %f, theta : %f, z0: %f \n", i, hit, thetaCM * TMath::RadToDeg(), thetab, helios.GetZ0());
+               //printf("%d, %2d, thetaNN : %f, theta : %f, z0: %f \n", i, hit, thetaNN * TMath::RadToDeg(), thetab, helios.GetZ0());
             }
          }else{
             redoFlag = false;
