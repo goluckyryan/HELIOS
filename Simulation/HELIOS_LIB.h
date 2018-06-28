@@ -208,8 +208,7 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
    Pac.Boost(nb);
    TVector3 va = Pac.Vect();
    
-   //--- from Pb
-   TLorentzVector Pbc;
+   //--- from vb
    TVector3 vb = va;
    vb.SetMag(p);
 
@@ -217,18 +216,23 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
    vb.Rotate(thetaCM, ub);
    vb.Rotate(phiCM + TMath::PiOver2(), va); // somehow, the calculation turn the vector 90 degree.
    
+   //--- from Pb
+   TLorentzVector Pbc;
    Pbc.SetVectM(vb, mb);
    
+   //--- from vB
+   //TVector3 vB = vA;
+   //vB.SetMag(p);
+
+   //TVector3 uB = vB.Orthogonal();
+   //vB.Rotate(-thetaCM, uB);
+   //vB.Rotate(-phiCM - TMath::PiOver2(), vA);
+  
    //--- from PB
    TLorentzVector PBc;
-   TVector3 vB = vA;
-   vB.SetMag(p);
-
-   TVector3 uB = vB.Orthogonal();
-   vB.Rotate(-thetaCM, uB);
-   vB.Rotate(-phiCM - TMath::PiOver2(), vA);
+   //PBc.SetVectM(vB, mB + ExB);
+   PBc.SetVectM(-vb, mB + ExB);
    
-   PBc.SetVectM(vB, mB + ExB);
    
    //---- to Lab Frame
    TLorentzVector Pb = Pbc;
@@ -859,7 +863,7 @@ Decay::Decay(){
 Decay::~Decay(){
    
 }
-/*
+
 //=======================================================
 //#######################################################
 // Class for Knockout Reaction
@@ -893,8 +897,8 @@ public:
       namea = temp.Name;
       name1 = temp.Name;
       
-      if( namea == "1H" ) {
-         namaa = "p";
+      if( namea == "1H " ) {
+         namea = "p";
          name1 = "p";
       }
    }
@@ -906,28 +910,37 @@ public:
       Z2 = Z;
       name2 = temp.Name;
       
-      if( name2 == "1H" ) {
-         nama2 = "p";
+      if( name2 == "1H " ) {
+         name2 = "p";
       }
    }
    
-   void SetSeparation&k(double S, double k, double thetak, double phik){
+   void SetSpk(double S, double k, double thetak, double phik){
       this->S = S;
       AB = AA + Aa - A1 - A2;
       ZB = ZA + Za - Z1 - Z2;
-      Isotope temp(A,Z);
+      Isotope temp(AB,ZB);
       mB0 = temp.Mass;
-      
+      nameB = temp.Name;
       this->k = k;
       this->thetak = thetak;
       this->phik = phik;
       
       mB = mA - m2 + S;
+      
+      ExB = mB - mB0;
+
+      isExPositive = true;
+      if( ExB < 0 ){
+         printf(" seperation energy is too small. \n");
+         isExPositive = false;
+      }
    }   
    
    TString GetReactionName(){
       TString rName;
       rName.Form("%s(%s,%s%s)%s", nameA.c_str(), namea.c_str(), name1.c_str(), name2.c_str(), nameB.c_str()); 
+   
       return rName;
    }
    
@@ -938,8 +951,15 @@ public:
       this->phiIN = phi;
    }
    
-   void CalReactionConstant();
-
+   void CalReactionConstant(double thetaCM, double phCM);
+   
+   TLorentzVector GetPA(){return PA;}
+   TLorentzVector GetPa(){return Pa;}
+   TLorentzVector GetPb(){return Pb;}
+   TLorentzVector GetPB(){return PB;}
+   TLorentzVector GetP1(){return P1;}
+   TLorentzVector GetP2(){return P2;}
+   
 private:   
    int AA, Aa, A1, A2, AB;
    int ZA, Za, Z1, Z2, ZB;
@@ -956,8 +976,11 @@ private:
    double T;
    
    double kA, beta, gamma, Etot, p; // reaction constant
+   double ExA, ExB;
    
-}
+   bool isExPositive;
+   
+};
 
 Knockout::Knockout(){
    TLorentzVector temp(0,0,0,0);
@@ -973,8 +996,10 @@ Knockout::Knockout(){
    Seta(1,1);
    Set2(1,1);
    
-   SetSeparation&k(0, 0, 0, 0);
+   SetSpk(0, 0, 0, 0);
    SetIncidentEnergyAngle(10, 0, 0);
+   
+   ExA = 0;
    
 }
 
@@ -982,10 +1007,10 @@ Knockout::~Knockout(){
 
 }
 
-Knockout::CalReactionConstant(){
+void Knockout::CalReactionConstant(double thetaCM, double phiCM){
    //===== construct 4-momentum
    kA = TMath::Sqrt(TMath::Power(mA + ExA + T, 2) - (mA + ExA) * (mA + ExA)); 
-   PA.SETXYZM(0, 0, kA, mA);
+   PA.SetXYZM(0, 0, kA, mA);
    PA.RotateY(thetaIN);
    PA.RotateZ(phiIN);
    
@@ -1009,17 +1034,25 @@ Knockout::CalReactionConstant(){
    double thetab = Pb.Theta();
    double phib = Pb.Phi();
    double kb = Pb.P();
+   double Tb = Pb.E() - Pb.M();
+
+   printf("mass of b : %f MeV/c2, mass of 2 : %f MeV/c\n", Pb.M(), m2);
 
    Pa.SetXYZM(0, 0, 0, ma);
+   
+   printf("mB0: %f, mB: %f\n", mB0, mB);
+   
+   Pb.Print();
+   
+   printf("thetab: %f deg, phib: %f deg, kb: %f MeV/c\n", thetab*TMath::RadToDeg(), phib*TMath::RadToDeg(), kb);
    
    //############################## following is same as Transfer reaction
    
    // reaction constant
-   beta = kb / (mb + ma + T);
+   beta = kb / (mb + ma + Tb);
    gamma = 1 / TMath::Sqrt(1- beta * beta);   
-   Etot = TMath::Sqrt(TMath::Power(mA + ExA + ma + T,2) - k * k);
-   p = TMath::Sqrt( (Etot*Etot - TMath::Power(mb + mB + ExB,2)) * (Etot*Etot - TMath::Power(mb - mB - ExB,2)) ) / 2 / Etot;
-   
+   Etot = TMath::Sqrt(TMath::Power(mb + ma + Tb,2) - kb * kb);
+   p = TMath::Sqrt( (Etot*Etot - TMath::Power(m1 + m2,2)) * (Etot*Etot - TMath::Power(m1 - m2 ,2)) ) / 2 / Etot;
    
    
    //===== construct Pcm
@@ -1034,38 +1067,33 @@ Knockout::CalReactionConstant(){
    Pbc.Boost(-bc);
    TVector3 vb = Pbc.Vect();
    
+   printf("============= Pac, Pbc\n");
+   Pac.Print();
+   Pbc.Print();
+   (Pac+Pbc).Print();
    
-   
+   printf("Etot: %f MeV, p : %f \n", Etot, p);
    
    //--- from P1
-   TLorentzVector P1c;
    TVector3 v1 = va;
    v1.SetMag(p);
-
-   TVector3 ub = vb.Orthogonal();
-   vb.Rotate(thetaCM, ub);
-   vb.Rotate(phiCM + TMath::PiOver2(), va); // somehow, the calculation turn the vector 90 degree.
    
-   Pbc.SetVectM(vb, mb);
+   TVector3 u1 = va.Orthogonal();
+   v1.Rotate(thetaCM, u1);
+   v1.Rotate(phiCM + TMath::PiOver2(), va); // somehow, the calculation turn the vector 90 degree.
+   
+   TLorentzVector P1c;
+   P1c.SetVectM(v1, m1);
    
    //--- from P2
-   TLorentzVector PBc;
-   TVector3 vB = vA;
-   vB.SetMag(p);
-
-   TVector3 uB = vB.Orthogonal();
-   vB.Rotate(-thetaCM, uB);
-   vB.Rotate(-phiCM - TMath::PiOver2(), vA);
-   
-   PBc.SetVectM(vB, mB + ExB);
+   TLorentzVector P2c;
+   P2c.SetVectM(-v1, m2);
    
    //---- to Lab Frame
-   TLorentzVector Pb = Pbc;
-   Pb.Boost(b);
-   TLorentzVector PB = PBc;
-   PB.Boost(b);
+   TLorentzVector P1 = P1c;
+   P1.Boost(bc);
+   TLorentzVector P2 = P2c;
+   P2.Boost(bc);
    
-      
 }
 
-*/

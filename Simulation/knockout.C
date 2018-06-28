@@ -13,7 +13,7 @@
 // $root sim.C+ | tee output.txt
 // this will same the massage to output.txt
 
-void sim(){
+void knockout(){
 
    //================================================= User Setting
    //---- reaction
@@ -62,21 +62,28 @@ void sim(){
    //=============================================================
    //=============================================================
    //===== Set Reaction
-   TransferReaction reaction;
-   int AB = AA+Aa-Ab, zB = zA+za-zb;
+   Knockout reaction;
+   int AB = AA-A2, zB = zA-z2;
    reaction.SetA(AA,zA);
    reaction.Seta(Aa,za);
-   reaction.Setb(Ab,zb);
-   reaction.SetB(AB,zB);
+   reaction.Set2(A2,z2);
    reaction.SetIncidentEnergyAngle(KEAmean, 0, 0);
-   reaction.CalReactioConstant();
+   
+   double thetak = 30 * TMath::DegToRad();
+   double phik = 30 * TMath::DegToRad();
+   
+   reaction.SetSpk(10., 100, thetak, phik);
+   
+   double thetaCM = 30 * TMath::DegToRad();
+   double phiCM = 30 * TMath::DegToRad();
+   reaction.CalReactionConstant(thetaCM, phiCM);
    
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
-   printf("=========== KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
-   printf("======== theta: %7.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
-   printf("===== Q-value : %7.4f MeV \n", reaction.GetQValue() );
-   printf("======= Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
+   printf("=========== KE: %9.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
+   printf("======== theta: %9.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
+   //printf("===== Q-value : %7.4f MeV \n", reaction.GetQValue() );
+   //printf("======= Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
    printf("===================================================\n");
 
 /*   
@@ -165,7 +172,6 @@ void sim(){
        printf("... fail\n");
        return;
    }
-*////============================
 
    //====================== build tree
    TFile * saveFile = new TFile(saveFileName, "recreate");
@@ -444,5 +450,7 @@ void sim(){
    saveFile->Close();
    
    printf("=============== done. saved as %s. count(hit==1) : %d\n", saveFileName.Data(), count);
+   
+   /**/
 
 }
