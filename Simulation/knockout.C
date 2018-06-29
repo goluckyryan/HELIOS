@@ -17,15 +17,16 @@ void knockout(){
 
    //================================================= User Setting
    //---- reaction
-   int AA = 208, zA = 82;
+   int AA = 23, zA = 9;
    int Aa = 1,  za = 1;
    int A2 = 1,  z2 = 1;
    
    bool isNormalKinematics = false;
+   bool isOverRideExNegative = true;
    double maxkb = 200.;
    
    //---- beam
-   double KEAmean = 100; // MeV/u 
+   double KEAmean = 290; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
@@ -38,7 +39,8 @@ void knockout(){
    //double zSigma = 0.1 ; // detector position sigma mm
    
    //---- excitation of Beam 
-   double ExAList[1];
+   int nExA = 1;
+   double ExAList[nExA];
    ExAList[0] = 0.000; // MeV
    //ExAList[1] = 1.567;
     
@@ -46,7 +48,7 @@ void knockout(){
    string separationFile = "separation_energies.txt";
    
    //---- save root file name
-   TString saveFileName = "test.root";
+   TString saveFileName = "test_k.root";
    
    //---- Auxiliary setting
    bool isTargetScattering = false;
@@ -70,22 +72,13 @@ void knockout(){
    reaction.Seta(Aa,za);
    reaction.Set2(A2,z2);
    reaction.SetIncidentEnergyAngle(KEAmean, 0, 0);
-   
-   double thetak = 30 * TMath::DegToRad();
-   double phik = 30 * TMath::DegToRad();
-   
-   reaction.SetBSpk(10., 30., 0, 0);
-   reaction.CalReactionConstant(isNormalKinematics);
+   reaction.OverRideExNegative(isOverRideExNegative);
    
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
    printf("=========== KE: %9.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
    printf("======== theta: %9.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
    printf("===================================================\n");
-
-   double thetaNN = 30 * TMath::DegToRad();
-   double phiNN = 30 * TMath::DegToRad();
-   reaction.Event(thetaNN, phiNN);
 
 /*   
    //======== Set HELIOS
@@ -122,17 +115,17 @@ void knockout(){
       msb.LoadStoppingPower(stoppingPowerForb);
       msB.LoadStoppingPower(stoppingPowerForB);
    }
+   */
    
    //======= Decay of particle-B
    Decay decay;
    decay.SetMotherDaugther(AB, zB, AB-1,zB); //neutron decay
+
    
    //======= loading excitation energy
    printf("############################################## excitation energies\n");
-   vector<double> ExKnown;
-   vector<double> y0; // intercept of e-z plot
-   vector<double> kCM; // momentum of b in CM frame
-   printf("----- loading excitation energy levels.");
+   vector<double> SpList;
+   printf("----- loading separation energies.");
    ifstream file;
    file.open(separationFile.c_str());
    string isotopeName;
@@ -144,29 +137,25 @@ void knockout(){
          if( line.substr(0,2) == "//" ) continue;
          if( i == 0 ) isotopeName = line; 
          if ( i >= 1 ){
-            ExKnown.push_back(atof(line.c_str()));
+            SpList.push_back(atof(line.c_str()));
          }
          i = i + 1;
       }
       file.close();
       printf("... done.\n");
       printf("========== %s\n", isotopeName.c_str());
-      int n = ExKnown.size();
+      int n = SpList.size();
       for(int i = 0; i < n ; i++){
-         reaction.SetExB(ExKnown[i]);
-         reaction.CalReactioConstant();
-         kCM.push_back(reaction.GetMomentumbCM());
-         y0.push_back(TMath::Sqrt(mb*mb + kCM[i]*kCM[i])/gamma - mb);
          if( isDecay ) {
             TLorentzVector temp(0,0,0,0);
-            int decayID = decay.CalDecay(temp, ExKnown[i], 0);
+            int decayID = decay.CalDecay(temp, SpList[i], 0);
             if( decayID == 1) {
-               printf("%d, Ex: %6.2f MeV, y0: %4.2f MeV --> Decay. \n", i, ExKnown[i], y0[i]);
+               printf("%d, Sp: %6.2f MeV --> Decay. \n", i, SpList[i]);
             }else{
-               printf("%d, Ex: %6.2f MeV, y0: %4.2f MeV\n", i, ExKnown[i], y0[i]);
+               printf("%d, Sp: %6.2f MeV\n", i, SpList[i]);
             }
          }else{
-            printf("%d, Ex: %6.2f MeV, y0: %4.2f MeV \n", i, ExKnown[i], y0[i]);
+            printf("%d, Sp: %6.2f MeV \n", i, SpList[i]);
          }
       }
    }else{
@@ -178,31 +167,60 @@ void knockout(){
    TFile * saveFile = new TFile(saveFileName, "recreate");
    TTree * tree = new TTree("tree", "tree");
    
-   double thetaNN;
-   double thetab, phib, Tb;
+   double thetaNN, phiNN;
+   double theta1, phi1, T1;
+   double theta2, phi2, T2;
    double thetaB, TB;
+   double Sp, kb, thetab, phib;
+   int SpID;
+
+   double ExA;
+   int ExAID;
+   double KEA, KEAnew, theta, phi;
    
+   double mB,mb;
+
+/*   
    int hit; // the output of Helios.CalHit
    double e, z, x, t, TbLoss;
    int loop, detID;
    double dphi, rho;
-   int ExID;
-   double Ex, KEA, KEAnew, theta, phi;
-   double ExA;
-   int ExAID;
 
+
+/*
    double rhoHit, rhoBHit; // rhoHit = radius of particle-b hit on z-pos of recoil detector
-   double decayTheta; // the change of thetaB due to decay
-   
+   double decayTheta; // the change of thetaB due to decay 
    double xHit, yHit;
-   
-   tree->Branch("hit", &hit, "hit/I");
+*/   
+
+   tree->Branch("theta1", &theta1, "theta1/D");
+   tree->Branch("phi1", &phi1, "phi1/D");
+   tree->Branch("T1", &T1, "T1/D");
+   tree->Branch("theta2", &theta2, "theta2/D");
+   tree->Branch("phi2", &phi2, "phi2/D");
+   tree->Branch("T2", &T2, "T2/D");
+   tree->Branch("thetaB", &thetaB, "thetaB/D");
+   tree->Branch("TB", &TB, "TB/D");
+   tree->Branch("thetaNN", &thetaNN, "thetaNN/D");
+   tree->Branch("phiNN", &phiNN, "phiNN/D");
+   tree->Branch("Sp", &Sp, "Sp/D");
+   tree->Branch("kb", &kb, "kb/D");
    tree->Branch("thetab", &thetab, "thetab/D");
    tree->Branch("phib", &phib, "phib/D");
-   tree->Branch("Tb", &Tb, "Tb/D");
-   tree->Branch("thetaB", &thetaB, "thetaB/D");
-   tree->Branch("TB", &TB, "Tb/D");
-   tree->Branch("thetaNN", &thetaNN, "thetaNN/D");
+   
+   tree->Branch("SpID", &SpID, "SpID/I");
+   
+   tree->Branch("ExAID", &ExAID, "ExAID/I");
+   tree->Branch("KEA", &KEA, "KEA/D");
+   tree->Branch("KEAnew", &KEAnew, "KEAnew/D");
+   tree->Branch("theta", &theta, "theta/D");
+   tree->Branch("phi", &phi, "phi/D");
+
+   tree->Branch("mB", &mB, "mB/D");
+   tree->Branch("mb", &mb, "mb/D");
+
+/*
+   tree->Branch("hit", &hit, "hit/I");
    tree->Branch("e", &e, "e/D");
    tree->Branch("x", &x, "x/D");
    tree->Branch("z", &z, "z/D");
@@ -212,13 +230,6 @@ void knockout(){
    tree->Branch("loop", &loop, "loop/I");
    tree->Branch("dphi", &dphi, "dphi/D");
    tree->Branch("rho", &rho, "rho/D");
-   tree->Branch("ExID", &ExID, "ExID/I");
-   tree->Branch("Ex", &Ex, "Ex/D");
-   tree->Branch("theta", &theta, "theta/D");
-   tree->Branch("phi", &phi, "phi/D");
-   tree->Branch("KEA", &KEA, "KEA/D");
-   tree->Branch("KEAnew", &KEAnew, "KEAnew/D");
-   tree->Branch("ExAID", &ExAID, "ExAID/I");
    tree->Branch("ExA", &ExA, "ExA/D");
 
    tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
@@ -227,73 +238,7 @@ void knockout(){
    
    tree->Branch("xHit", &xHit, "xHit/D");
    tree->Branch("yHit", &yHit, "yHit/D");
-   
-   //======= function for e-z plot for ideal case
-   printf("##################  generate functions and save to *root");
-   
-   TF1* g0 = new TF1("g0", "TMath::Sqrt([0] + [1] * x*x) - [2]", -1000, 1000);
-   g0->SetParameter(0, mb*mb);
-   g0->SetParameter(1, TMath::Power(slope/beta,2));
-   g0->SetParameter(2, mb);
-   g0->SetNpx(1000);
-   g0->Write();
-   printf("/");
-   
-   TF1 ** gx = new TF1*[20];
-   TString name;
-   for( int i = 1; i <= 20; i++){
-      name.Form("g%d", i);     
-      gx[i] = new TF1(name, "([0]*TMath::Sqrt([1]+[2]*x*x)+[5]*x)/([3]) - [4]", -1000, 1000);      
-      double thetaNN = i * TMath::DegToRad();
-      double gS2 = TMath::Power(TMath::Sin(thetaNN)*gamma,2);
-      gx[i]->SetParameter(0, TMath::Cos(thetaNN));
-      gx[i]->SetParameter(1, mb*mb*(1-gS2));
-      gx[i]->SetParameter(2, TMath::Power(slope/beta,2));
-      gx[i]->SetParameter(3, 1-gS2);
-      gx[i]->SetParameter(4, mb);
-      gx[i]->SetParameter(5, -gS2*slope);
-      gx[i]->SetNpx(1000);
-      gx[i]->Write();
-      printf("/");
-   }
-   
-
-   int n = ExKnown.size();
-   TF1** f = new TF1*[n];
-   for( int i = 0; i< n ; i++){
-      name.Form("f%d", i);     
-      f[i] = new TF1(name, "[0] + [1] * x", -1000, 1000);      
-      f[i]->SetParameter(0, y0[i]);
-      f[i]->SetParameter(1, slope);
-      f[i]->SetNpx(1000);
-      f[i]->Write();
-      printf(".");
-   }
-   
-   //--- cal modified f
-   TGraph ** fx = new TGraph*[n];
-   for( int j = 0 ; j < n; j++){
-      double px[100];
-      double py[100];
-      double a = helios.GetDetectorA();
-      double q = TMath::Sqrt(mb*mb + kCM[j] * kCM[j] );
-      for(int i = 0; i < 100; i++){
-      
-         double thetaNN = TMath::Pi()/TMath::Log(100) * (TMath::Log(100) - TMath::Log(100-i)) ;//using log scale, for more point in small angle.
-         double temp = TMath::TwoPi() * slope / beta / kCM[j] * a / TMath::Sin(thetaNN); 
-         px[i] = beta /slope * (gamma * beta * q - gamma * kCM[j] * TMath::Cos(thetaNN)) * (1 - TMath::ASin(temp)/TMath::TwoPi()) ;
-         py[i] = gamma * q - mb - gamma * beta * kCM[j] * TMath::Cos(thetaNN);   
-      }
-      
-      fx[j] = new TGraph(100, px, py);
-      name.Form("fx%d", j);
-      fx[j]->SetName(name);
-      fx[j]->SetLineColor(4);
-      fx[j]->Write();
-      printf(",");
-   }
-   printf("done!\n");
-   
+*/   
    //========timer
    TBenchmark clock;
    bool shown ;   
@@ -310,14 +255,13 @@ void knockout(){
       do{
       
          //==== Set Ex of A
-         ExAID = gRandom->Integer(2);
+         ExAID = gRandom->Integer(nExA);
          ExA = ExAList[ExAID];
          reaction.SetExA(ExA);
          
-         //==== Set Ex of B
-         ExID = gRandom->Integer(ExKnown.size());
-         Ex = ExKnown[ExID]; 
-         reaction.SetExB(Ex);
+         //==== Set Sp of B
+         SpID = gRandom->Integer(SpList.size());
+         Sp = SpList[SpID]; 
          
          //==== Set incident beam
          if( KEAsigma == 0 ){
@@ -330,10 +274,11 @@ void knockout(){
          }else{
             theta = gRandom->Gaus(thetaMean, thetaSigma);
          }
-         phi = 0.;
-         //phi = TMath::TwoPi() * gRandom->Rndm();
-         reaction.SetIncidentEnergyAngle(KEA, theta, phi);
-         reaction.CalReactioConstant();
+         
+         /*
+         //For target scattering
+         reaction.SetIncidentEnergyAngle(KEA, theta, 0.);
+         reaction.CalIncidentChannel(isNormalKinematics); // but only need is PA
          TLorentzVector PA = reaction.GetPA();            
          
          double depth = 0;
@@ -344,18 +289,26 @@ void knockout(){
             TLorentzVector PAnew = msA.Scattering(PA);
             KEAnew = msA.GetKE()/AA;
             reaction.SetIncidentEnergyAngle(KEAnew, theta, phi);
-         }
+         }*/
          
          //==== Calculate reaction
          thetaNN = TMath::ACos(2 * gRandom->Rndm() - 1) ; 
-         //double phiNN = TMath::TwoPi() / mDet * ( gRandom->Rndm() - 0.5); // reduce the range of phiNN for faster calculation
-         double phiNN = TMath::TwoPi() * gRandom->Rndm(); 
+         phiNN = TMath::TwoPi() * gRandom->Rndm(); 
          
-         TLorentzVector * output = reaction.Event(thetaNN, phiNN);
+         kb = maxkb * gRandom->Rndm();
+         thetab = TMath::ACos(2 * gRandom->Rndm() - 1);
+         phib = TMath::TwoPi() * gRandom->Rndm();
+
+         reaction.SetBSpk(Sp, kb, thetab, phib);
+         reaction.CalReactionConstant(isNormalKinematics);
+         reaction.Event(thetaNN, phiNN);
       
-         TLorentzVector Pb = output[2];
-         TLorentzVector PB = output[3];
+         TLorentzVector P1 = reaction.GetP1();
+         TLorentzVector P2 = reaction.GetP2();
+         TLorentzVector Pb = reaction.GetPb();
+         TLorentzVector PB = reaction.GetPB();
          
+         /*
          //==== Calculate energy loss of scattered and recoil in target
          if( isTargetScattering ){
             if( Pb.Theta() < TMath::PiOver2() ){
@@ -373,7 +326,7 @@ void knockout(){
          
          //======= Decay of particle-B
          if( isDecay){
-            int decayID = decay.CalDecay(PB, Ex, 0); // decay to ground state
+            int decayID = decay.CalDecay(PB, Sp, 0); // decay to ground state
             if( decayID == 1 ){
                PB = decay.GetDaugther_D();
                decayTheta = decay.GetAngleChange();
@@ -381,17 +334,24 @@ void knockout(){
                decayTheta = TMath::QuietNaN();
             }
          }
+         */
          
          //################################### tree branches
          //===== reaction
-         thetab = Pb.Theta() * TMath::RadToDeg();
+         theta1 = P1.Theta() * TMath::RadToDeg();
+         theta2 = P2.Theta() * TMath::RadToDeg();
          thetaB = PB.Theta() * TMath::RadToDeg();
       
-         Tb = Pb.E() - Pb.M();
+         T1 = P1.E() - P1.M();
+         T2 = P2.E() - P2.M();
          TB = PB.E() - PB.M();
          
-         phib = Pb.Phi() * TMath::RadToDeg();
+         phi1 = P1.Phi() * TMath::RadToDeg();
+         phi2 = P2.Phi() * TMath::RadToDeg();
          
+         mB = PB.M();
+         mb = Pb.M();
+         /*
          //==== Helios
          hit = helios.CalHit(Pb, zb, PB, zB);
          
@@ -426,6 +386,7 @@ void knockout(){
          }else{
             redoFlag = false;
          }
+         */
          
       }while( redoFlag );
       tree->Fill();

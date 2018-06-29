@@ -35,7 +35,8 @@ void transfer(){
    double zSigma = 0.1 ; // detector position sigma mm
    
    //---- excitation of Beam 
-   double ExAList[1];
+   int nExA = 1;
+   double ExAList[nExA];
    ExAList[0] = 0.000; // MeV
    //ExAList[1] = 1.567;
     
@@ -191,7 +192,7 @@ void transfer(){
    tree->Branch("phib", &phib, "phib/D");
    tree->Branch("Tb", &Tb, "Tb/D");
    tree->Branch("thetaB", &thetaB, "thetaB/D");
-   tree->Branch("TB", &TB, "Tb/D");
+   tree->Branch("TB", &TB, "TB/D");
    tree->Branch("thetaCM", &thetaCM, "thetaCM/D");
    tree->Branch("e", &e, "e/D");
    tree->Branch("x", &x, "x/D");
@@ -300,7 +301,7 @@ void transfer(){
       do{
       
          //==== Set Ex of A
-         ExAID = gRandom->Integer(2);
+         ExAID = gRandom->Integer(nExA);
          ExA = ExAList[ExAID];
          reaction.SetExA(ExA);
          
@@ -320,9 +321,8 @@ void transfer(){
          }else{
             theta = gRandom->Gaus(thetaMean, thetaSigma);
          }
-         phi = 0.;
-         //phi = TMath::TwoPi() * gRandom->Rndm();
-         reaction.SetIncidentEnergyAngle(KEA, theta, phi);
+         //for taregt scattering
+         reaction.SetIncidentEnergyAngle(KEA, theta, 0.);
          reaction.CalReactionConstant();
          TLorentzVector PA = reaction.GetPA();            
          

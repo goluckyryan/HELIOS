@@ -877,6 +877,10 @@ public:
       nameA = temp.Name;
    }
    
+   void SetExA(double Ex){
+      this->ExA = Ex; 
+   }
+   
    void Seta(int A, int Z){
       Isotope temp(A,Z);
       ma = temp.Mass;
@@ -921,9 +925,13 @@ public:
       
       ExB = mB - mB0;
 
-      if( ExB < 0 ){
+      if( ExB < 0 && !isOverRideExNegative ){
          printf(" seperation energy is too small. \n");
       }
+   }
+   
+   void OverRideExNegative(bool YN){
+      isOverRideExNegative = YN;
    }   
    
    TString GetReactionName(){
@@ -947,8 +955,16 @@ public:
       this->phiIN = phi;
    }
    
+   void CalIncidentChannel(bool isNormalKinematics); 
    void CalReactionConstant(bool isNormalKinematics);
    void Event(double thetaCM, double phCM);
+   
+   double GetMass_A(){return mA;}
+   double GetMass_a(){return ma;}
+   double GetMass_b(){return mb;}
+   double GetMass_B(){return mB;}
+   double GetMass_1(){return m1;}
+   double GetMass_2(){return m2;}
    
    TLorentzVector GetPA(){return PA;}
    TLorentzVector GetPa(){return Pa;}
@@ -985,6 +1001,7 @@ private:
    double ExA, ExB;
 
    bool isNormalKinematics;
+   bool isOverRideExNegative;
    
 };
 
@@ -1002,20 +1019,21 @@ Knockout::Knockout(){
    Seta(1,1);
    Set2(1,1);
    
-   SetBSpk(0, 0, 0, 0);
+   SetBSpk(1000, 0, 0, 0);
    SetIncidentEnergyAngle(10, 0, 0);
    
    ExA = 0;
    
    isNormalKinematics = false;
+   isOverRideExNegative = false;
 }
 
 Knockout::~Knockout(){
 
 }
 
-void Knockout::CalReactionConstant(bool isNormalKinematics){
-   if( ExB < 0 ) return;
+void Knockout::CalIncidentChannel(bool isNormalKinematics){
+   if( ExB < 0 && !isOverRideExNegative) return;
    
    this->isNormalKinematics = isNormalKinematics;
    
@@ -1028,6 +1046,28 @@ void Knockout::CalReactionConstant(bool isNormalKinematics){
       PA.RotateZ(phiIN);
       
       Pa.SetXYZM(0,0,0,ma);
+      
+   }else{
+      //===== construct 4-momentum
+      this->T = KEA * Aa;
+      double ka = TMath::Sqrt(TMath::Power(ma + T, 2) - (ma) * (ma)); 
+      Pa.SetXYZM(0, 0, ka, ma);
+      Pa.RotateY(thetaIN);
+      Pa.RotateZ(phiIN);
+      
+      PA.SetXYZM(0, 0, 0, mA + ExA);  
+   }
+
+}
+
+void Knockout::CalReactionConstant(bool isNormalKinematics){
+   if( ExB < 0 && !isOverRideExNegative) return;
+   
+   this->isNormalKinematics = isNormalKinematics;
+   
+   CalIncidentChannel(isNormalKinematics);
+   
+   if(!isNormalKinematics){
       
       //===== change to A's rest frame
       TVector3 bA = PA.BoostVector();
@@ -1047,14 +1087,6 @@ void Knockout::CalReactionConstant(bool isNormalKinematics){
       PB.Boost(bA);
       
    }else{
-      //===== construct 4-momentum
-      this->T = KEA * Aa;
-      double ka = TMath::Sqrt(TMath::Power(ma + T, 2) - (ma) * (ma)); 
-      Pa.SetXYZM(0, 0, ka, ma + T);
-      Pa.RotateY(thetaIN);
-      Pa.RotateZ(phiIN);
-      
-      PA.SetXYZM(0, 0, 0, mA + ExA);
       
       //===== constructe bounded nucleus b
       PB.SetXYZM(0, 0, -kb, mB);
@@ -1077,7 +1109,7 @@ void Knockout::CalReactionConstant(bool isNormalKinematics){
 }
 
 void Knockout::Event(double thetaCM, double phiCM){
-   if( ExB < 0 ) return;
+   if( ExB < 0 && !isOverRideExNegative ) return;
    
    //===== construct Pcm
    TLorentzVector Pc = Pb + Pa;
@@ -1107,9 +1139,9 @@ void Knockout::Event(double thetaCM, double phiCM){
    P2c.SetVectM(-v1, m2);
    
    //---- to Lab Frame
-   TLorentzVector P1 = P1c;
+   P1 = P1c;
    P1.Boost(bc);
-   TLorentzVector P2 = P2c;
+   P2 = P2c;
    P2.Boost(bc);
    
 }
