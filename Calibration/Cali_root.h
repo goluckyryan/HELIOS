@@ -70,11 +70,11 @@ public :
    Float_t z[24]; 
    int det;
    int hitID; // is e, xf, xn are all fired.
-   int zMulti; // multipicity of z
+   int zMultiHit; // multipicity of z
    
-   Float_t ddt; // downstream detector for deuteron, for H060_208Pb  
+   Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb  
       
-   Float_t thetaCM;
+   //Float_t thetaCM;
    Float_t Ex;   
    Float_t energy;
    Int_t energy_t;
@@ -525,24 +525,24 @@ void Cali_root::Init(TTree *tree)
    newTree->Branch("z" ,   z, "z[24]/F");
    newTree->Branch("detID", &det, "det/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
-   newTree->Branch("zMulti", &zMulti, "zMulti/I");
+   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
    
    if( option >= 2 ){
       newTree->Branch("energy" ,  &energy, "energy/F");
       newTree->Branch("Ex", &Ex, "Ex/F");
-      newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+      //newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
       
       newTree->Branch("e_t", eC_t, "e_t[24]/F");
       newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");
       newTree->Branch("rdt", rdtC, "rdtC[8]/F");
       newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
       newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
+      newTree->Branch("tac", tacC, "tacC[6]/F");
+      newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
    }   
    
    if( option >= 3 ){   
       newTree->Branch("tac_m", &tac_m, "tac_m/I");
-      newTree->Branch("tac", tacC, "tacC[6]/F");
-      newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F");
       newTree->Branch("dt", dt, "dt[6]/I");
       //newTree->Branch("tt", &tt, "tt/F");
       //newTree->Branch("ttt", &ttt, "ttt/F");
@@ -552,6 +552,7 @@ void Cali_root::Init(TTree *tree)
    
    //special for H060_208Pb
    newTree->Branch("ddt", &ddt, "ddt/F");
+   newTree->Branch("ddt_t", &ddt_t, "ddt_t/F");
    
    printf("=========================================================\n");
    

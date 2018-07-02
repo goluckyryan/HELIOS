@@ -254,11 +254,13 @@ public:
    HELIOS();
    ~HELIOS();
    
-   int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
+   bool SetCoincidentWithRecoil(bool TorF){
+      this->isCoincidentWithRecoil = TorF;
+   }
    bool SetDetectorGeometry(string filename);
+   int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
    
    int GetNumberOfDetectorsInSamePos(){return mDet;}
-
    double GetEnergy(){return e;}
    double GetZ(){return z;}
    double GetX(){return x;} // position in each detector, range from -1, 1
@@ -299,7 +301,6 @@ public:
    
    double GetZ0(){return z0;}  // infinite detector
    double GetTime0(){return t0;}
-   
    double GetBField() {return Bfield;}
    double GetDetectorA() {return a;}
 private:
@@ -329,6 +330,8 @@ private:
    double firstPos; // m 
    vector<double> pos; // near position in m
    int nDet, mDet; // nDet = number of different pos, mDet, number of same pos
+   
+   bool isCoincidentWithRecoil;
 };
 
 HELIOS::HELIOS(){
@@ -368,6 +371,8 @@ HELIOS::HELIOS(){
    pos.clear();
    nDet = 0;
    mDet = 0;
+   
+   isCoincidentWithRecoil = true;
 }
 
 HELIOS::~HELIOS(){
@@ -460,7 +465,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
    theta = Pb.Theta();
    phi = Pb.Phi();
-   //printf("bore:%f, rho:%f, firstPos:%f, theta:%f < %f \n", bore, rho, firstPos, theta, TMath::PiOver2() );
    
    if( bore > 2 * rho && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
       //====================== infinite small detector   
@@ -468,7 +472,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
       t0 = TMath::TwoPi() * rho / vt0; // nano-second   
       z0 = vp0 * t0; // mm        
-      //printf("====== z0: %f \n",  z0);
       
       //======================  recoil detector
       thetaB = PB.Theta();
@@ -477,7 +480,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       tB   = posRecoil / (PB.Beta() * TMath::Cos(thetaB) * c ); // nano-second
       eB   = PB.E() - PB.M();
       
-      //========= check particle-b 
+      //========= check is particle-b was blocked by recoil detector
       rhoHit = GetR(posRecoil) ;// radius of light particle b at recoil detector
       if( z0 > 0 && posRecoil > 0 && z0 > posRecoil && rhoHit < rhoRecoil) {
           return -1 ;  // when particle-b blocked by recoil detector
@@ -489,7 +492,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
       vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
       rhoBHit = GetRecoilR(posRecoil);
-      if( rhoBHit > rhoRecoil ) return -2; // when particle-B miss the recoil detector
+      if(isCoincidentWithRecoil && rhoBHit > rhoRecoil ) return -2; // when particle-B miss the recoil detector
 
       //================ Calulate z hit
       double zHit = TMath::QuietNaN();

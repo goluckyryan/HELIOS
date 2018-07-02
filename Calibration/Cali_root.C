@@ -80,13 +80,14 @@ Bool_t Cali_root::Process(Long64_t entry)
    
    det = -4;
    hitID = -4;
-   zMulti = 0;
+   zMultiHit = 0;
    
    ddt = TMath::QuietNaN(); // H060
+   ddt_t = TMath::QuietNaN(); // H060
    
    if( option >= 2){
       Ex  = TMath::QuietNaN();
-      thetaCM  = TMath::QuietNaN();
+      //thetaCM  = TMath::QuietNaN();
       energy    = TMath::QuietNaN();
       energy_t  = -100000;
       
@@ -95,6 +96,11 @@ Bool_t Cali_root::Process(Long64_t entry)
          rdtC_t[i] = TMath::QuietNaN();
       }
       rdt_m = 0;
+      
+      for(int i = 0; i < 6 ; i++){
+         tacC[i] = TMath::QuietNaN();
+         tacC_t[i] = TMath::QuietNaN();
+      }
    }
       
    if( option >= 3){
@@ -106,8 +112,6 @@ Bool_t Cali_root::Process(Long64_t entry)
       
       tac_m = 0;
       for(int i = 0; i < 6 ; i++){
-         tacC[i] = TMath::QuietNaN();
-         tacC_t[i] = TMath::QuietNaN();
          dt[i] = -100000;
       }
    }
@@ -123,14 +127,12 @@ Bool_t Cali_root::Process(Long64_t entry)
    b_XN->GetEntry(entry,0);
    
    b_ELUM->GetEntry(entry, 0); // for H060_208Pb
+   b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
    
    if( option >= 2){
       b_EnergyTimestamp->GetEntry(entry,0);
       b_RDT->GetEntry(entry,0);
       b_RDTTimestamp->GetEntry(entry,0);
-   }
-
-   if( option >= 3){
       b_TAC->GetEntry(entry,0);
       b_TACTimestamp->GetEntry(entry,0);
    }
@@ -147,12 +149,12 @@ Bool_t Cali_root::Process(Long64_t entry)
             rdt_m = rdt_m +1;
          }
       }
-   }
-   if( option >= 3){
       for(int i = 0; i < 6; i++){
-         tacC[i] = tac[i];
-         tacC_t[i] = tac_t[i];
-         tac_m = tac_m +1;
+         if( tac[i] > 0 ){
+            tacC[i] = tac[i];
+            tacC_t[i] = tac_t[i];
+            tac_m = tac_m +1;
+         }
       }
    }
    
@@ -172,7 +174,7 @@ Bool_t Cali_root::Process(Long64_t entry)
       }
    }
    
-   int zMulti = 0;
+   int zMultiHit = 0;
    if(rdt_energy && coincident_t ){
       for(int i = 0; i < numDet; i++){
          //if( -10 < e_t[i] - rdt_t[rID] && e_t[i] - rdt_t[rID] < 10 && rdt[rID] > 5000){  // recoil energy and time gate
@@ -207,7 +209,7 @@ Bool_t Cali_root::Process(Long64_t entry)
             }else{
                z[i] = pos[detID] + (x[i] + 1.)*length/2 ; 
             }
-            zMulti ++;
+            zMultiHit ++;
             count ++;
             det = i;
             //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[i], pos[detID], z[i]);
@@ -223,11 +225,13 @@ Bool_t Cali_root::Process(Long64_t entry)
             Ex = p0 + p1 * energy;
             Ex = Ex/1000.; // in to MeV
             
+            //========= align e
+            eC[i] = m[2]*z[i] - energy; // using slope at detID == 2
             
-            double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
-            double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
-            double costhetaCM = p0 + p1 * z[i];  
-            thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
+            //double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
+            //double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
+            //double costhetaCM = p0 + p1 * z[i];  
+            //thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
             
             // calculate coincident time
             int temp = 10000;
@@ -239,14 +243,11 @@ Bool_t Cali_root::Process(Long64_t entry)
                   if( TMath::Abs(a - b)  < TMath::Abs(temp)){
                      temp    = e_t[i] - rdt_t[rID];
                      ePicked = e_t[i];
-                  } 
-                   
+                  }   
                }
             }
             energy_t = temp;
-            
          }
-         
          
          if( option >= 3 && !TMath::IsNaN(Ex) ){
             //==== for tac Calibration
@@ -309,10 +310,13 @@ Bool_t Cali_root::Process(Long64_t entry)
    }
    
    //for H060
-   ddt = elum[0];
+   if( elum[0] != 0){
+      ddt = elum[0];
+      ddt_t = elum_t[0];
+   }
    
-   //disable for H060, for 
-   if( zMulti == 0 ) return kTRUE;
+   //disable for H060
+   //if( zMultiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file
@@ -324,7 +328,7 @@ Bool_t Cali_root::Process(Long64_t entry)
 
    if ( !shown ) {
       if (fmod(time, 10) < 1 ){
-         printf( "%10d[%2d%%]|%3d min %5.2f sec | expect:%5.1fmin %10d\n", 
+         printf( "%10d[%2d%%]|%3d min %5.2f sec | expect:%5.1fmin, z-valid count : %10d\n", 
                eventID, 
                TMath::Nint((eventID+1)*100./totnumEntry),
                TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
