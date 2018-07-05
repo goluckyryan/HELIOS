@@ -28,7 +28,7 @@ void Count_MaualFit(int detID = -1, int splitCtrl = 0){
    bool isH052 = false;
    
    // for H060 
-   gate = "hitID == 0 && 5 > detID%6 && detID%6 > 0";
+   gate = "hitID >= 0 && e > 200 && 5 > detID%6 && detID%6 > 0";
    gate_cm = "";
    gate_Aux = "";
    
@@ -136,6 +136,9 @@ void Count_MaualFit(int detID = -1, int splitCtrl = 0){
 
    TH1F * spec  = new TH1F("spec" , "spec"  , ExRange[0], ExRange[1], ExRange[2]);
    spec ->SetXTitle("Ex [MeV]");   
+   TString ytitle;
+   ytitle.Form("Count / %6.2f keV", (ExRange[2] - ExRange[1])/ExRange[0] * 1000.);
+   spec ->SetYTitle(ytitle);
    
    //========define gate_z
    TString gate_z;

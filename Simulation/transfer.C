@@ -27,7 +27,7 @@ void transfer(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000;
+   int numEvent = 1000000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo_upstream.txt";
@@ -45,7 +45,7 @@ void transfer(){
    string excitationFile = "excitation_energies.txt";
    
    //---- save root file name
-   TString saveFileName = "test.root";
+   TString saveFileName = "transfer.root";
    
    //---- target
    bool isTargetScattering = true;
@@ -74,7 +74,7 @@ void transfer(){
    
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
-   printf("=========== KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
+   printf("=========== KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f %% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
    printf("======== theta: %7.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
    printf("===== Q-value : %7.4f MeV \n", reaction.GetQValue() );
    printf("======= Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );

@@ -74,7 +74,7 @@ public :
    
    Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb  
       
-   //Float_t thetaCM;
+   Float_t thetaCM;
    Float_t Ex;   
    Float_t energy;
    Int_t energy_t;
@@ -530,7 +530,7 @@ void Cali_root::Init(TTree *tree)
    if( option >= 2 ){
       newTree->Branch("energy" ,  &energy, "energy/F");
       newTree->Branch("Ex", &Ex, "Ex/F");
-      //newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+      newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
       
       newTree->Branch("e_t", eC_t, "e_t[24]/F");
       newTree->Branch("energy_t" ,  &energy_t, "energy_t/I");

@@ -87,7 +87,7 @@ Bool_t Cali_root::Process(Long64_t entry)
    
    if( option >= 2){
       Ex  = TMath::QuietNaN();
-      //thetaCM  = TMath::QuietNaN();
+      thetaCM  = TMath::QuietNaN();
       energy    = TMath::QuietNaN();
       energy_t  = -100000;
       
@@ -228,12 +228,16 @@ Bool_t Cali_root::Process(Long64_t entry)
             //========= align e
             eC[i] = m[2]*z[i] - energy; // using slope at detID == 2
             
-            //double p0 = (0.521973 + 0.011473594 * Ex + 0.000816016 * Ex * Ex);
-            //double p1 = (-0.000721 - 0.000016868 * Ex - 0.000001344 * Ex * Ex); 
-            //double costhetaCM = p0 + p1 * z[i];  
-            //thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
+            //z-correction (for H060_208Pb)
+            z[i] = z[i] + 30.;
             
-            // calculate coincident time
+            //========= from Findz2thetaCM
+            double p0 =  0.671922 + 0.018199917 * Ex + 0.000984063 * Ex * Ex;
+            double p1 = -0.000677 - 0.000021603 * Ex - 0.000001694 * Ex * Ex;
+            double costhetaCM = p0 + p1 * z[i];  
+            thetaCM = TMath::ACos(costhetaCM) * TMath::RadToDeg();
+            
+            //========= calculate coincident time
             int temp = 10000;
             ULong64_t ePicked = -10000000;
             for(int rID = 0; rID < 8; rID ++){
@@ -328,12 +332,11 @@ Bool_t Cali_root::Process(Long64_t entry)
 
    if ( !shown ) {
       if (fmod(time, 10) < 1 ){
-         printf( "%10d[%2d%%]|%3d min %5.2f sec | expect:%5.1fmin, z-valid count : %10d\n", 
+         printf( "%10d[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
                eventID, 
                TMath::Nint((eventID+1)*100./totnumEntry),
                TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
-               totnumEntry*time/(eventID+1)/60.,
-               count);
+               totnumEntry*time/(eventID+1.)/60.);
                shown = 1;
       }
    }else{
@@ -362,7 +365,7 @@ void Cali_root::Terminate()
    newTree->Write(); 
    saveFile->Close();
 
-   printf("-------------- done. %s, %d\n", saveFileName.Data(), count);
+   printf("-------------- done. %s, z-valid count: %d\n", saveFileName.Data(), count);
    
 
 }

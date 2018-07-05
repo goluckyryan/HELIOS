@@ -19,7 +19,7 @@ void Cali_physical(TTree *tree){
    vector<double> knownE;
    knownE.push_back(0);
    knownE.push_back(1567.1);
-   //knownE.push_back(2032.2);
+   knownE.push_back(2032.2);
    knownE.push_back(2500.0);
    
 /**///========================================================  load tree

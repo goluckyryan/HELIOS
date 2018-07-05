@@ -1,6 +1,9 @@
 {   
 /**///======================================================== initial input
-   const char* rootfile="test.root"; const char* treeName="tree";
+   const char* rootfile="~/ANALYSIS/Simulation/transfer.root"; const char* treeName="tree";
+   
+   double zRange[3] = { 400, -500, -100};
+   string excitationFile = "excitation_energies.txt";
    
 /**///========================================================  load tree
 
@@ -28,55 +31,58 @@
    gStyle->SetStatH(0.1);
    
 /**///========================================================= Analysis
-   int numEx = 8;
-   
-   tree->Draw("Ex >> hEx");
-   
-   // get Ex energy
-   TSpectrum * spec = new TSpectrum(numEx+2);
-   spec->Search(hEx);
-   float * xpos = spec->GetPositionX();
-   //Sort
-   
-   int * inX = new int[numEx];
-   TMath::Sort(numEx, xpos, inX, 0 );  
-   vector<double> energy;   
-   for( int j = 0; j < numEx; j++){
-      //printf(" %d , x: %8.3f \n", j, xpos[inX[j]]);
-      energy.push_back(xpos[inX[j]]);
+
+   printf("############################################## excitation energies\n");
+   vector<double> ExKnown;
+   int numEx = 0;
+   printf("----- loading excitation ExKnown levels.");
+   ifstream file;
+   file.open(excitationFile.c_str());
+   string isotopeName;
+   if( file.is_open() ){
+      string exline;
+      int i = 0;
+      while( file >> exline){
+         if( exline.substr(0,2) == "//" ) continue;
+         if( i == 0 ) isotopeName = exline; 
+         if ( i >= 1 ){
+            ExKnown.push_back(atof(exline.c_str()));
+         }
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+      numEx = ExKnown.size();
+
+//      printf("========== %s\n", isotopeName.c_str());
+//      for(int i = 0; i < numEx ; i++){
+//         printf("%d, Ex: %6.2f MeV \n", i, ExKnown[i]);
+//      }
+   }else{
+       printf("... fail\n");
+       return;
    }
 
-
-   // plotting cos(thetaCM) vs z
-   TH2F * k = new TH2F("k", "k", 400, -600, -200, 400, 0.65, 1.0); 
-   
+   //=============== plotting cos(thetaCM) vs z
+   TH2F * k = new TH2F("k", "k", zRange[0], zRange[0], zRange[0], 400, 0.65, 1.0); 
    double c0[numEx], c1[numEx];
-   
    for(int ExID = 0; ExID < numEx ; ExID ++){
       
       TString gate;
-      gate.Form("tag == 2 && rho > 40 &&  ExID == %d", ExID);
-      
-      tree->Draw("TMath::Cos(thetaCM):z >> k", gate, "")   ;
-      
+      gate.Form("loop == 1 && thetaCM > 10 &&  ExID == %d", ExID);
+      tree->Draw("TMath::Cos(thetaCM*TMath::DegToRad()):z >> k", gate, "")   ;
       // fit pol1
-      k->ProfileX("kpx");
-      kpx->Fit("pol1", "q");
+      k->Fit("pol1", "q");
       
       c0[ExID] = pol1->GetParameter(0);
       c1[ExID] = pol1->GetParameter(1);
       
-      printf("%d, Ex:%f -- c[0]: %9.6f, c[1]: %20.15f \n", ExID, energy[ExID], c0[ExID], c1[ExID]); 
-      
-      //cScript->Update();
-      //printf("press 1 for continous.");
-      //int dummy;
-      //scanf("%d", &dummy);
+      printf("%d, Ex:%f -- c[0]: %9.6f, c[1]: %20.15f \n", ExID, ExKnown[ExID], c0[ExID], c1[ExID]); 
       
    }
    
-   // Find the energy vs c0, energy vs c1;
-   TGraph * g0 = new TGraph(numEx, &energy[0], &c0[0] );
+   //============ Find the ExKnown vs c0, ExKnown vs c1;
+   TGraph * g0 = new TGraph(numEx, &ExKnown[0], &c0[0] );
    g0->Draw("*ap");
    g0->Fit("pol2", "q");
    double e00 = pol2->GetParameter(0);
@@ -89,7 +95,7 @@
    e2c0->SetParameter(1, e01);
    e2c0->SetParameter(2, e02);
 
-   TGraph * g1 = new TGraph(numEx, &energy[0], &c1[0] );
+   TGraph * g1 = new TGraph(numEx, &ExKnown[0], &c1[0] );
    g1->Draw("*ap");
    g1->Fit("pol2", "q");
    double e10 = pol2->GetParameter(0);
@@ -102,11 +108,13 @@
    e2c1->SetParameter(1, e11);
    e2c1->SetParameter(2, e12);
    
-   tree->Draw("TMath::Cos(thetaCM):z >> ezt", "tag==2 && rho > 100");
+   
+   //============ test
+   tree->Draw("TMath::Cos(thetaCM*TMath::DegToRad()):z >> ezt", "loop==1 && thetaCM > 10 && 5 > detID && detID > 0 && hit == 1");
    
    // for Ex = 0;
-   double ex = energy[3];
-   TF1 * line = new TF1("line", "[0] + [1]*x", -600, -200);
+   double ex = ExKnown[2];
+   TF1 * line = new TF1("line", "[0] + [1]*x", zRange[1], zRange[2]);
    double p0 = e2c0->Eval(ex);
    line->SetParameter(0, p0);
    double p1 = e2c1->Eval(ex);

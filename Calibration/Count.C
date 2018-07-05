@@ -27,7 +27,7 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    bool isH052 = false;
    
    // for H060 
-   gate = "hitID == 0 && 5 > detID%6 && detID%6 > 0";
+   gate = "hitID >= 0 &&  e > 200 && 5 > detID%6 && detID%6 > 0";
    gate_cm = "";
    gate_Aux = "";
    
