@@ -3,6 +3,7 @@
 #include <TCanvas.h>
 #include <TROOT.h>
 #include <TStyle.h>
+#include <TProfile.h>
 #include <TH2F.h>
 #include <TH1F.h>
 #include <TF1.h>
@@ -12,14 +13,7 @@
 #include <fstream>
 
 void Cali_xf_xn_to_e(TTree *tree){
-   gStyle->SetOptStat(1111111111111111);
-   
-   //const char* rootfile="~/ANALYSIS/H060_ana/C_gen_run11.root";
-   
-	//###########################  load tree
-   //TFile *f0 = new TFile (rootfile, "read"); 
-   //TTree *tree = (TTree*)f0->Get("tree");
-   //printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   gStyle->SetOptStat(11111111);
    
    printf("=========== Total #Entry: %10d \n", tree->GetEntries());
 
@@ -43,8 +37,9 @@ void Cali_xf_xn_to_e(TTree *tree){
 /**///========================================================= Analysis
 
    //======== create histogram for each detector
+   printf("creating xf-xn histogram for each detector.... please wait.\n"); 
    const int nDet = 24;
-   TH2F ** d = new TH2F[nDet];
+   TH2F ** d = new TH2F*[nDet];
    for( int i = 0; i < nDet; i ++){
       TString name;
       name.Form("d%d", i);
@@ -60,11 +55,11 @@ void Cali_xf_xn_to_e(TTree *tree){
       
       cCali_xf_xn_e->cd(i+1);
       tree->Draw(expression, gate , "");
-      
-      //printf("========  i = %d \n", i); 
+      cCali_xf_xn_e->Update();  
    }
    
    //======== profileX
+   printf("fitting slope.\n");
    Double_t* slope = new Double_t[nDet];
    Double_t* intep = new Double_t[nDet];
    
@@ -73,12 +68,7 @@ void Cali_xf_xn_to_e(TTree *tree){
    for( int i = 0; i < nDet; i ++){
    
       cCali_xf_xn_e->cd(i+1);
-      d[i]->ProfileX("d_prx");
-      
-      //printf("===================== d%i \n", i);
-      
-      //fit
-      d_prx->Fit("fit", "q");
+      d[i]->Fit("fit", "q");
       
       slope[i] = fit->GetParameter(1);
       intep[i] = fit->GetParameter(0);
@@ -88,7 +78,7 @@ void Cali_xf_xn_to_e(TTree *tree){
    cCali_xf_xn_e->Update();
    //===== save correction parameter
    int dummy = 0;
-   printf("0 for end, 1 for save e-xf+xn correction & Canvas: ");
+   printf("0 for end, 1 for save e-xf+xn correction: ");
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){
@@ -106,7 +96,7 @@ void Cali_xf_xn_to_e(TTree *tree){
       
       printf("=========== save xfxn-e-correction parameters to %s \n", "correction_xfxn_e.dat");
       
-      cCali_xf_xn_e->SaveAs("xfxn_e_correction.pdf");
+      //cCali_xf_xn_e->SaveAs("xfxn_e_correction.pdf");
       
       printf("=========== save canvas to %s \n", "xfxn_e.pdf");
       

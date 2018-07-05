@@ -1,10 +1,18 @@
 void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {   
-
+   //mode == 0; all detector
+   //mode == 1; individual detector
+   
 /**///======================================================== initial input
    
-   const char* rootfile0="X_H052_Mg25.root"; const char* treeName0="tree";
-   const char* rootfile1="test.root";        const char* treeName1="tree";
+   const char* rootfile0="~/ANALYSIS/H060_ana/C_gen_run11.root"; const char* treeName0="tree";
+   const char* rootfile1="~/ANALYSIS/Simulation/transfer.root"; const char* treeName1="tree";
    
+   double zRange[3] = {400, -450, -100};
+   
+   TString expression, gate_e, gate, gate_det;
+   gate_e.Form("loop == 1 && TMath::Abs(Ex-%f) < 0.01 && thetaCM > 9 && hit == 1", Ex);      
+   
+    
 /**///========================================================  load tree
 
    TFile *f0 = new TFile (rootfile0, "read"); 
@@ -37,27 +45,21 @@ void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {
 
 /**///========================================================= Analysis
    
-   //double Ex = 4.3;
-   
    printf("============================ Ex : %f\n", Ex);
-   TString expression, gate_e, gate, gate_det;
    
-   TH1F* h = new TH1F("h", "h", 500, 0, 50);
-   TH2F* h2 = new TH2F("h2", "h2", 400, -600, -200, 500, 0, 50); 
-   TH1F* w = new TH1F("w", "Z_th", 400, -600, -200);
-   TH1F* k = new TH1F("k", "Z_exp", bin, -600, -200); 
+   TH1F* h = new TH1F("h", "thetaCM", 500, 0, 50);
+   TH2F* h2 = new TH2F("h2", "thetaCMvZ", zRange[0], zRange[1], zRange[2], 500, 0, 50); 
+   TH1F* w = new TH1F("w", "Z_th", zRange[0], zRange[1], zRange[2]);
+   TH1F* k = new TH1F("k", "Z_exp", bin, zRange[1], zRange[2]); 
    
    if( mode == 1 ){
    
       for( int i = 0; i < 6; i++){
          //printf("--------- detID == %d \n", i);
          gate_det.Form("&& detID%6 == %d", i);
-         gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.01 && thetaCM > 9", Ex);      
-      
-         //============= get the acceptance
          
+         //============= get the acceptance
          tree1->Draw("thetaCM >> h", gate_e + gate_det);
-           
          tree1->Draw("thetaCM : z >> h2", gate_e + gate_det);
          
          if( h->GetEntries() == 0){
@@ -92,7 +94,8 @@ void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {
             double mean = (angle[2*j+1] + angle[2*j])/2;
             if ( delta < 2. ) continue;
             dCos.push_back(TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
-            printf(" %10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
+            printf("%d, %10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
+                       j,
                        angle[2*j], 
                        angle[2*j+1], 
                        delta,
@@ -103,8 +106,8 @@ void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {
          tree1->Draw("z >> w", gate_e + gate_det);
          double wMax = w->GetMaximum(); 
          
-         
-         gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
+         //gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
+         gate.Form("TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
          tree0->Draw("z >> k", gate + gate_det );
          
          w->Scale(50./wMax);

@@ -1,3 +1,16 @@
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TSpectrum.h>
+#include <TGraph.h>
+#include <fstream>
+
 int nPeaks = 16;
 
 Double_t fpeaks(Double_t *x, Double_t *par) {
@@ -29,7 +42,7 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    // for H060 
    gate = "hitID >= 0 &&  e > 200 && 5 > detID%6 && detID%6 > 0";
    gate_cm = "";
-   gate_Aux = "";
+   gate_Aux = ""; // for detID == -1
    
    string detGeoFileName = "/home/ttang/ANALYSIS/H060_ana/detectorGeo_upstream.txt";
    
@@ -144,6 +157,9 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
             gate.Form("good == 1 && det%6 == %d && det != 11 && TMath::Abs(t4)<1000", detID);
          }
       }   
+      
+      gate_Aux.Form("&& detID%6 == %d", detID);
+      
    }else if (detID == -1){
       //gate.Form("good == 1 && det != 11 && det != 18 && TMath::Abs(t4)<1000");
       if( firstPos > 0 ){
