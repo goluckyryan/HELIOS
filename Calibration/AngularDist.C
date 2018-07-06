@@ -1,4 +1,17 @@
-void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {   
+#include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TH2F.h>
+#include <TH1F.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TSpectrum.h>
+#include <TGraph.h>
+#include <fstream>
+
+void AngularDist(int mode, double Ex, double dEx = 0.2, int bin = 80) {   
    //mode == 0; all detector
    //mode == 1; individual detector
    
@@ -9,8 +22,9 @@ void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {
    
    double zRange[3] = {400, -450, -100};
    
-   TString expression, gate_e, gate, gate_det;
-   gate_e.Form("loop == 1 && TMath::Abs(Ex-%f) < 0.01 && thetaCM > 9 && hit == 1", Ex);      
+   //setting for simulation
+   double thetaCMLow = 10; //deg
+   double dEx_sim = 0.05; // MeV
    
     
 /**///========================================================  load tree
@@ -44,195 +58,77 @@ void AngularDist(int mode, double Ex, int bin = 80, double dEx = 0.02) {
 /**///========================================================= load files
 
 /**///========================================================= Analysis
-   
+
+   TString expression, gate_sim, gate_exp, gate_det;
+   gate_sim.Form("loop == 1 && TMath::Abs(Ex-%f) < %f && thetaCM > %f && hit == 1", Ex, dEx_sim, thetaCMLow);      
+
    printf("============================ Ex : %f\n", Ex);
    
    TH1F* h = new TH1F("h", "thetaCM", 500, 0, 50);
    TH2F* h2 = new TH2F("h2", "thetaCMvZ", zRange[0], zRange[1], zRange[2], 500, 0, 50); 
    TH1F* w = new TH1F("w", "Z_th", zRange[0], zRange[1], zRange[2]);
    TH1F* k = new TH1F("k", "Z_exp", bin, zRange[1], zRange[2]); 
-   
-   if( mode == 1 ){
-   
-      for( int i = 0; i < 6; i++){
-         //printf("--------- detID == %d \n", i);
-         gate_det.Form("&& detID%6 == %d", i);
-         
-         //============= get the acceptance
-         tree1->Draw("thetaCM >> h", gate_e + gate_det);
-         tree1->Draw("thetaCM : z >> h2", gate_e + gate_det);
-         
-         if( h->GetEntries() == 0){
-            printf(" no data for detID == %d \n", i);
-            continue;
-         }
-         //============== find the acceptance, the angle the count drop
-         vector<double> angle;
-         angle.clear();
-         for(int j = 1 ; j < 500; j++){
-            int a = h->GetBinContent(j);
-            int b = h->GetBinContent(j+1);
-            
-            if( a == 0 && b > 0) {
-               angle.push_back(h->GetBinLowEdge(j+1));
-               //printf(" boundary : %10.5f\n", h[i]->GetBinLowEdge(j+1) );
-            }
-            if( a > 0 && b == 0) {
-               angle.push_back(h->GetBinLowEdge(j+1));
-               //printf(" boundary : %10.5f\n", h[i]->GetBinLowEdge(j+1) );
-            }
-         }
-         
-         if( angle.size() == 4){
-            angle.erase(angle.begin(), angle.begin()+2);
-         }
-               
-         vector<double> dCos;
-         dCos.clear();
-         for( int j = 0; j < angle.size()/2; j++){
-            double delta = angle[2*j+1] - angle[2*j];
-            double mean = (angle[2*j+1] + angle[2*j])/2;
-            if ( delta < 2. ) continue;
-            dCos.push_back(TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
-            printf("%d, %10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
-                       j,
-                       angle[2*j], 
-                       angle[2*j+1], 
-                       delta,
-                       mean,
-                       1./TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
-         }
-         
-         tree1->Draw("z >> w", gate_e + gate_det);
-         double wMax = w->GetMaximum(); 
-         
-         //gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
-         gate.Form("TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
-         tree0->Draw("z >> k", gate + gate_det );
-         
-         w->Scale(50./wMax);
-         w->Draw("");
-         k->SetLineColor(2);
-         k->Draw("same");
-         h2->Draw("same");
-         
-         cAngularDist->Update();
-         //printf("0 for stop, 1 for continous : ");
-         //int dummy;
-         //scanf("%d", &dummy);
-         //if( dummy == 0 ) break;
-      }
-      
-   }else if (mode == 0) {
-      gate_e.Form("tag == 2 && TMath::Abs(Ex-%f) < 0.1", Ex);  
-      gate.Form("good == 1 && TMath::Abs(t4)<1000 && TMath::Abs(Ex-%4.1f)<%3f", Ex, dEx);
-   }
-    
-   tree1->Draw("thetaCM : z >> h2", gate_e );
-   tree1->Draw("z >> w", gate_e);
-   tree0->Draw("z >> k", gate  );
-   double wMax = w->GetMaximum(); 
-   
-   w->Scale(50./wMax);
-   w->Draw("");
-   
-   k->SetLineColor(2);
-   double kMax = k->GetMaximum();
-   k->Scale(50./kMax);
-   k->Draw("same");
-   h2->Draw("same");
-   
-   /**/
-   
-   /*
-   //=========== get the background-free distribution
-   
-   //gate  = "good == 1 && det%6 != 5 && TMath::Abs(t4)<1000";
-   //gate  = "good == 1 && det%6 == 0 && TMath::Abs(t4)<1000";
-   //gateB = "good == 0 && TMath::Abs(energy_t)<20 && det%6 != 5 && TMath::Abs(t4)<1000";
-   gate_cm = "&& 50 > thetaCM && thetaCM > 0 ";
+
+   vector<double> angle;
+   vector<double> meanAngle;
+   vector<double> dCos; 
    
    for( int i = 0; i < 6; i++){
-      TH1F * spec  = new TH1F("spec" , "spec"  , 400, -1, 10);
-      spec ->SetXTitle("Ex [MeV]");
+      //printf("--------- detID == %d \n", i);
+      gate_det.Form("&& detID%6 == %d", i);
       
-      gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", i);
+      //============= get the acceptance from simulation
+      tree1->Draw("thetaCM >> h", gate_sim + gate_det);
+      tree1->Draw("thetaCM : z >> h2", gate_sim + gate_det);
       
-      tree0->Draw("Ex>>spec ", gate + gate_cm, "");
-     
-      TSpectrum * peak = new TSpectrum(20);
-      peak->Search(spec, 1, "", 0.05);
-      TH1 * h1 = peak->Background(spec,10);
-      //h1->Sumw2();
-      
-      TH1F * specS = (TH1F*) spec->Clone();
-      specS->SetTitle("t4-gate && |e_t| < 20 &&  det%6 != 5 && TMath::Abs(t4)<1000" + gate_cm);
-      specS->SetName("specS");
-      specS->Add(h1, -1.);
-      specS->Sumw2();
-      specS->Draw();
-      
-      
-      //========== Fitting 
-      nPeaks  = peak->Search(specS, 1, "", 0.05);
-      double * xpos = peak->GetPositionX();
-      double * ypos = peak->GetPositionY();
-      
-      int * inX = new int[nPeaks];
-      TMath::Sort(nPeaks, xpos, inX, 0 );
-      vector<double> energy, height;
-      for( int j = 0; j < nPeaks; j++){
-         energy.push_back(xpos[inX[j]]);
-         height.push_back(ypos[inX[j]]);
+      if( h->GetEntries() == 0){
+         printf(" no data for detID == %d \n", i);
+         continue;
+      }
+      //============== find the acceptance, the angle the count drop
+      angle.clear();
+      for(int j = 1 ; j < 500; j++){
+         int a = h->GetBinContent(j);
+         int b = h->GetBinContent(j+1);
+         
+         if( a == 0 && b > 0) angle.push_back(h->GetBinLowEdge(j+1));
+         if( a > 0 && b == 0) angle.push_back(h->GetBinLowEdge(j+1));
       }
       
-      int nEPeaks = 0;
-      
-      const int  n = 3 * (nPeaks + nEPeaks);
-      double * para = new double[n]; 
-      for(int i = 0; i < nPeaks ; i++){
-         para[3*i+0] = height[i] * 0.05 * TMath::Sqrt(TMath::TwoPi());
-         para[3*i+1] = energy[i];
-         para[3*i+2] = 0.05;
-         //printf("%2d, %f \n", i, para[3*i+1]);
+      if( angle.size() == 4){
+         angle.erase(angle.begin(), angle.begin()+2);
+      }
+            
+      //============ print angle
+      meanAngle.clear();
+      dCos.clear();
+      for( int j = 0; j < angle.size()/2; j++){
+         double delta = angle[2*j+1] - angle[2*j];
+         meanAngle = (angle[2*j+1] + angle[2*j])/2;
+         if ( delta < 2. ) continue;
+         dCos.push_back(TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
+         printf("%d, %10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
+                    j,
+                    angle[2*j], 
+                    angle[2*j+1], 
+                    delta,
+                    mean,
+                    1./TMath::Sin(mean*TMath::DegToRad())*(delta*TMath::DegToRad()));
       }
       
-      for( int i = nPeaks ; i < nPeaks + nEPeaks; i++){
-         para[3*i+0] = 20.; 
-         para[3*i+0] = 3.5; 
-         para[3*i+0] = 0.05;
-      }
-      
-      TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3*( nPeaks + nEPeaks ));
-      fit->SetNpx(1000);
-      fit->SetParameters(para);
-      //fit->Draw("same");   
-      specS->Fit("fit", "q");
-      
-      const Double_t* paraE = fit->GetParErrors();
-      const Double_t* paraA = fit->GetParameters();
-      
-      double bw = specS->GetBinWidth(1);
-      
-      double * ExPos = new double[nPeaks];
-      
-      for(int i = 0; i < nPeaks + nEPeaks; i++){
-         ExPos[i] = paraA[3*i+1];
-      }
-      //sort ExPos
-
-      
-      for(int i = 0; i < nPeaks + nEPeaks; i++){
-         ExPos[i] = paraA[3*i+1];
-         printf("%2d , count: %8.0f(%3.0f), mean: %8.4f(%8.4f), sigma: %8.4f(%8.4f) \n", 
-                 i, 
-                 paraA[3*i] / bw,   paraE[3*i] /bw, 
-                 paraA[3*i+1], paraE[3*i+1],
-                 paraA[3*i+2], paraE[3*i+2]);
-      }
-   
    }
    
-   /**/
+   //====== get Ex -z gate from simulation
+   
+   
+   //========== for experimental data
+   gROOT->ProcessLine(".L /home/ttang/ANALYSIS/Calibration/Count.C+");
+   
+   gate_exp.Form("TMath::Abs(Ex-%4.1f)<%f", Ex, dEx);
+   
+   
+   //========== if Xsec exist.
+   
+   
 }
 

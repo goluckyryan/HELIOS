@@ -27,7 +27,7 @@ void Calibration(){
 
    int option = 0;
    printf(" ========= Analysis ============== \n");
-   printf(" xf - xn calibration should be done before\n");
+   printf(" xf - xn calibration should be done before\n"); //TODO, include alpha-calibration
    printf(" ================================= \n");
    printf(" 0 = generate C_*.root, remember to Set correction files in advance.\n");
    printf(" 1 = xf+xn to e calibration \n");
