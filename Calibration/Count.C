@@ -48,7 +48,7 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    
 /**///========================================================  load tree
 
-   printf("=====>  Total #Entry: %10d \n", tree->GetEntries());
+   printf("==============>  Total #Entry: %10d \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas
 
@@ -71,114 +71,48 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    
 /**///========================================================= load files
 
-   //=================== load detector geometery
-   vector<double> pos;
-   double length = 50.5;
-   double firstPos = 0;
-   int iDet = 6;
-   int jDet = 4;
-
-   printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
-   ifstream file(detGeoFileName.c_str(), std::ifstream::in);
-   int i = 0;
-   if( file.is_open() ){
-      string x;
-      while( file >> x){
-         //printf("%d, %s \n", i,  x.c_str());
-         if( x.substr(0,2) == "//" )  continue;
-         if( i == 6 ) length   = atof(x.c_str());
-         if( i == 8 ) firstPos = atof(x.c_str());
-         if( i == 9 ) jDet = atoi(x.c_str());
-         if( i >= 10 ) {
-            pos.push_back(atof(x.c_str()));
-         }
-         i = i + 1;
-      }
-      
-      int iDet = pos.size();
-      file.close();
-      printf("... done.\n");
-      
-      for(int id = 0; id < iDet; id++){
-         pos[id] = firstPos + pos[id];
-      }
-      
-      for(int i = 0; i < iDet ; i++){
-         if( firstPos > 0 ){
-            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
-         }else{
-            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - length , pos[i]);
-         }
-      }
-      printf("=======================\n");
-      
-   }else{
-       printf("... fail\n");
-       
-   }
-   
-   double zMPos[6];
-   for(int i = 0; i < iDet ; i++){
-      if(firstPos < 0 ){
-         zMPos[i] = pos[i] - length/2;
-      }else{
-         zMPos[i] = pos[i] + length/2;
-      }
-   } 
-
 /**///========================================================= Analysis
 
    TH1F * spec  = new TH1F("spec" , "spec"  , ExRange[0], ExRange[1], ExRange[2]);
    spec ->SetXTitle("Ex [MeV]");   
    
-   //========define gate_z
-   TString gate_z;
-   if( detID >= 0 ){
-      //gate.Form("good == 1 && det%6 == %d && TMath::Abs(t4)<1000", detID);
-      if( splitCtrl == 0 ) {
-         if( firstPos > 0 ){
-            gate_z.Form("&& %f < z && z < %f", pos[0] - 10, pos[iDet-1] + length + 10);
-         }else{
-            gate_z.Form("&& %f < z && z < %f", pos[0] - length - 10, pos[iDet-1] + 10);
-         }
-      }
-      if( splitCtrl == 1) {
-         gate_z.Form("&& z < %f", zMPos[detID]);
-      }
-      if( splitCtrl == 2) {
-         gate_z.Form("&& z > %f", zMPos[detID]);
-      }
-      //exclude defected detectors
-      if( isH052 ){
-         if( detID == 0){
-            gate.Form("good == 1 && det%6 == %d && det != 18 && TMath::Abs(t4)<1000", detID);
-         }
-         if( detID == 5){
-            gate.Form("good == 1 && det%6 == %d && det != 11 && TMath::Abs(t4)<1000", detID);
-         }
-      }   
-      
-      gate_Aux.Form("&& detID%6 == %d", detID);
-      
-   }else if (detID == -1){
-      //gate.Form("good == 1 && det != 11 && det != 18 && TMath::Abs(t4)<1000");
-      if( firstPos > 0 ){
-         gate_z.Form("&& %f < z && z < %f", pos[0] - 10, pos[iDet-1] + length + 10);
-      }else{
-         gate_z.Form("&& %f < z && z < %f", pos[0] - length - 10, pos[iDet-1] + 10);
-      }
+   //========define gate_x
+   TString gate_x;
+   if( splitCtrl == 0 ) {
+      gate_x.Form("&& -1.5 < x && x < 1.5"); 
+   }else if( splitCtrl == 1) {
+      gate_x.Form("&& x < 0");
+   }else if( splitCtrl == 2) {
+      gate_x.Form("&& x > 0");
+   }else if( splitCtrl == 3) {
+      gate_x.Form("&& x < -1./3.");
+   }else if( splitCtrl == 4) {
+      gate_x.Form("&& x > 1./3.");
    }
    
-   printf("%s\n", gate.Data());
-   printf("%s\n", gate_cm.Data());
-   printf("%s\n", gate_z.Data());
-   printf("%s\n", gate_Aux.Data());
-
-   printf(" threshold : %f \n", threshold);
+   //===== exclude defected detectors
+   if( isH052 ){
+      if( detID == 0){
+         gate.Form("good == 1 && det%6 == %d && det != 18 && TMath::Abs(t4)<1000", detID);
+      }
+      if( detID == 5){
+         gate.Form("good == 1 && det%6 == %d && det != 11 && TMath::Abs(t4)<1000", detID);
+      }
+   }   
+   
+   if( detID >= 0 ){
+      gate_Aux.Form("&& detID%6 == %d", detID);  
+   }
+   
+   printf("gate        : %s\n", gate.Data());
+   printf("gate_thetCM : %s\n", gate_cm.Data());
+   printf("gate_x      : %s\n", gate_x.Data());
+   printf("gate_Aux    : %s\n", gate_Aux.Data());
+   printf("threshold   : %f\n", threshold);
    
    //================= plot Ex
    printf("============= plot Ex with gates\n");    
-   tree->Draw("Ex>>spec ", gate + gate_z +  gate_cm + gate_Aux, "");
+   tree->Draw("Ex>>spec ", gate + gate_x +  gate_cm + gate_Aux, "");
   
    cCount->cd(1);
    spec ->Draw();
@@ -190,18 +124,10 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    TSpectrum * peak = new TSpectrum(50);
    peak->Search(spec, 1, "", threshold);
    TH1 * h1 = peak->Background(spec,10);
-   //h1->Sumw2();
    h1->Draw("same");
    
    cCount->cd(2);
-   //TH1F * specS = (TH1F*) spec->Clone();
    TString title;
-   //if( detID >= 0){
-   //   title.Form("t4-gate && |e_t| < 20 && det%6 == %d && TMath::Abs(t4)<1000", detID);
-   //}else if(detID == -1){
-   //   title.Form("t4-gate && |e_t| < 20 && TMath::Abs(t4)<1000");
-   //}
-   //specS->SetTitle(title + gate_cm + gate_z + " && thetaCM > 8");
    specS->SetName("specS");
    specS->Add(h1, -1.);
    specS->Sumw2();
@@ -234,7 +160,7 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
       para[3*i+2] = 0.05;
    }
 
-   TF1 * fit = new TF1("fit", fpeaks, -1 , 10, 3* nPeaks );
+   TF1 * fit = new TF1("fit", fpeaks, ExRange[1], ExRange[2], 3* nPeaks );
    fit->SetNpx(1000);
    fit->SetParameters(para);
    specS->Fit("fit", "q");
