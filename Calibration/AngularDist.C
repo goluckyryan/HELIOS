@@ -9,6 +9,7 @@
 #include <TMath.h>
 #include <TSpectrum.h>
 #include <TGraph.h>
+#include <TLegend.h>
 #include <fstream>
 
 int nPeaks = 16;
@@ -24,26 +25,29 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
    return result;
 }
 
-Double_t fsquare(Double_t *x, Double_t *par){
-   Double_t result = 0;
-   
-   if( par[0] < x[0] && x[0] < par[1] ){
-      result = par[2]; 
-   }else{
-      result = 0;
-   }
 
-   return result;
+TGraph * g1, *g2, *gData;
+
+Double_t func1(Double_t *x, Double_t *) {return g1->Eval(x[0]);}
+Double_t func2(Double_t *x, Double_t *) {return g2->Eval(x[0]);}
+Double_t func(Double_t *x, Double_t *para) {
+   double f1 = g1->Eval(x[0]);
+   double f2 = g2->Eval(x[0]);
+   double val = para[0] * f1 + para[1] * f2;
+   
+   return val;
 }
 
 TString expression, gate_sim, gate_exp, gate_det, gate_aux;
 
-void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {   
+void AngularDist(int ExID, int nSplit = 2, double dEx = 0.2, int bin = 80) {   
+   // number of partition = nSplit + 1
    
 /**///======================================================== initial input
    
    const char* rootfile0="~/ANALYSIS/H060_ana/C_gen_run11.root"; const char* treeName0="tree";
    const char* rootfile1="~/ANALYSIS/Simulation/transfer.root"; const char* treeName1="tree";
+   //the transfer.root contain tx# for thetaCM vs z
    
    double zRange[3] = {400, -500, -100};
    
@@ -53,19 +57,18 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
    int detID[2] = {1, 4}; // start, end detID
    
    double ExRange[3] = {100, -1, 4};
-   int nSplit = 3;
    double threshold = 0.1;
    
-   bool isIgnoreEdge = true;
+   bool isIgnoreEdge = true; // at least nSplit >= 2;
     
 /**///========================================================  load tree
    
-   TFile *f0 = new TFile (rootfile0, "read"); 
-   TTree *tree0 = (TTree*)f0->Get(treeName0);
+   TFile *file0 = new TFile (rootfile0, "read"); 
+   TTree *tree0 = (TTree*)file0->Get(treeName0);
    printf("=====> /// %20s //// is loaded. Total #Entry: %10d \n", rootfile0,  tree0->GetEntries());
    
-   TFile *f1 = new TFile (rootfile1, "read"); 
-   TTree *tree1 = (TTree*)f1->Get(treeName1);
+   TFile *file1 = new TFile (rootfile1, "read"); 
+   TTree *tree1 = (TTree*)file1->Get(treeName1);
    printf("=====> /// %20s //// is loaded. Total #Entry: %10d \n", rootfile1,  tree1->GetEntries());
    
 /**///======================================================== Browser or Canvas
@@ -87,7 +90,52 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load files
+   vector<double> pos;
+   double length = 50.5;
+   double firstPos = 0;
+   int iDet = 6;
+   int jDet = 4;
 
+   string detGeoFileName = "/home/ttang/ANALYSIS/Simulation/detectorGeo_upstream.txt";
+   
+   printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
+   ifstream file(detGeoFileName.c_str(), std::ifstream::in);
+   int i = 0;
+   if( file.is_open() ){
+      string x;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" )  continue;
+         if( i == 6 ) length   = atof(x.c_str());
+         if( i == 8 ) firstPos = atof(x.c_str());
+         if( i == 9 ) jDet = atoi(x.c_str());
+         if( i >= 10 ) {
+            pos.push_back(atof(x.c_str()));
+         }
+         i = i + 1;
+      }
+      
+      iDet = pos.size();
+      file.close();
+      printf("... done.\n");
+      
+      for(int id = 0; id < iDet; id++){
+         pos[id] = firstPos + pos[id];
+      }
+      
+      for(int i = 0; i < iDet ; i++){
+         if( firstPos > 0 ){
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
+         }else{
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - length , pos[i]);
+         }
+      }
+      printf("=======================\n");
+      
+   }else{
+       printf("... fail\n");
+       return ;
+   }
 /**///========================================================= Analysis
 
    TString gate_x;
@@ -139,10 +187,23 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
    }else{
       printf("isIgnoreEdge: false \n");
    }
+   
+   TString fName; fName.Form("tx%d", ExID);
+   TGraph * g0 = (TGraph *) file1->FindObjectAny(fName);
+   
    for( int idet = detID[0]; idet <= detID[1]; idet++){
       
       printf("============================== detID : %d\n", idet);
       gate_det.Form("&& detID%6 == %d", idet);  
+      
+      double pos0, pos1;
+      if( firstPos > 0 ){
+         pos0 = pos[idet];
+         pos1 = pos[idet]+length;
+      }else{
+         pos0 = pos[idet]-length;
+         pos1 = pos[idet];
+      }
       
       for(int iSplit = 0; iSplit < nSplit+1; iSplit ++){
             
@@ -154,7 +215,7 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
          if( split[0] < -1.0 + 0.01 ) split[0] = -1.5;
          if( split[1] > +1.0 - 0.01 ) split[1] = +1.5;
 
-         if( isIgnoreEdge && split[0] < -1 || split[1] > 1) continue;
+         if( isIgnoreEdge && nSplit >=2 && (split[0] < -1 || split[1] > 1)) continue;
 
          gate_x.Form("&& %f < x && x < %f", split[0], split[1]);
          
@@ -166,7 +227,7 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
          cAngularDist->cd(idet);
          tree1->Draw("thetaCM >> h", gate_sim + gate_det + gate_x);
          tree1->Draw("thetaCM : z >> h2", gate_sim + gate_det+gate_x);
-
+         g0->Draw("same");
          cAngularDist->Update();
 
          if( h->GetEntries() == 0){
@@ -174,27 +235,35 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
             continue;
          }
          //============== find the acceptance, the angle the count drop
+         // using the calculated TGraph in transfer.root
          vector<double> angle;
          angle.clear();
-         for(int j = 1 ; j < 500; j++){
-            int a = h->GetBinContent(j);
-            int b = h->GetBinContent(j+1);
-            
-            if( a == 0 && b > 0) angle.push_back(h->GetBinLowEdge(j+1));
-            if( a > 0 && b == 0) angle.push_back(h->GetBinLowEdge(j+1));
+         
+         double posSplit[2];
+         if( split[0] < -1 ){ 
+            posSplit[0] = pos0;
+         }else{
+            posSplit[0] = pos0 + (split[0] + 1) * (pos1 - pos0)/2;
          }
          
-         int sizeOfAngle = angle.size();
-         if( sizeOfAngle > 2){
-            angle.erase(angle.begin(), angle.begin()+sizeOfAngle-2);
+         if( split[1] > +1 ){ 
+            posSplit[1] = pos1;
+         }else{
+            posSplit[1] = pos0 + (split[1] + 1) * (pos1 - pos0)/2;
          }
+         
+         if( g0->Eval(posSplit[0]) < thetaCMLow ) {
+            angle.push_back(thetaCMLow);
+         }else{
+            angle.push_back(g0->Eval(posSplit[0]));
+         }
+         angle.push_back(g0->Eval(posSplit[1]));
              
          //============ print angle
          for( int j = 0; j < (int) angle.size()/2; j++){
             double delta = angle[2*j+1] - angle[2*j];
             meanAngle.push_back((angle[2*j+1] + angle[2*j])/2);
             
-            //if ( delta < 1. ) continue;
             dCos.push_back(TMath::Sin(meanAngle.back()*TMath::DegToRad())*(delta*TMath::DegToRad()));
             
             printf("%10.5f - %10.5f = %10.5f | %10.5f, %10.5f \n", 
@@ -294,33 +363,113 @@ void AngularDist(int ExID, double dEx = 0.2, int bin = 80) {
    
    printf("================ summary \n");
    int nDet = (int) detIDAdapted.size();
+   vector<double> dXsec;
+   double factor = 1./100;
    double countMax = 0;
    double countMin = 10000;
    for( int idet = 0; idet < nDet; idet++){
-      
-      if( countAdapted[idet] > countMax) countMax = countAdapted[idet];
-      if( countAdapted[idet] < countMin) countMin = countAdapted[idet];
-      
-      printf("detID : %d, Mean-Angle: %6.2f, Count: %6.0f(%3.0f), Ex-Fit:%6.2f \n", 
+      dXsec.push_back( countAdapted[idet] * factor );
+      if( dXsec[idet] > countMax) countMax = dXsec[idet];
+      if( dXsec[idet] < countMin) countMin = dXsec[idet];
+      printf("detID : %d, Mean-Angle: %6.2f, Count: %6.0f(%3.0f), Ex-Fit:%6.2f, Xsec:%6.4e mb/sr \n", 
                detIDAdapted[idet], 
-               meanAngle[idet], countAdapted[idet], countErrAdapted[idet], ExAdapted[idet]); 
+               meanAngle[idet], countAdapted[idet], countErrAdapted[idet], ExAdapted[idet], dXsec[idet]); 
       
    }
    
    double yMax = TMath::Power(10,TMath::Ceil(TMath::Log10(countMax)));
    double yMin = TMath::Power(10,TMath::Floor(TMath::Log10(countMin)));
    
-   TGraph * g = new TGraph(nDet, &meanAngle[0], &countAdapted[0]);
-   g->GetYaxis()->SetRangeUser(yMin, yMax);
-   g->GetXaxis()->SetLimits(10,40);
-   TCanvas * cG = new TCanvas("cG", "cG", 200, 200, 500, 500);
-   cG->SetGrid();
-   cG->cd();
-   cG->SetLogy();
-   g->Draw("A*");
-   
-   
-   //========== if Xsec exist.
+   if( ExID >= 1) yMax = 30;
+      
+   TCanvas * cG = new TCanvas("cG", "cG", 200, 50, 500, 900);
+   cG->Divide(1,2);
+   cG->cd(1);
+   cG->cd(1)->SetGrid();
+   cG->cd(1)->SetLogy();
 
+   gData = new TGraph(nDet, &meanAngle[0], &dXsec[0]);
+   gData->GetYaxis()->SetRangeUser(yMin, yMax);
+   gData->GetXaxis()->SetLimits(10,40);
+   TString gTitle;
+   gTitle.Form("dXsec/dOmega, ExID = %d", ExID);
+   gData->SetTitle(gTitle);
+   gData->GetXaxis()->SetTitle("thetaCM [deg]");
+   gData->GetYaxis()->SetTitle("d.s.c [mb/sr]");
+   gData->Draw("A*");
+   
+   cG->cd(2);
+   cG->cd(2)->SetGrid();
+   tree1->Draw("z : thetaCM >> h3(300, 10, 40, 300, -500, -100)", gate_sim +gate_x);
+  
+   
+   //################################################################## if Xsec exist, plot and fit
+    //======== load Xsec data
+   string xsecFileName = "/home/ttang/Ptolemy/208Pb_dp.out.Xsec.txt";
+   ifstream fileXsec(xsecFileName.c_str(), std::ifstream::in);
+   printf("==========  using theoretical Xsec : %s \n", xsecFileName.c_str());
+   string line;
+   vector<double> angle;
+   vector<double> f1;
+   vector<double> f2;
+   TString g1Name, g2Name;
+   double range[2] = {1,1};
+   
+   int fitCol[2] = {ExID+1,ExID+1};
+   
+   if( fileXsec.is_open() ){
+      int lineNum = 0;
+      while( ! fileXsec.eof() ){
+         getline(fileXsec, line);
+         lineNum += 1;
+         if( lineNum == 1 ) {
+            g1Name = line.substr(18*fitCol[0], 18);
+            g2Name = line.substr(18*fitCol[1], 18);
+            continue;
+         }
+         // get angle
+         int len = line.length();
+         if( (18 + 18*fitCol[0] > len) || (18 + 18*fitCol[1] > len)) {
+            printf("accessing location longer then line.length() @ lineNum : %d, line-Length: %d \n", lineNum, len);
+            break;
+         }
+         angle.push_back(atof(line.substr(0, 18).c_str()));
+         f1.push_back(atof(line.substr(18*fitCol[0], 18).c_str()));
+         f2.push_back(atof(line.substr(18*fitCol[1], 18).c_str()));
+         
+         if( f1.back() > range[0] ) range[0] = f1.back();
+         if( f1.back() < range[1] ) range[1] = f1.back();
+         
+         if( fitCol[1] > 0 ){
+            if( f2.back() > range[0] ) range[0] = f2.back();
+            if( f2.back() < range[1] ) range[1] = f2.back();
+         }
+         
+         //printf("%d| %f, %f, %f \n", lineNum,  angle.back(), f1.back(), f2.back());
+      }
+      fileXsec.close();
+   }else{
+      printf("... fail\n");
+      return;
+   }
+   
+   g1 = new TGraph(); g1->SetLineColor(4); g1->SetTitle(g1Name);
+   g2 = new TGraph(); g2->SetLineColor(2); g2->SetTitle(g2Name);
+   
+   for( int i =0 ; i < (int) angle.size() ; i++){
+      g1->SetPoint(i, angle[i], f1[i]);
+      g2->SetPoint(i, angle[i], f2[i]);
+   }
+   
+   cG->cd(1);
+   g1->Draw();
+   
+   TLegend* legend = new TLegend(0.6, 0.7, 0.9, 0.9);
+   legend->AddEntry(g1, g1Name , "l");
+   if( fitCol[1] > 0 && fitCol[1] != fitCol[0] ) legend->AddEntry(g2, g2Name , "l");
+   TString gDataName;
+   legend->AddEntry(gData, gTitle, "l");
+   legend->Draw();
+  
 }
 

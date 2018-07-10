@@ -57,7 +57,7 @@ void FitXsec(int expCol, int k1, int k2){
    
    //======== load Xsec data
    ifstream file;
-   TString fileName = "25Mg_dp_3.out.Xsec.txt";
+   TString fileName = "~/Ptolemy/208Pb_dp.out.Xsec.tx";
    file.open(fileName.Data());
    printf("--- using theoretical Xsec : %s \n", fileName.Data());
    string line;

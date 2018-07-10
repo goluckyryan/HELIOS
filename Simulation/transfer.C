@@ -285,6 +285,29 @@ void transfer(){
       fx[j]->Write();
       printf(",");
    }
+   
+   //--- cal modified thetaCM vs z
+   TGraph ** tx = new TGraph*[n];
+   for( int j = 0 ; j < n; j++){
+      double px[100];
+      double py[100];
+      double a = helios.GetDetectorA();
+      double q = TMath::Sqrt(mb*mb + kCM[j] * kCM[j] );
+      for(int i = 0; i < 100; i++){
+      
+         double thetacm = (i + 8.) * TMath::DegToRad();
+         double temp = TMath::TwoPi() * slope / beta / kCM[j] * a / TMath::Sin(thetacm); 
+         px[i] = beta /slope * (gamma * beta * q - gamma * kCM[j] * TMath::Cos(thetacm)) * (1 - TMath::ASin(temp)/TMath::TwoPi());
+         py[i] = thetacm * TMath::RadToDeg();   
+      }
+      
+      tx[j] = new TGraph(100, px, py);
+      name.Form("tx%d", j);
+      tx[j]->SetName(name);
+      tx[j]->SetLineColor(4);
+      tx[j]->Write();
+      printf("*");
+   }
    printf("done!\n");
    
    //========timer
