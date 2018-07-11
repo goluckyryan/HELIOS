@@ -156,22 +156,27 @@ void Cali_compare(TTree *tree, TTree *rTree){
    double      eR;   TBranch * b_e;   //!
    double      xR;   TBranch * b_x;   //!
    int      detID;   TBranch * b_detID;   //!
+   int       loop;   TBranch * b_loop; //!
+   int        hit;   TBranch * b_hit;
 
    rTree->SetBranchAddress("e", &eR, &b_e);
    rTree->SetBranchAddress("x", &xR, &b_x);
    rTree->SetBranchAddress("detID", &detID, &b_detID);
+   rTree->SetBranchAddress("loop", &loop, &b_loop);
+   rTree->SetBranchAddress("hit", &hit, &b_hit);
    
 /**///======================================================== Extract tree entry, create new smaller trees, use that tree to speed up
    double B1 [numDet]; // best a1 of iDet
    double B0 [numDet]; // best a0 of iDet
 
    TBenchmark clock;  
-   for( int idet = 0; idet < 6; idet ++){
+   for( int idet = 0; idet < numDet; idet ++){
       
       bool shown = false; clock.Reset(); clock.Start("timer");
    
       //TODO is save as an array faster?
       printf("========== creating a smaller trees for detID = %d \n", idet);
+      TString title; title.Form("detID-%d", idet);      
             
       TFile * temp1 = new TFile("temp1.root", "recreate");
       TTree * tTree1 = new TTree("tree", "tree");
@@ -242,6 +247,8 @@ void Cali_compare(TTree *tree, TTree *rTree){
       double distThreshold   = 0.2;
       
       bool fillFlag = false;
+      exPlotR->Clear();
+      exPlotR->SetTitle(title + "(sim)");
 
       gDist->SetTitle("Total min-dist; a1; a0; min-dist");
       
@@ -251,13 +258,19 @@ void Cali_compare(TTree *tree, TTree *rTree){
       if( eventIDStepSize == 0 ) eventIDStepSize = 1;
       if( eventjStepSize == 0 ) eventjStepSize = 1;
       
-      int nPoint = 100;
+      int nPoint = 50;
       printf("======================= find fit by Monle Carlo. #Point: %d\n", nPoint);
       for( int iPoint = 0; iPoint < nPoint; iPoint ++){ 
          
-         //TODO better method, not random
-         double a1 = a1Range[0] + (a1Range[1] - a1Range[0])*gRandom->Rndm();
-         double a0 = a0Range[0] + (a0Range[1] - a0Range[0])*gRandom->Rndm();
+         //TODO better method, not pure random
+         double a1, a0;
+         //if( iPoint == 0){
+            a1 = a1Range[0] + (a1Range[1] - a1Range[0])*gRandom->Rndm();
+            a0 = a0Range[0] + (a0Range[1] - a0Range[0])*gRandom->Rndm();
+         //}else{
+         //   a1 = A1 + 2*TMath::Abs(A1 - a
+         //}
+         
          
          printf("%3d | a1: %5.1f, a0:%6.2f | ", iPoint, a1, a0);
          
@@ -272,8 +285,10 @@ void Cali_compare(TTree *tree, TTree *rTree){
             for( int eventj = 0; eventj < rTree->GetEntries(); eventj += eventjStepSize){
                rTree->GetEntry(eventj);
                if( detID != idet%6 ) continue;
+               if( loop  != 1 ) continue;
+               if( hit   != 1 ) continue;
+               
                if(fillFlag == false) {
-                  exPlotR->Clear();
                   exPlotR->Fill(xR, eR);
                }
                //calculate dist
@@ -316,10 +331,13 @@ void Cali_compare(TTree *tree, TTree *rTree){
       
       //After founded the best fit, plot the result
       printf("==========> A1: %f, A0: %f \n", A1, A0);
+      exPlot->Clear();
+      exPlot->SetTitle(title + "(exp)");
+      exPlotC->Clear();
+         
       for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID ++ ){
          sTree->GetEntry(eventID);
-         exPlot->Clear();
-         exPlotC->Clear();
+         
          exPlot->Fill(xS, eS);
          exPlotC->Fill(xS, eS/A1 - A0);
          
@@ -327,7 +345,6 @@ void Cali_compare(TTree *tree, TTree *rTree){
          B0[idet] = A0;
             
       }
-      
       
       cScript->cd(1);
       exPlot->Draw();
