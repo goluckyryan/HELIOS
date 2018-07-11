@@ -9,11 +9,16 @@
 #include <TH1F.h>
 #include <TF1.h>
 #include <TGraph2D.h>
+#include <TRandom.h>
 #include <string>
 #include <fstream>
 #include <math.h>
 
 void Cali_compare(TTree *tree, TTree *rTree){
+
+   double a1Range[3] = {200, 300, 10};
+   double a0Range[3] = {-0.7, 0.7, 0.1}; 
+
 
    int totnumEntry = tree->GetEntries();
    
@@ -25,6 +30,24 @@ void Cali_compare(TTree *tree, TTree *rTree){
    TH2F * exPlot  = new TH2F("exPlot", "exPlot", 400, -1.3, 1.3, 400, 0, 2500);
    TH2F * exPlotC = new TH2F("exPlotC", "exPlotC", 400, -1.3, 1.3, 400, 0, 10);
    TH2F * exPlotR = new TH2F("exPlotR", "exPlotR", 400, -1.3, 1.3, 400, 0, 10);
+   TGraph2D * gDist = new TGraph2D();   
+
+/**///======================================================== Plot
+
+   Int_t Div[2] = {3,1};  //x,y
+   Int_t size[2] = {400,400}; //x,y
+   
+   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   cScript->Divide(Div[0],Div[1]);
+   for( int i = 1; i <= Div[0]+Div[1] ; i++){
+      cScript->cd(i)->SetGrid();
+   }
+
+   gStyle->SetOptStat(1111111);
+   gStyle->SetStatY(1.0);
+   gStyle->SetStatX(0.99);
+   gStyle->SetStatW(0.2);
+   gStyle->SetStatH(0.1);
    
 /**///========================================================= load correction
 //========================================= detector Geometry
@@ -139,104 +162,107 @@ void Cali_compare(TTree *tree, TTree *rTree){
    rTree->SetBranchAddress("detID", &detID, &b_detID);
    
 /**///======================================================== Extract tree entry, create new smaller trees, use that tree to speed up
-   int idet = 4;
-   
-   TBenchmark clock; bool shown = false; 
-   clock.Reset(); clock.Start("timer");
+   double B1 [numDet]; // best a1 of iDet
+   double B0 [numDet]; // best a0 of iDet
 
-/*
-   printf("========== creating a smaller trees \n");
+   TBenchmark clock;  
+   for( int idet = 0; idet < 6; idet ++){
+      
+      bool shown = false; clock.Reset(); clock.Start("timer");
    
-   TFile * temp1 = new TFile("temp1.root", "recreate");
-   TTree * tTree1 = new TTree("tree", "tree");
-   
-   double e1, x1;
-   tTree1->Branch("e1", &e1, "e1/D");
-   tTree1->Branch("x1", &x1, "x1/D");
+      //TODO is save as an array faster?
+      printf("========== creating a smaller trees for detID = %d \n", idet);
+            
+      TFile * temp1 = new TFile("temp1.root", "recreate");
+      TTree * tTree1 = new TTree("tree", "tree");
+      
+      double e1, x1;
+      tTree1->Branch("e1", &e1, "e1/D");
+      tTree1->Branch("x1", &x1, "x1/D");
 
-   for( int eventID = 0 ; eventID < totnumEntry; eventID ++ ){
-      tree->GetEntry(eventID);
-      if( e[idet] == 0 ) continue;
-      if( xf[idet] == 0 ) continue;
-      if( xn[idet] == 0 ) continue;
-      
-      e1 = e[idet];
-      
-      double xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
-      double xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
-      x1 = (xfC - xnC)/(xfC+xnC);
-      
-      tTree1->Fill();
-      
-      clock.Stop("timer");
-      Double_t time = clock.GetRealTime("timer");
-      clock.Start("timer");
+      for( int eventID = 0 ; eventID < totnumEntry; eventID ++ ){
+         tree->GetEntry(eventID);
+         if( e[idet] == 0 ) continue;
+         if( xf[idet] == 0 ) continue;
+         if( xn[idet] == 0 ) continue;
+         
+         e1 = e[idet];
+         
+         double xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
+         double xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
+         x1 = (xfC - xnC)/(xfC+xnC);
+         
+         tTree1->Fill();
+         
+         clock.Stop("timer");
+         Double_t time = clock.GetRealTime("timer");
+         clock.Start("timer");
 
-      if ( !shown ) {
-         if (fmod(time, 10.) < 1 ){
-            printf( "%10d[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
-                  eventID, 
-                  TMath::Nint((eventID+1)*100./totnumEntry),
-                  TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
-                  totnumEntry*time/(eventID+1.)/60.);
-                  shown = 1;
-         }
-      }else{
-         if (fmod(time, 10) > 9 ){
-            shown = 0;
+         if ( !shown ) {
+            if (fmod(time, 10.) < 1 ){
+               printf( "%10d[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
+                     eventID, 
+                     TMath::Nint((eventID+1)*100./totnumEntry),
+                     TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
+                     totnumEntry*time/(eventID+1.)/60.);
+                     shown = 1;
+            }
+         }else{
+            if (fmod(time, 10) > 9 ){
+               shown = 0;
+            }
          }
       }
-   }
-   tTree1->Write();
-   int totalEventNum = tTree1->GetEntries();
-   printf("========== saved event : %d \n", totalEventNum); 
-   temp1->Close();
-   
-/**///======================================================== open the tree
-   
-   const char* tempfile="temp1.root";
-   TFile *f0 = new TFile (tempfile, "read"); 
-   TTree * sTree = (TTree*)f0->Get("tree"); // s for seleced
-   
-   double  eS; TBranch * b_eS;   //!
-   double  xS; TBranch * b_xS;   //!
+      tTree1->Write();
+      int totalEventNum = tTree1->GetEntries();
+      printf("========== saved event : %d \n", totalEventNum); 
+      temp1->Close();
+      
+   /**///======================================================== open the tree
+      
+      const char* tempfile="temp1.root";
+      TFile *f0 = new TFile (tempfile, "read"); 
+      TTree * sTree = (TTree*)f0->Get("tree"); // s for seleced
+      
+      double  eS; TBranch * b_eS;   //!
+      double  xS; TBranch * b_xS;   //!
 
-   sTree->SetBranchAddress("e1", &eS, &b_eS);
-   sTree->SetBranchAddress("x1", &xS, &b_xS);
-   
-   
-/**///======================================================== Get tree entry
+      sTree->SetBranchAddress("e1", &eS, &b_eS);
+      sTree->SetBranchAddress("x1", &xS, &b_xS);
+      
+      
+   /**///======================================================== Get tree entry
 
-   printf("======================= find fit.\n");
-   
-   clock.Reset(); clock.Start("timer");
-   
-   double A0 = 0.;
-   double A1 = 200.;
-   
-   double minTotalMinDist = 99.;
-   double distThreshold   = 0.2;
-   
-   bool fillFlag = false;
-   
-   double a1Range[3] = {200, 270, 10};
-   double a0Range[3] = {-0.2, 0.7, 0.1}; 
-   
-   TGraph2D * gDist = new TGraph2D();
-   gDist->SetTitle("Total min-dist; a1; a0; min-dist");
-   
-   int eventIDStepSize = 5;
-   int eventjStepSize = 3;
-   
-   int count = 0;
-   for( double a1 = a1Range[0]; a1 <= a1Range[1]; a1 += a1Range[2]){
-      for( double a0 = a0Range[0]; a0 <= a0Range[1] ; a0 += a0Range[2]){
+      clock.Reset(); clock.Start("timer");
       
-      count ++;
-      printf("==== a1: %5.1f, a0:%6.2f | ", a1, a0);
+      double A0 = 0.;
+      double A1 = 200.;
       
-      double totalMinDist    = 0.;
+      double minTotalMinDist = 99.;
+      double distThreshold   = 0.2;
       
+      bool fillFlag = false;
+
+      gDist->SetTitle("Total min-dist; a1; a0; min-dist");
+      
+      int eventIDStepSize = sTree->GetEntries()/200 ; // restrict number of point be around 200 to 300
+      int eventjStepSize = 3;
+      
+      if( eventIDStepSize == 0 ) eventIDStepSize = 1;
+      if( eventjStepSize == 0 ) eventjStepSize = 1;
+      
+      int nPoint = 100;
+      printf("======================= find fit by Monle Carlo. #Point: %d\n", nPoint);
+      for( int iPoint = 0; iPoint < nPoint; iPoint ++){ 
+         
+         //TODO better method, not random
+         double a1 = a1Range[0] + (a1Range[1] - a1Range[0])*gRandom->Rndm();
+         double a0 = a0Range[0] + (a0Range[1] - a0Range[0])*gRandom->Rndm();
+         
+         printf("%3d | a1: %5.1f, a0:%6.2f | ", iPoint, a1, a0);
+         
+         double totalMinDist    = 0.;
+         bool filledOnce = false;
          for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID += eventIDStepSize ){
             sTree->GetEntry(eventID);
             
@@ -246,8 +272,10 @@ void Cali_compare(TTree *tree, TTree *rTree){
             for( int eventj = 0; eventj < rTree->GetEntries(); eventj += eventjStepSize){
                rTree->GetEntry(eventj);
                if( detID != idet%6 ) continue;
-               if(fillFlag == false) exPlotR->Fill(xR, eR);
-               
+               if(fillFlag == false) {
+                  exPlotR->Clear();
+                  exPlotR->Fill(xR, eR);
+               }
                //calculate dist
                double tempDist = TMath::Power(xS - xR,2) + TMath::Power( (eS/a1 - a0) - eR,2);
                if( tempDist < minDist ) minDist = tempDist;
@@ -258,9 +286,13 @@ void Cali_compare(TTree *tree, TTree *rTree){
 
             if( minDist < distThreshold ) {
                totalMinDist += minDist;
+               filledOnce = true;
             }
          }
-         gDist->SetPoint(count, a1, a0, totalMinDist);
+         
+         if( ! filledOnce ) totalMinDist = 10.; // to avoid no fill
+         
+         gDist->SetPoint(iPoint, a1, a0, totalMinDist);
          
          printf("totalMinDist: %6.3f < %6.3f ", totalMinDist, minTotalMinDist);   
 
@@ -268,7 +300,7 @@ void Cali_compare(TTree *tree, TTree *rTree){
          clock.Stop("timer");
          Double_t time = clock.GetRealTime("timer");
          clock.Start("timer");
-         printf( "( %8.2f min)", time/60.);
+         printf( "(%5.2f min)", time/60.);
          
          if( totalMinDist < minTotalMinDist ) {
             minTotalMinDist = totalMinDist;
@@ -278,48 +310,50 @@ void Cali_compare(TTree *tree, TTree *rTree){
          }else{
             printf("\n");
          }
+            
+      }// end of loop
+      
+      
+      //After founded the best fit, plot the result
+      printf("==========> A1: %f, A0: %f \n", A1, A0);
+      for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID ++ ){
+         sTree->GetEntry(eventID);
+         exPlot->Clear();
+         exPlotC->Clear();
+         exPlot->Fill(xS, eS);
+         exPlotC->Fill(xS, eS/A1 - A0);
          
-      } // end of loop a0
+         B1[idet] = A1;
+         B0[idet] = A0;
+            
+      }
+      
+      
+      cScript->cd(1);
+      exPlot->Draw();
+      cScript->cd(2);
+      exPlotR->Draw("colz");
+      exPlotC->Draw("same");
+      cScript->cd(3);
+      gDist->Draw("surf1");
+    
+      cScript->Update();
    
-   }// end of loop a1
-   
-   
-   //After founded the best fit, plot the result
-   printf("==========> A1: %f, A0: %f \n", A1, A0);
-   for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID ++ ){
-      sTree->GetEntry(eventID);
-      exPlot->Fill(xS, eS);
-      exPlotC->Fill(xS, eS/A1 - A0);
-         
+   } // end of loop idet  
+
+/**///======================================================== save result
+
+   FILE * paraOut;
+   TString filename;
+   filename.Form("correction_e.dat");
+   paraOut = fopen (filename.Data(), "w+");
+
+   printf("=========== save parameters to %s \n", filename.Data());
+   for( int i = 0; i < numDet; i++){
+   fprintf(paraOut, "%9.6f  %9.6f\n", B1[i], B0[i]);
    }
-   
 
-/**///======================================================== Plot
+   fflush(paraOut);
+   fclose(paraOut);
 
-   Int_t Div[2] = {3,1};  //x,y
-   Int_t size[2] = {400,400}; //x,y
-   
-   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
-   cScript->Divide(Div[0],Div[1]);
-   for( int i = 1; i <= Div[0]+Div[1] ; i++){
-      cScript->cd(i)->SetGrid();
-   }
-
-   gStyle->SetOptStat(1111111);
-   gStyle->SetStatY(1.0);
-   gStyle->SetStatX(0.99);
-   gStyle->SetStatW(0.2);
-   gStyle->SetStatH(0.1);
-   
-   cScript->cd(1);
-   exPlot->Draw();
-   cScript->cd(2);
-   exPlotR->Draw("colz");
-   //cScript->cd(3);
-   exPlotC->Draw("same");
-   cScript->cd(3);
-   gDist->Draw("surf1");
-   
-
-/**/
 }
