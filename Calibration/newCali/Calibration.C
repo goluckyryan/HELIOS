@@ -66,11 +66,11 @@ void Calibration(){
 */
    TTree *tree = NULL;
    TTree *cTree = NULL;
-   const char* rootfile0="gen_run11.root";
+   const char* rootfile0="~/ANALYSIS/H060_ana/data/gen_run11.root";
    TFile *f0 = new TFile (rootfile0, "read"); 
    tree = (TTree*)f0->Get("gen_tree");
    
-   const char* rootfile1="~/Desktop/HELIOS/Simulation/transfer.root";
+   const char* rootfile1="~/ANALYSIS/Simulation/transfer.root";
    TFile *f1 = new TFile (rootfile1, "read"); 
    cTree = (TTree*)f1->Get("tree");
    
