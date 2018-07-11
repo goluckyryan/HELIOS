@@ -27,7 +27,7 @@ void transfer(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 1000000;
+   int numEvent = 10000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo_upstream.txt";
@@ -56,8 +56,8 @@ void transfer(){
    string stoppingPowerForB = "209Pb_in_CD2.txt";
    
    //---- Auxiliary setting
-   bool isDecay = true;
-   bool isReDo = false; // redo calculation until detected. 
+   bool isDecay = false;
+   bool isReDo = true; // redo calculation until detected. 
    
    //=============================================================
    //=============================================================
