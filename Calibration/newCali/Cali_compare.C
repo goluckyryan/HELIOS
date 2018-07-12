@@ -14,13 +14,15 @@
 #include <fstream>
 #include <math.h>
 #include <TRandom.h>
+#include <TDatime.h>
 
 void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
 
    double a1Range[2] = {250, 320};
-   double a0Range[2] = {-1.0, 1.0}; 
+   double a0Range[2] = {-0.7, 0.7}; // the energy gap
    
-   double eThreshold = 10;
+   double eThreshold = 200;
+   double distThreshold   = 0.2;
 
    int totnumEntry = tree->GetEntries();
    
@@ -167,6 +169,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
    rTree->SetBranchAddress("detID", &detID, &b_detID);
    rTree->SetBranchAddress("loop", &loop, &b_loop);
    rTree->SetBranchAddress("hit", &hit, &b_hit);
+   rTree->SetBranchAddress("ExID", &ExID, &b_ExID);
    
 /**///======================================================== Extract tree entry, create new smaller trees, use that tree to speed up
    double B1 [numDet]; // best a1 of iDet
@@ -265,7 +268,6 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
       double A1 = 200.;
       
       double minTotalMinDist = 99.;
-      double distThreshold   = 0.2;
       
       bool fillFlag = false;
       exPlotR->Reset();
@@ -281,7 +283,8 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
       
       int nPoint = 50;
       TRandom * r1 = new TRandom();
-      TRandom * r2 = new TRandom();
+      TDatime time;
+      r1->SetSeed(time.GetTime());
       printf("======================= find fit by Monle Carlo. #Point: %d\n", nPoint);
       for( int iPoint = 0; iPoint < nPoint; iPoint ++){ 
          
@@ -289,7 +292,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
          double a1, a0;
          //if( iPoint == 0){
             a1 = a1Range[0] + (a1Range[1] - a1Range[0])*r1->Rndm();
-            a0 = a0Range[0] + (a0Range[1] - a0Range[0])*r2->Rndm();
+            a0 = a0Range[0] + (a0Range[1] - a0Range[0])*r1->Rndm();
          //}else{
          //   a1 = A1 + 2*TMath::Abs(A1 - a
          //}
