@@ -66,8 +66,112 @@ Bool_t Cali_all::Process(Long64_t entry)
    //
    // The return value is currently not used.
    
+   //#################################################################### initialization
+   for(int i = 0; i < numDet; i++){
+      eC[i]    = TMath::QuietNaN();
+      x[i]     = TMath::QuietNaN();
+      z[i]     = TMath::QuietNaN();
+      eC_t[i]  = TMath::QuietNaN();
+   }
+   
+   det = -4;
+   hitID = -4;
+   zMultiHit = 0;
+   
+   Ex  = TMath::QuietNaN();
+   thetaCM  = TMath::QuietNaN();
+
+   ddt = TMath::QuietNaN(); // H060
+   ddt_t = TMath::QuietNaN(); // H060
+   
+   //#################################################################### processing
+   eventID += 1;
+   if( entry == 1 ) run += 1;
+   
+   b_Energy->GetEntry(entry,0);
+   b_XF->GetEntry(entry,0);
+   b_XN->GetEntry(entry,0);
+   
+   b_ELUM->GetEntry(entry, 0); // for H060_208Pb
+   b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
+   
+   b_EnergyTimestamp->GetEntry(entry,0);
+
+   for(int idet = 0 ; idet < numDet; idet++){
+      
+      if( e[idet] > 0 ){
+         eC[idet] = e[idet]/eCorr[idet][0] + eCorr[idet][1];  
+         eC_t[idet] = e_t[idet]/1e8; // into sec
+      }
+      
+      double xfC, xnC;
+      if( xf[idet] > 0) xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
+      if( xn[idet] > 0) xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
+   
+      //========= calculate x
+      if(xf[idet] > 0  && xn[idet] > 0 ) {
+         x[idet] = (xfC-xnC)/(xfC+xnC);
+         hitID = 0;
+      }else if(xf[idet] == 0 && xn[idet] > 0 ){
+         x[idet] = (1-2*xnC/e[idet]);
+         hitID = 1;
+      }else if(xf[idet] > 0 && xn[idet] == 0 ){
+         x[idet] = (2*xfC/e[idet]-1);
+         hitID = 2;
+      }else{
+         x[idet] = TMath::QuietNaN();
+      }
+      
+      //if( e[idet] > 0 ) printf("%d, %d , %f, %f \n", eventID, idet, eC[idet], x[idet]);
+      
+      //========= calculate z, det
+      if( TMath::IsNaN(x[idet]) ) {
+         z[idet] = TMath::QuietNaN();
+      }else{ 
+         int detID = idet%iDet;
+         if( pos[detID] < 0 ){
+            z[idet] = pos[detID] - (-x[idet] + 1.)*length/2 ; 
+         }else{
+            z[idet] = pos[detID] + (x[idet] + 1.)*length/2 ; 
+         }
+         zMultiHit ++;
+         count ++;
+         det = idet;
+         //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[idet], pos[detID], z[idet]);
+      }
+   }
+   
+   //for H060
+   if( elum[0] != 0){
+      ddt = elum[0];
+      ddt_t = elum_t[0];
+   }
+   
+   if( zMultiHit == 0 ) return kTRUE;
    
    
+   //#################################################################### Timer  
+   saveFile->cd(); //set focus on this file
+   newTree->Fill();  
+
+   clock.Stop("timer");
+   Double_t time = clock.GetRealTime("timer");
+   clock.Start("timer");
+
+   if ( !shown ) {
+      if (fmod(time, 10) < 1 ){
+         printf( "%10d[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
+               eventID, 
+               TMath::Nint((eventID+1)*100./totnumEntry),
+               TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
+               totnumEntry*time/(eventID+1.)/60.);
+               shown = 1;
+      }
+   }else{
+      if (fmod(time, 10) > 9 ){
+         shown = 0;
+      }
+   }
 
    return kTRUE;
 }

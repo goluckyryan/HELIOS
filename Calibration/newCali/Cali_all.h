@@ -72,12 +72,28 @@ public :
    ClassDef(Cali_all,0);
    
    //=============================== 
+   TFile * saveFile;
+   TTree * newTree;
+   TString saveFileName;
    int totnumEntry; // of original root
+  
+   //tree  
+   Int_t eventID;
+   Int_t run;
+   Float_t eC[24];
+   Float_t eC_t[24];
+   Float_t x[24]; // unadjusted position, range (-1,1)
+   Float_t z[24]; 
+   int det;
+   int hitID; // is e, xf, xn are all fired.
+   int zMultiHit; // multipicity of z
    
-   TFile * cFile ; // compare root
-   TTree * cTree ;
-   int cTotalEntry; 
+   Float_t thetaCM;
+   Float_t Ex;   
    
+   Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb  
+
+   //clock   
    TBenchmark clock;
    Bool_t shown;
    Int_t count;
@@ -91,6 +107,9 @@ public :
    double firstPos;
    double xnCorr[24]; // xn correction for xn = xf
    double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
+   
+   double eCorr[24][2]; // e-correction
+
 
 };
 
@@ -131,11 +150,46 @@ void Cali_all::Init(TTree *tree)
    totnumEntry = tree->GetEntries();
    printf( "========== Calibration by compare, total Entry : %d \n", totnumEntry);
    
-      
-   cFile = new; // compare root
-   TTree * cTree ;
-   int cTotalEntry; 
+   saveFileName = fChain->GetDirectory()->GetName();
+   //remove any folder path to get the name;
+   int found;
+   do{
+      found = saveFileName.First("/");
+      saveFileName.Remove(0,found+1);
+   }while( found >= 0 );
+   saveFileName = "A_" + saveFileName;
    
+   saveFile = new TFile( saveFileName,"recreate");
+   newTree =  new TTree("tree","tree");
+   
+   eventID = 0;
+   run = 0;
+   
+   newTree->Branch("eventID",&eventID,"eventID/I"); 
+   newTree->Branch("run",&run,"run/I"); 
+   
+   newTree->Branch("e" ,  eC, "eC[24]/F");
+   newTree->Branch("x" ,   x, "x[24]/F");
+   newTree->Branch("z" ,   z, "z[24]/F");
+   newTree->Branch("detID", &det, "det/I");
+   newTree->Branch("hitID", &hitID, "hitID/I");
+   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
+   
+   newTree->Branch("Ex", &Ex, "Ex/F");
+   newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+   
+   newTree->Branch("e_t", eC_t, "e_t[24]/F");
+   
+   /*
+   newTree->Branch("rdt", rdtC, "rdtC[8]/F");
+   newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
+   newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
+   newTree->Branch("tac", tacC, "tacC[6]/F");
+   newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F"); 
+   */
+   
+   newTree->Branch("ddt", &ddt, "ddt/F");
+   newTree->Branch("ddt_t", &ddt_t, "ddt_t/F");
    
    clock.Reset();
    clock.Start("timer");
@@ -225,6 +279,30 @@ void Cali_all::Init(TTree *tree)
    }else{
       printf("... fail.\n");
       return;
+   }
+   file.close();
+
+   //========================================= e correction
+   
+   printf("----- loading e correction.");
+   file.open("correction_e.dat");
+   if( file.is_open() ){
+      double a, b;
+      int i = 0;
+      while( file >> a >> b){
+         if( i >= numDet) break;
+         eCorr[i][0] = a;
+         eCorr[i][1] = b;
+         i = i + 1;
+      }
+      printf("... done.\n");
+   }else{
+      printf("... fail.\n");
+      for( int i = 0; i < 24 ; i++){
+         eCorr[i][0] = 1.;
+         eCorr[i][1] = 0.;
+      }
+      //return;
    }
    file.close();
 
