@@ -19,17 +19,20 @@
 void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
 /**///======================================================== User Input
 
-   double a1Range[2] = {250, 350};
+   double a1Range[2] = {250, 320};
    double a0Range[2] = {-0.7, 0.7}; // the energy gap
    
    double eThreshold = 300;
-   double distThreshold   = 0.2;
+   double distThreshold   = 0.02;
 
-   int hitMode = 0; // 0 = only both xn, xf valid, 1 = any
+   int hitMode = 1; // 0 = only both xn, xf valid, 1 = any
    
-   int ExIDMax = 2;
+   int ExIDMax = 3;
    
-   int nPoint = 50;
+   int nPoint = 100;
+   
+   printf("======================== \n");
+   printf("distant Threshold : %f \n", distThreshold);
    
 /**///======================================================== display tree
    int totnumEntry = tree->GetEntries();
@@ -336,6 +339,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
             sTree->GetEntry(eventID);
             countEvent++;
             double minDist = 99;
+            double eC, xC;
             //printf("==================== %d| %f, %f \n", eventID, eS/a1 - a0, xS);
             for( int eventj = 0; eventj < rTree->GetEntries(); eventj += eventjStepSize){
                rTree->GetEntry(eventj);
@@ -346,13 +350,18 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
                
                //calculate dist
                double tempDist = TMath::Power(xS - xR,2) + TMath::Power( (eS/a1 + a0) - eR,2);
-               if( tempDist < minDist ) minDist = tempDist;
-               
+               if( tempDist < minDist ) {
+                  minDist = tempDist;
+                  eC = eR;
+                  xC = xR;
+               }
                //if( eventj%100 == 0) printf("%d, %8.4f, %8.4f| %8.4f < %8.4f \n", eventj, eR, xR, tempDist, minDist);               
+                       
             }
             if( minDist < distThreshold ) {
                count ++;  
                totalMinDist += minDist;
+               //printf("%8.4f, %8.4f|%8.4f, %8.4f|%8.4f \n", eS/a1+a0, xS, eC, xC, minDist);       
             }else{
                totalMinDist += distThreshold;
             }
@@ -362,7 +371,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
          
          gDist->SetPoint(iPoint, a1, a0, totalMinDist);
          
-         printf("totalMinDist: %6.3f (%3d, %3d) < %6.3f ", totalMinDist, count, countEvent, minTotalMinDist);   
+         printf("totalMinDist: %7.3f (%3d, %3d) < %6.3f ", totalMinDist, count, countEvent, minTotalMinDist);   
 
          //======== time
          clock.Stop("timer");
@@ -370,7 +379,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
          clock.Start("timer");
          printf( "(%5.2f min)", time/60.);
          
-         if( totalMinDist < minTotalMinDist ) {
+         if( totalMinDist < minTotalMinDist && count > countEvent/2. ) {
             minTotalMinDist = totalMinDist;
             A0 = a0;
             A1 = a1;
@@ -389,7 +398,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
       exPlotC->Reset();
       for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID ++ ){
          sTree->GetEntry(eventID);
-         exPlotC->Fill(xS, eS/A1 - A0);
+         exPlotC->Fill(xS, eS/A1 + A0);
       }
       
       cScript->cd(2);

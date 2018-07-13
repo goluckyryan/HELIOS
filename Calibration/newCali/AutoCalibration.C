@@ -38,16 +38,18 @@ void AutoCalibration(){
    
 //==================================================== data files
    //======== alpha data
-   const char* rootfileAlpha="~/ANALYSIS/H060_ana/data/gen_run09.root";
+   const char* rootfileAlpha="gen_run11.root";
+   //const char* rootfileAlpha="~/ANALYSIS/H060_ana/data/gen_run09.root";
    
    //======== Simulation data
-   //const char* rootfileSim="~/Desktop/HELIOS/Simulation/transfer.root";
-   const char* rootfileSim="~/ANALYSIS/Simulation/transfer.root";
+   const char* rootfileSim="~/Desktop/HELIOS/Simulation/transfer.root";
+   //const char* rootfileSim="~/ANALYSIS/Simulation/transfer.root";
 
    //======== experimental data
    //const char* rootfile0="gen_run11.root";
    TChain * chain = new TChain("gen_tree");
-   chain->Add("~/ANALYSIS/H060_ana/data/gen_run11.root");  //01
+//   chain->Add("~/ANALYSIS/H060_ana/data/gen_run11.root");  //01
+   chain->Add("gen_run11.root");  //01
 /*   chain->Add("data/gen_run12.root");  //02
    chain->Add("data/gen_run13.root");  //03
    chain->Add("data/gen_run15.root");  //04
