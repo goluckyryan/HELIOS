@@ -1,5 +1,5 @@
-#define Cali_all_cxx
-// The class definition in Cali_all.h has been generated automatically
+#define Cali_e_cxx
+// The class definition in Cali_e.h has been generated automatically
 // by the ROOT utility TTree::MakeSelector(). This class is derived
 // from the ROOT class TSelector. For more information on the TSelector
 // framework see $ROOTSYS/README/README.SELECTOR or the ROOT User Manual.
@@ -19,26 +19,27 @@
 //
 // To use this file, try the following session on your Tree T:
 //
-// root> T->Process("Cali_all.C")
-// root> T->Process("Cali_all.C","some options")
-// root> T->Process("Cali_all.C+")
+// root> T->Process("Cali_e.C")
+// root> T->Process("Cali_e.C","some options")
+// root> T->Process("Cali_e.C+")
 //
 
 
-#include "Cali_all.h"
+#include "Cali_e.h"
 #include <TH2.h>
 #include <TStyle.h>
 
-void Cali_all::Begin(TTree * /*tree*/)
+void Cali_e::Begin(TTree * /*tree*/)
 {
    // The Begin() function is called at the start of the query.
    // When running with PROOF Begin() is only called on the client.
    // The tree argument is deprecated (on PROOF 0 is passed).
 
    TString option = GetOption();
+   
 }
 
-void Cali_all::SlaveBegin(TTree * /*tree*/)
+void Cali_e::SlaveBegin(TTree * /*tree*/)
 {
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
@@ -48,7 +49,7 @@ void Cali_all::SlaveBegin(TTree * /*tree*/)
 
 }
 
-Bool_t Cali_all::Process(Long64_t entry)
+Bool_t Cali_e::Process(Long64_t entry)
 {
    // The Process() function is called for each entry in the tree (or possibly
    // keyed object in the case of PROOF) to be processed. The entry argument
@@ -104,7 +105,7 @@ Bool_t Cali_all::Process(Long64_t entry)
          eC_t[idet] = e_t[idet]/1e8; // into sec
       }
       
-      double xfC, xnC;
+      double xfC = 0, xnC = 0;
       if( xf[idet] > 0) xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       if( xn[idet] > 0) xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
    
@@ -122,7 +123,7 @@ Bool_t Cali_all::Process(Long64_t entry)
          x[idet] = TMath::QuietNaN();
       }
       
-      //if( e[idet] > 0 ) printf("%d, %d , %f, %f \n", eventID, idet, eC[idet], x[idet]);
+      //if( idet >= 17 && e[idet] > 0) printf("%d, %d , %f, %f \n", eventID, idet, eC[idet], e[idet]);
       
       //========= calculate z, det
       if( TMath::IsNaN(x[idet]) ) {
@@ -138,7 +139,18 @@ Bool_t Cali_all::Process(Long64_t entry)
          count ++;
          det = idet;
          //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[idet], pos[detID], z[idet]);
+      
+      
+         //========== Calculate Ex and thetaCM
+         if( TMath::IsNaN(eC[idet]) ){
+            Ex = TMath::QuiteNaN();
+         }else{
+            
+            Ex = 0;
+            theta = 0;
+         }
       }
+      
    }
    
    //for H060
@@ -176,7 +188,7 @@ Bool_t Cali_all::Process(Long64_t entry)
    return kTRUE;
 }
 
-void Cali_all::SlaveTerminate()
+void Cali_e::SlaveTerminate()
 {
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
@@ -184,7 +196,7 @@ void Cali_all::SlaveTerminate()
 
 }
 
-void Cali_all::Terminate()
+void Cali_e::Terminate()
 {
    // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present

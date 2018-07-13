@@ -1,18 +1,18 @@
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TTree.h>
 #include <TFile.h>
+#include <TTree.h>
+#include <TCanvas.h>
+#include <TROOT.h>
+#include <TStyle.h>
+#include <TProfile.h>
+#include <TH2F.h>
+#include <TH1F.h>
 #include <TF1.h>
+#include <TMath.h>
+#include <TGraph.h>
+#include <TLine.h>
 
-//void Cali_alpha(TString rootfile)
-
-{
+void Cali_xf_xn(TTree * tree){
 /**///======================================================== initial input
-   
-   //const char* rootfile="~/ANALYSIS/RUNs/H060_208Pb/gen_run09.root"; 
-   const char* rootfile="gen_run09.root";    
-   
-   const char* treeName="gen_tree";
    
    const int numDet = 24;
    
@@ -21,12 +21,8 @@
    printf("============ calibration for PSD detectors using alpha souce. \n");
    printf("1, calibration energy using charateristic energy of alpha souce. \n");
    printf("2, calibration xf-xn with energy-gate. \n");
-   //printf("3, calibration e vs xf+xn. \n");
    printf("------------------------------------------------- \n");
-
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   printf("=========== Total #Entry: %10d \n", tree->GetEntries());
    
 /**///======================================================== Browser or Canvas
 
@@ -176,10 +172,11 @@
    //-------- 2, profileX and get the fit function
    double para[numDet][2];
    double xnScale[numDet];
+   TF1 * fit = new TF1("fit", "pol1");
    for( int i = 0; i < numDet; i++){
       cAlpha->cd(i+1);
-      h[i]->ProfileX()->Fit("pol1", "Q");
-      pol1->GetParameters(para[i]);
+      h[i]->ProfileX()->Fit("fit", "Q");
+      fit->GetParameters(para[i]);
       xnScale[i] = -para[i][1]; 
    }
    
@@ -207,8 +204,7 @@
    
    //--------- 4, pause for saving correction parameter
    cAlpha->Update();
-   printf("0 for stop, 1 for save xf-xn-correction & Canvas, 2 for e - xf+xn correction: ");
-   //printf("0 for stop, 1 for save xf-xn-correction & Canvas: ");
+   printf("0 for stop, 1 for save xf-xn-correction : ");
    scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){   
@@ -223,95 +219,10 @@
       fflush(paraOut);
       fclose(paraOut);
       
-      cAlpha->SaveAs("alpha_xf_xn_corrected.pdf");
+      //cAlpha->SaveAs("alpha_xf_xn_corrected.pdf");
    }
    
    return;
-   
-   //############################################################ for e vs xf+xn correction
-   //#### alpha calibration does not fit for physical run
-   printf("############## e - xf+xn correction \n");
-   line.SetX1(-200);
-   line.SetY1(-200);
-   line.SetX2(2000);
-   line.SetY2(2000);
-   
-   TH2F ** ex = new TH2F*[numDet];
-   for( int i = 0; i < numDet; i ++){
-      TString name;
-      name.Form("ex%d", i);
-      ex[i] = new TH2F(name, name, 100, -100, 1800, 100, -100, 1800);
-      name.Form("e[%d]", i); ex[i]->SetYTitle(name);
-      name.Form("xf[%d]+xn[%d]", i,i); ex[i]->SetXTitle(name);
-      
-      TString expression;
-      expression.Form("e[%d]*%f : xf[%d]+xn[%d]*%f>> ex%d" ,i ,xHalf[0]/xHalf[i] ,i, i, xnScale[i], i);
-      gate[i].Form("xf[%d]!=0 && xn[%d]!=0 && e[%d]!=0", i, i, i);
-      
-      cAlpha->cd(i+1);
-      
-      tree->Draw(expression, gate[i] , "");
-      
-      line.Draw("same");
-   }
-   
-   //-------- 1, pause for saving Canvas
-   cAlpha->Update();
-   printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
-   scanf("%d", &dummy);
-   if( dummy == 0 ) {
-      return;
-   }else if(dummy == 1){
-      cAlpha->SaveAs("alpha_e_xf+xn.pdf");
-   }
-   
-   //-------- 2, profileX and get the fit function
-   double exfxn[numDet][2];
-   for( int i = 0; i < numDet; i++){
-      cAlpha->cd(i+1);
-      ex[i]->ProfileX()->Fit("pol1", "Q");
-      pol1->GetParameters(exfxn[i]); 
-   }
-   
-   //--------- 3, correction
-   TH2F ** exC = new TH2F*[numDet];
-   for( int i = 0; i < numDet; i ++){
-      TString name;
-      name.Form("exC%d", i);
-      exC[i] = new TH2F(name, name, 100, -100, 1800, 100, -100, 1800);
-      name.Form("e[%d]", i); exC[i]->SetYTitle(name);
-      name.Form("xf[%d]+xn[%d]", i, i); exC[i]->SetXTitle(name);
-      
-      TString expression;
-      expression.Form("e[%d]*%f : (xf[%d]+xn[%d]*%f)*%f + %f>> exC%d" ,i ,xHalf[0]/xHalf[i] ,i, i, xnScale[i], exfxn[i][1], exfxn[i][0], i);
-      gate[i].Form("xf[%d]!=0 && xn[%d]!=0 && e[%d]!=0", i, i, i);
-      
-      cAlpha->cd(i+1);
-      
-      tree->Draw(expression, gate[i] , "");
-      line.Draw("same");
-   }
-   
-   //--------- 4, pause for saving correction parameter
-   cAlpha->Update();
-   printf("0 for end, 1 for save e-xf+xn correction & Canvas: ");
-   scanf("%d", &dummy);
-   if( dummy == 0 ) return;
-   if( dummy == 1 ){
-      FILE * paraOut;
-      TString filename;
-      filename.Form("correction_xfxn_e.dat");
-      paraOut = fopen (filename.Data(), "w+");
-      printf("=========== save xfxn-e-correction parameters to %s \n", filename.Data());
-      for( int i = 0; i < numDet; i++){
-         fprintf(paraOut, "%9.6f\t%9.6f\n", exfxn[i][0], exfxn[i][1]);
-      }
-      fflush(paraOut);
-      fclose(paraOut);
-
-      cAlpha->SaveAs("alpha_e_xf+xn_correction.pdf");
-
-   }
    
 }
 

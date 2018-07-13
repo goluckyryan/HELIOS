@@ -5,8 +5,8 @@
 // found on file: gen_run11.root
 //////////////////////////////////////////////////////////
 
-#ifndef Cali_all_h
-#define Cali_all_h
+#ifndef Cali_e_h
+#define Cali_e_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -21,9 +21,9 @@
 // Headers needed by this particular selector
 
 
-class Cali_all : public TSelector {
+class Cali_e : public TSelector {
 public :
-   TTree          *fChain = 0;   //!pointer to the analyzed TTree or TChain
+   TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
    // Declaration of leaf types
    Float_t         e[100];
@@ -53,8 +53,8 @@ public :
    TBranch        *b_ELUM;   //!
    TBranch        *b_ELUMTimestamp;   //!
 
-   Cali_all(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~Cali_all() { }
+   Cali_e(TTree * /*tree*/ =0) : fChain(0) { }
+   virtual ~Cali_e() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -69,7 +69,7 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-   ClassDef(Cali_all,0);
+   ClassDef(Cali_e,0);
    
    //=============================== 
    TFile * saveFile;
@@ -115,8 +115,8 @@ public :
 
 #endif
 
-#ifdef Cali_all_cxx
-void Cali_all::Init(TTree *tree)
+#ifdef Cali_e_cxx
+void Cali_e::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the reader is initialized.
@@ -293,9 +293,11 @@ void Cali_all::Init(TTree *tree)
          if( i >= numDet) break;
          eCorr[i][0] = a;
          eCorr[i][1] = b;
+         //printf("\n%2d, e0: %f, e1: %f ", i, eCorr[i][0], eCorr[i][1]);
          i = i + 1;
       }
       printf("... done.\n");
+      
    }else{
       printf("... fail.\n");
       for( int i = 0; i < 24 ; i++){
@@ -306,9 +308,11 @@ void Cali_all::Init(TTree *tree)
    }
    file.close();
 
+
+   printf("================================== numDet : %d \n", numDet);
 }
 
-Bool_t Cali_all::Notify()
+Bool_t Cali_e::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -320,4 +324,4 @@ Bool_t Cali_all::Notify()
 }
 
 
-#endif // #ifdef Cali_all_cxx
+#endif // #ifdef Cali_e_cxx

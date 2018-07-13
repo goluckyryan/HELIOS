@@ -14,11 +14,13 @@
    for (Int_t N=0; N<np; N++) {
       x = 2*P*(r->Rndm(N))-P;
       y = 2*P*(r->Rndm(N))-P;
-      z = -(sin(x-1.0)/(x-1.0))*(sin(y)/y)+0.2;
+      z = (sin(x-1.0)/(x-1.0))*(sin(y)/y)+0.2;
       dt->SetPoint(N,x,y,z);
+      //dt->Draw("TRI1");
+      //c->Update();
    }
-   gStyle->SetPalette(1);
+   //gStyle->SetPalette(1);
    dt->Draw("TRI1");
-   return c;
+   
    
 }
