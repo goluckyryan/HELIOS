@@ -8,7 +8,7 @@
 /**///======================================================== User input
    const char* rootfile="A_gen_run11.root"; const char* treeName="tree";
 
-   const char* simfile="~/ANALYSIS/Simulation/transfer.root"; const char* treeName="tree";
+   const char* simfile="../../Simulation/transfer.root"; const char* treeNameS="tree";
 
    int numDet = 24;
 
@@ -21,7 +21,7 @@
    printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
    
    TFile *f1 = new TFile (simfile, "read"); 
-   TTree *sTree = (TTree*)f1->Get(treeName);
+   TTree *sTree = (TTree*)f1->Get(treeNameS);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", simfile,  sTree->GetEntries());
 
    Int_t Div[2] = {6,4};  //x,y

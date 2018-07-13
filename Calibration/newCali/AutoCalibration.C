@@ -21,7 +21,7 @@
 //
 //==========================================
 
-int eCdet = 4; // e-correction detID
+int eCdet = -1; // e-correction detID
 
 void AutoCalibration(){
    
@@ -80,12 +80,12 @@ void AutoCalibration(){
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
    if( option == 2 ) Cali_compare(chain, sTree, eCdet);
-   if( option == 3 ) chain->Process("~/ANALYSIS/Calibration/Cali_e.C+");
+   if( option == 3 ) chain->Process("Cali_e.C+");
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
       Cali_compare(chain, sTree);
-      chain->Process("~/ANALYSIS/Calibration/Cali_e.C+");
+      chain->Process("Cali_e.C+");
    }
 
    

@@ -29,7 +29,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
    
    int ExIDMax = 3;
    
-   int nPoint = 100;
+   int nPoint = 60;
    
    printf("======================== \n");
    printf("distant Threshold : %f \n", distThreshold);
@@ -274,30 +274,33 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
       sTree->SetBranchAddress("e1", &eS, &b_eS);
       sTree->SetBranchAddress("x1", &xS, &b_xS);
       
-      cScript->cd(1);
-      exPlot->Reset();
-      exPlot->SetTitle(title + "(exp)");
-      for( int i = 0; i < sTree->GetEntries() ; i++){
-         sTree->GetEntry(i);
-         exPlot->Fill(xS, eS);
-      }
-      exPlot->Draw();
-      cScript->Update();
-      
-      cScript->cd(2);
-      exPlotR->Reset();
-      exPlotR->SetTitle(title + "(sim)");
-      for( int i = 0; i < rTree->GetEntries() ; i++){
-         rTree->GetEntry(i);
-         if( detID != idet%6 ) continue;
-         if( loop  != 1 ) continue;
-         if( hit   != 1 ) continue;
-         if( ExID  >  ExIDMax ) continue;
+      if( det >= 0 ){
+         cScript->cd(1);
+         exPlot->Reset();
+         exPlot->SetTitle(title + "(exp)");
+         for( int i = 0; i < sTree->GetEntries() ; i++){
+            sTree->GetEntry(i);
+            exPlot->Fill(xS, eS);
+         }
+         exPlot->Draw();
+         cScript->Update();
+         
+         cScript->cd(2);
+         exPlotR->Reset();
+         exPlotR->SetTitle(title + "(sim)");
+         for( int i = 0; i < rTree->GetEntries() ; i++){
+            rTree->GetEntry(i);
+            if( detID != idet%6 ) continue;
+            if( loop  != 1 ) continue;
+            if( hit   != 1 ) continue;
+            if( ExID  >  ExIDMax ) continue;
 
-         exPlotR->Fill(xR, eR);
+            exPlotR->Fill(xR, eR);
+         }
+         exPlotR->Draw("colz");            
+         cScript->Update();
+         
       }
-      exPlotR->Draw("colz");            
-      cScript->Update();
    /**///======================================================== Get tree entry
 
       clock.Reset(); clock.Start("timer");
@@ -308,6 +311,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
       double minTotalMinDist = 99.;
       
       gDist->SetTitle("Total min-dist; a1; a0; min-dist");
+      gDist->Clear();
       
       int eventIDStepSize = sTree->GetEntries()/300 ; // restrict number of point be around 200 to 300
       int eventjStepSize = 2;
@@ -379,7 +383,7 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
          clock.Start("timer");
          printf( "(%5.2f min)", time/60.);
          
-         if( totalMinDist < minTotalMinDist && count > countEvent/2. ) {
+         if( totalMinDist < minTotalMinDist && count > countEvent/4. ) {
             minTotalMinDist = totalMinDist;
             A0 = a0;
             A1 = a1;
@@ -399,6 +403,35 @@ void Cali_compare(TTree *tree, TTree *rTree, int det = -1){
       for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID ++ ){
          sTree->GetEntry(eventID);
          exPlotC->Fill(xS, eS/A1 + A0);
+      }
+      
+      
+      if( det == -1 ){
+         cScript->cd(1);
+         exPlot->Reset();
+         exPlot->SetTitle(title + "(exp)");
+         for( int i = 0; i < sTree->GetEntries() ; i++){
+            sTree->GetEntry(i);
+            exPlot->Fill(xS, eS);
+         }
+         exPlot->Draw();
+         cScript->Update();
+         
+         cScript->cd(2);
+         exPlotR->Reset();
+         exPlotR->SetTitle(title + "(sim)");
+         for( int i = 0; i < rTree->GetEntries() ; i++){
+            rTree->GetEntry(i);
+            if( detID != idet%6 ) continue;
+            if( loop  != 1 ) continue;
+            if( hit   != 1 ) continue;
+            if( ExID  >  ExIDMax ) continue;
+
+            exPlotR->Fill(xR, eR);
+         }
+         exPlotR->Draw("colz");            
+         cScript->Update();
+         
       }
       
       cScript->cd(2);

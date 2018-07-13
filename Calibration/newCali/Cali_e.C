@@ -143,11 +143,11 @@ Bool_t Cali_e::Process(Long64_t entry)
       
          //========== Calculate Ex and thetaCM
          if( TMath::IsNaN(eC[idet]) ){
-            Ex = TMath::QuiteNaN();
+            Ex = TMath::QuietNaN();
          }else{
             
             Ex = 0;
-            theta = 0;
+            thetaCM = 0;
          }
       }
       
