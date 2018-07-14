@@ -11,7 +11,8 @@
 #include <TSpectrum.h>
 #include <TGraph.h>
 #include <fstream>
-//#include "Cali_compare.C"
+#include <TProof.h>
+#include "Cali_compare.C"
 #include "Cali_compareNew.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
@@ -40,15 +41,15 @@ void AutoCalibration(){
 //==================================================== data files
    //======== alpha data
    //const char* rootfileAlpha="gen_run11.root";
-   const char* rootfileAlpha="~/ANALYSIS/H060_ana/data/gen_run09.root";
+   const char* rootfileAlpha="../../H060_ana/data/gen_run09.root";
    
    //======== Simulation data
    //const char* rootfileSim="~/Desktop/HELIOS/Simulation/transfer.root";
-   const char* rootfileSim="~/ANALYSIS/Simulation/transfer.root";
+   const char* rootfileSim="../../Simulation/transfer.root";
 
    //======== experimental data
    TChain * chain = new TChain("gen_tree");
-   chain->Add("~/ANALYSIS/H060_ana/data/gen_run11.root");  //01
+   chain->Add("../../H060_ana/data/gen_run11.root");  //01
 //   chain->Add("gen_run11.root");  //01
 /*   chain->Add("data/gen_run12.root");  //02
    chain->Add("data/gen_run13.root");  //03
@@ -67,7 +68,10 @@ void AutoCalibration(){
    chain->Add("data/gen_run28.root");  //16
    chain->Add("data/gen_run29.root");  //17
    chain->Add("data/gen_run30.root");  //18
-*/         
+*/ 
+      
+   TProof::Open("");
+   chain->SetProof();        
    chain->GetListOfFiles()->Print();
       
    TFile *fa = new TFile (rootfileAlpha, "read"); 
@@ -79,8 +83,8 @@ void AutoCalibration(){
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
-   //   if( option == 2 ) Cali_compare(chain, sTree, eCdet);
-   if( option == 2 ) Cali_compareNew(chain, sTree, eCdet);
+   if( option == 2 ) Cali_compare(chain, sTree, eCdet);
+   //if( option == 2 ) Cali_compareNew(chain, sTree, eCdet);
    if( option == 3 ) chain->Process("Cali_e.C+");
 
    if( option == -1){
