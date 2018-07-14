@@ -343,7 +343,16 @@ void Cali_compareNew(TTree *tree, TTree *rTree, int det = -1){
       TRandom * r1 = new TRandom();
       TDatime time;
       r1->SetSeed(time.GetTime());
-      printf("======================= find fit by Monle Carlo. #Point: %d\n", nTrial);
+
+      //calculate number of event will be used.
+      int countEvent = 0;
+      for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID += eventIDStepSize ){
+        sTree->GetEntry(eventID);
+        countEvent++;
+      }
+
+      int countMax = 0; 
+      printf("======================= find fit by Monle Carlo. #Trial: %d, #event: %d\n", nTrial, countEvent);
       for( int iTrial = 0; iTrial < nTrial; iTrial ++){ 
          
          //TODO better method, not pure random
@@ -361,11 +370,9 @@ void Cali_compareNew(TTree *tree, TTree *rTree, int det = -1){
 
          double totalMinDist    = 0.;
          int count = 0;
-         int countMax = 0; 
-         int countEvent = 0;
          for( int eventID = 0 ; eventID < sTree->GetEntries(); eventID += eventIDStepSize ){
             sTree->GetEntry(eventID);
-            countEvent++;
+            
             double minDist = 99;
             double eC, xC;
             //convert detIDS to j = 0,1,2,.. jDet
@@ -402,7 +409,7 @@ void Cali_compareNew(TTree *tree, TTree *rTree, int det = -1){
          
          gDist->SetPoint(iTrial, a1, a0[0], totalMinDist);
          
-         printf("%7.3f (%3d, %3d) < %6.3f ", totalMinDist, count, countMax, minTotalMinDist);   
+         printf("%7.3f < %6.3f (%3d, %3d) ", totalMinDist, minTotalMinDist, count, countMax);   
 
          //======== time
          clock.Stop("timer");
@@ -411,7 +418,7 @@ void Cali_compareNew(TTree *tree, TTree *rTree, int det = -1){
          printf( "|%5.2f min| ", time/60.);
          
          if( totalMinDist < minTotalMinDist && count > countEvent/4.  && count >= countMax) {
-           countMax = count; // next best fit must have more data points
+            countMax = count; // next best fit must have more data points
             minTotalMinDist = totalMinDist;
             A1 = a1;
             printf("%5.1f, ", A1);
