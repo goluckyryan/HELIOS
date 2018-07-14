@@ -15,7 +15,7 @@
 void Cali_xf_xn_to_e(TTree *tree){
    gStyle->SetOptStat(11111111);
    
-   printf("=========== Total #Entry: %10d \n", tree->GetEntries());
+   printf("=========== Total #Entry: %10lld \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas
 
@@ -103,7 +103,7 @@ void Cali_xf_xn_to_e(TTree *tree){
    //===== save correction parameter
    int dummy = 0;
    printf("0 for end, 1 for save e-xf+xn correction: ");
-   scanf("%d", &dummy);
+   int temp = scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){
       

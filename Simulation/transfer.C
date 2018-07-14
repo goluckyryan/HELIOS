@@ -33,7 +33,7 @@ void transfer(){
    string heliosDetGeoFile = "detectorGeo_upstream.txt";
    bool isCoincidentWithRecoil = false; 
    double eSigma = 0.0001 ; // detector energy sigma MeV
-   double zSigma = 0.1 ; // detector position sigma mm
+   double zSigma = 0.001 ; // detector position sigma mm
    
    //---- excitation of Beam 
    int nExA = 1;

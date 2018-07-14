@@ -22,7 +22,7 @@ void Cali_xf_xn(TTree * tree){
    printf("1, calibration energy using charateristic energy of alpha souce. \n");
    printf("2, calibration xf-xn with energy-gate. \n");
    printf("------------------------------------------------- \n");
-   printf("=========== Total #Entry: %10d \n", tree->GetEntries());
+   printf("=========== Total #Entry: %10lld \n", tree->GetEntries());
    
 /**///======================================================== Browser or Canvas
 
@@ -66,7 +66,7 @@ void Cali_xf_xn(TTree * tree){
    int dummy = 0;
    cAlpha->Update();
    printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
-   scanf("%d", &dummy);
+   int temp = scanf("%d", &dummy);
    if( dummy == 0 ) {
       return;
    }else if(dummy == 1){
@@ -114,7 +114,7 @@ void Cali_xf_xn(TTree * tree){
    //----------- 4, pause for saving correction parameters
    cAlpha->Update();
    printf("0 for stop, 1 for save e-correction & Canvas, 2 for xf - xn correction: ");
-   scanf("%d", &dummy);
+   temp = scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){
       FILE * paraOut;
@@ -161,7 +161,7 @@ void Cali_xf_xn(TTree * tree){
    //-------- 1, pause for saving Canvas
    cAlpha->Update();
    printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
-   scanf("%d", &dummy);
+   temp = scanf("%d", &dummy);
    if( dummy == 0 ) {
       return;
    }else if(dummy == 1){
@@ -205,7 +205,7 @@ void Cali_xf_xn(TTree * tree){
    //--------- 4, pause for saving correction parameter
    cAlpha->Update();
    printf("0 for stop, 1 for save xf-xn-correction : ");
-   scanf("%d", &dummy);
+   temp = scanf("%d", &dummy);
    if( dummy == 0 ) return;
    if( dummy == 1 ){   
       FILE * paraOut;

@@ -23,8 +23,6 @@
 //
 //==========================================
 
-int eCdet = 2; // e-correction detID
-
 void AutoCalibration(){
    
    int option;
@@ -36,7 +34,7 @@ void AutoCalibration(){
    printf(" 3 = Generate new root with calibrated data. \n");
    printf(" ============================================= \n");
    printf(" Choose action (-1 for all): ");
-   scanf("%d", &option);
+   int temp = scanf("%d", &option);
    
 //==================================================== data files
    //======== alpha data
@@ -70,8 +68,8 @@ void AutoCalibration(){
    chain->Add("data/gen_run30.root");  //18
 */ 
       
-   TProof::Open("");
-   chain->SetProof();        
+   //TProof::Open("");
+   //chain->SetProof();        
    chain->GetListOfFiles()->Print();
       
    TFile *fa = new TFile (rootfileAlpha, "read"); 
@@ -83,14 +81,19 @@ void AutoCalibration(){
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
-   if( option == 2 ) Cali_compare(chain, sTree, eCdet);
-   //if( option == 2 ) Cali_compareNew(chain, sTree, eCdet);
+   if( option == 2 ) {
+      int eCdet = -1; // e-correction detID
+      printf(" Choose detID (-1 for all): ");
+      int temp = scanf("%d", &eCdet);
+      Cali_compare(chain, sTree, eCdet);
+      //Cali_compareNew(chain, sTree, eCdet);
+   }
    if( option == 3 ) chain->Process("Cali_e.C+");
 
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
-      //      Cali_compare(chain, sTree);
+      Cali_compare(chain, sTree);
       chain->Process("Cali_e.C+");
    }
 

@@ -6,18 +6,18 @@
 //void test(){
 {  
 
-  const char* tempfile="temp1.root";
+  const char* tempfile="temp.root";
       TFile *f0 = new TFile (tempfile, "read"); 
       TTree * sTree = (TTree*)f0->Get("tree"); // s for seleced
       printf("========== number of event : %d \n", sTree->GetEntries()); 
       
       double  eS; TBranch * b_eS;   //!
       double  xS; TBranch * b_xS;   //!
-      int detIDS; TBranch * b_detIDS; //!
+      //int detIDS; TBranch * b_detIDS; //!
 
       sTree->SetBranchAddress("e1", &eS, &b_eS);
       sTree->SetBranchAddress("x1", &xS, &b_xS);
-      sTree->SetBranchAddress("detID1", &detIDS, &b_detIDS);
+      //sTree->SetBranchAddress("detID1", &detIDS, &b_detIDS);
 
    TH2F * exPlot  = new TH2F("exPlot" , "exPlot" , 200, -1.3, 1.3, 200, 0, 10);
    TH2F * exPlotC = new TH2F("exPlotC", "exPlotC", 200, -1.3, 1.3, 200, 0, 10);
