@@ -11,7 +11,8 @@
 #include <TSpectrum.h>
 #include <TGraph.h>
 #include <fstream>
-#include "Cali_compare.C"
+//#include "Cali_compare.C"
+#include "Cali_compareNew.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
 #include "Cali_e.h"
@@ -21,7 +22,7 @@
 //
 //==========================================
 
-int eCdet = 21; // e-correction detID
+int eCdet = 2; // e-correction detID
 
 void AutoCalibration(){
    
@@ -78,12 +79,14 @@ void AutoCalibration(){
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
-   if( option == 2 ) Cali_compare(chain, sTree, eCdet);
+   //   if( option == 2 ) Cali_compare(chain, sTree, eCdet);
+   if( option == 2 ) Cali_compareNew(chain, sTree, eCdet);
    if( option == 3 ) chain->Process("Cali_e.C+");
+
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
-      Cali_compare(chain, sTree);
+      //      Cali_compare(chain, sTree);
       chain->Process("Cali_e.C+");
    }
 
