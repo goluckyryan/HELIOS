@@ -324,21 +324,34 @@ void Cali_e::Init(TTree *tree)
    file.open("reaction.dat");
    isReaction = false;
    if( file.is_open() ){
-      double a, b;
+      string x;
       int i = 0;
-      while( file >> a >> b){
-         if( i == 0 ) mass = a;
-         if( i == 1 ) q    = a;
-         if( i == 2 ) beta = a; 
-         if( i == 3 ) Et   = a; 
-         if( i == 4 ) massB = a; 
+      while( file >> x ){
+         if( x.substr(0,2) == "//" )  continue;
+         if( i == 0 ) mass = atof(x.c_str());
+         if( i == 1 ) q    = atof(x.c_str());
+         if( i == 2 ) beta = atof(x.c_str()); 
+         if( i == 3 ) Et   = atof(x.c_str()); 
+         if( i == 4 ) massB = atof(x.c_str()); 
          i = i + 1;
       }
       printf("... done.\n");
+
       isReaction = true;
-      alpha = 299.792458 * Bfield * q / TMath::TwoPi();
-      gamam = 1./TMath::Sqrt(1-beta*beta);
-      G = alpha * gamma * beta * a;
+      alpha = 299.792458 * Bfield * q / TMath::TwoPi()/1000.;
+      gamma = 1./TMath::Sqrt(1-beta*beta);
+      G = alpha * gamma * beta * a ;
+      printf("============\n");
+      printf("mass-b  : %f MeV/c2 \n", mass);
+      printf("charge-b: %f \n", q);
+      printf("E-total : %f MeV \n", Et);
+      printf("mass-B  : %f MeV/c2 \n", massB);      
+      printf("beta    : %f \n", beta);
+      printf("B-field : %f T \n", Bfield);
+      printf("alpha   : %f MeV/mm \n", alpha);
+      printf("a       : %f mm \n", a);
+      printf("G       : %f MeV \n", G);
+
 
    }else{
       printf("... fail.\n");
@@ -348,6 +361,8 @@ void Cali_e::Init(TTree *tree)
 
 
    printf("================================== numDet : %d \n", numDet);
+   
+
 }
 
 Bool_t Cali_e::Notify()

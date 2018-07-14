@@ -150,22 +150,48 @@ Bool_t Cali_e::Process(Long64_t entry)
             Z = alpha * gamma * beta * z[idet];
             H = TMath::Sqrt(TMath::Power(gamma * beta,2) * (y*y - mass * mass) ) ;
             
-            // Solve phi,  Z = H * sin(phi) - G * tan(phi); 
-            // K = H * sin(phi) 
-            // Solve x, cos(x) = m/(y*gamma - K) 
-            // k = m * tan(x) 
-            // EB^2  = mass^2 + Et^2 + sqrt(2*Et*k^2 + 4 * mass^2 * Et^2 ) 
-            // Ex = EB - massB;
-            // cos(thetaCM) = gamma*(alpha * z - beta * y)/ k
-            // in G -> 0 limit, k^2 = gamma^2 *(y-alpha * beta *z )^2 - mass^2   
-            Ex = 0;
+            if( TMath::Abs(Z) < H ) {            
+              //using Newton's method to solve 0 ==  H * sin(phi) - G * tan(phi) - Z = f(phi) 
+              double tolerrence = 0.001;
+              double phi = 0; //initial phi = 0 -> ensure the solution has f'(phi) > 0
+              double nPhi = 0; // new phi
+
+              //printf("========= H: %f, G:%f, Z:%f \n", H, G, Z);  
+              int iter = 0;
+              do{
+                phi = nPhi;
+                nPhi = phi - (H * TMath::Sin(phi) - G * TMath::Tan(phi) - Z) / (H * TMath::Cos(phi) - G /TMath::Power( TMath::Cos(phi), 2));               
+                //printf("%d | phi :%f, nPhi:%f, %f < %f\n", iter, phi, nPhi, phi-nPhi, tolerrence);
+                iter ++;
+                if( iter > 10 || TMath::Abs(nPhi) > TMath::PiOver2()) break;
+              }while( TMath::Abs(phi - nPhi ) > tolerrence);
+              phi = nPhi;
+
+              // check f'(phi) > 0
+              double Df = H * TMath::Cos(phi) - G / TMath::Power( TMath::Cos(phi),2);
+              if( Df > 0 && TMath::Abs(phi) < TMath::PiOver2()  ){
+                double K = H * TMath::Sin(phi);
+                double x = TMath::ACos( mass / ( y * gamma - K));
+                double k = mass * TMath::Tan(x); // momentum of particel b or B in CM frame
+                double EB = TMath::Sqrt(mass*mass + Et*Et - 2*Et*TMath::Sqrt(k*k + mass * mass));
+                Ex = EB - massB;
             
-            
-            thetaCM = 0;
-         }
-      }
+                double hahaha1 = gamma* TMath::Sqrt(mass * mass + k * k) - y;
+                double hahaha2 = gamma* beta * k;
+                thetaCM = TMath::ACos(hahaha1/hahaha2) * TMath::RadToDeg();
+              }else{
+                Ex = TMath::QuietNaN();
+                thetaCM = TMath::QuietNaN();
+              }
+
+            }else{
+              Ex = TMath::QuietNaN();
+              thetaCM = TMath::QuietNaN();  
+            } // end of if |Z| > H
+         } //end of e is valid
+      }//end of x is valid
       
-   }
+   }//end of idet-loop
    
    //for H060
    if( elum[0] != 0){
