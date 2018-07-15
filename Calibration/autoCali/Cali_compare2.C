@@ -29,7 +29,7 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
    
    int ExIDMax = 3;
    
-   int nTrial = 40;
+   int nTrial = 60;
    
    int scaleDownTo = 400;
    

@@ -12,7 +12,9 @@
 
    int numDet = 24;
 
-   double eRange[3] = {400, 0, 10};
+   double eRange[3]  = {400, 0, 10};
+   double zRange[3]  = {400, -500, -100};
+   double ExRange[3] = {400, -1, 4};
 
 /**///======================================================== read tree and create Canvas
 
@@ -23,7 +25,9 @@
    TFile *f1 = new TFile (simfile, "read"); 
    TTree *sTree = (TTree*)f1->Get(treeNameS);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", simfile,  sTree->GetEntries());
-
+   
+   f0->cd();
+   
    Int_t Div[2] = {6,4};  //x,y
    Int_t size[2] = {230,230}; //x,y
    
