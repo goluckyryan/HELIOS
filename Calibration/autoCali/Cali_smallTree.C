@@ -139,19 +139,18 @@ void Cali_smallTree(TTree *expTree, TString saveFileName = "temp.root"){
    double eTemp, xTemp, zTemp;
    int detIDTemp, multi;
    tempTree->Branch("e", &eTemp, "eTemp/D");
-   tempTree->Branch("x", &xTemp, "xTemp/D");
    tempTree->Branch("z", &zTemp, "zTemp/D");
+   tempTree->Branch("x", &xTemp, "xTemp/D");
    tempTree->Branch("detID", &detIDTemp, "detIDTemp/I");
    tempTree->Branch("multi", &multi, "multi/I");
 
    for( int eventT = 0 ; eventT < totnumEntry; eventT ++ ){
       expTree->GetEntry(eventT);
       
-      int multi = 0; //multiplicity
+      multi = 0; //multiplicity
       for( int idet = 0 ; idet < numDet; idet ++){
+         if( e[idet] == 0 ) continue;
          if( xf[idet] == 0 && xn[idet] == 0 ) continue;
-      
-         multi++;
          
          detIDTemp = idet;
          eTemp = e[idet];
@@ -161,10 +160,13 @@ void Cali_smallTree(TTree *expTree, TString saveFileName = "temp.root"){
          
          if( xf[idet] > 0 && xn[idet] > 0 ){
             xTemp = (xfC - xnC)/(xfC+xnC);
+            multi++;
          }else if(xf[idet] == 0 && xn[idet] > 0 ){
             xTemp = (1-2*xnC/e[idet]);
+            multi++;
          }else if(xf[idet] > 0 && xn[idet] == 0 ){
             xTemp = (2*xfC/e[idet]-1);
+            multi++;
          }else{
             xTemp = TMath::QuietNaN();
          }

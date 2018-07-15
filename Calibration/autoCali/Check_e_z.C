@@ -63,7 +63,7 @@
       cCheck->Update();
    }
    
-   TCanvas * cCheck2 = new TCanvas("cCheck2", "cCheck2", 50, 50,  600, 300);
+   TCanvas * cCheck2 = new TCanvas("cCheck2", "cCheck2", 50, 50,  600, 400);
    cCheck2->SetGrid();
    tree->Draw("e:z >> h(400, -500, -100, 400, 0, 10)", "hitID >= 0 " );
    /*

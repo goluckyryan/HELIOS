@@ -4,7 +4,66 @@
 //#include <fstream>
 
 //void test(){
-{  
+{ 
+
+   int idet = 16;
+
+   TFile *caliFile = new TFile ("temp.root", "read"); 
+   TTree * expTree = (TTree*) caliFile->Get("tree");
+
+   double  eTemp; 
+   double  zTemp; 
+   //double  xTemp; 
+   int detIDTemp; 
+
+   expTree->SetBranchAddress("e",     &eTemp);
+   expTree->SetBranchAddress("z",     &zTemp);
+   expTree->SetBranchAddress("detID", &detIDTemp);
+   
+/**///======================================================== Plot
+
+   Int_t Div[2] = {2,1};  //x,y
+   Int_t size[2] = {400,400}; //x,y
+   
+   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   cScript->Divide(Div[0],Div[1]);
+   for( int i = 1; i <= Div[0]+Div[1] ; i++){
+      cScript->cd(i)->SetGrid();
+   }
+
+   gStyle->SetOptStat(1111111);
+   gStyle->SetStatY(1.0);
+   gStyle->SetStatX(0.99);
+   gStyle->SetStatW(0.2);
+   gStyle->SetStatH(0.1);   
+   
+   
+   cScript->cd(1);
+   TH2F * exPlot  = new TH2F("exPlot" , "exPlot" , 200, -230, -160, 200, 0, 2500);
+   exPlot->Reset();
+   //exPlot->GetXaxis()->SetRangeUser(-230, -160);
+   for( int i = 0; i < expTree->GetEntries() ; i++){
+      expTree->GetEntry(i);
+      if( detIDTemp != idet ) continue;
+      exPlot->Fill(zTemp, eTemp);
+   }
+   exPlot->Draw();
+   
+   cScript->cd(2);
+   TH2F * exPlot2  = new TH2F("exPlot2" , "exPlot2" , 200, -1000, 1000, 200, 0, 2500);
+   exPlot2->Reset();
+   exPlot2->GetXaxis()->SetRangeUser(-230, -160);
+   for( int i = 0; i < expTree->GetEntries() ; i++){
+      expTree->GetEntry(i);
+      if( detIDTemp != idet ) continue;
+      exPlot2->Fill(zTemp, eTemp);
+   }
+   exPlot2->Draw();
+   
+   //expTree->Draw("e:z >> exPlot2", "detID == 16"); 
+
+   
+/*
    const char* rootfileAlpha="../../H060_ana/data/gen_run11.root";
    const char* rootfileSim="../../Simulation/transfer.root";
    
