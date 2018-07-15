@@ -14,6 +14,7 @@
 #include <TProof.h>
 #include "Cali_compare.C"
 #include "Cali_compare2.C"
+#include "Cali_compareF.C"
 #include "Cali_compareNew.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
@@ -93,6 +94,8 @@ void AutoCalibration(){
       printf("=====================\n");
       printf("Method-0 : find e/a+b for each det.\n");
       printf("Method-1 : same position detector share same.\n");
+      printf("Method-2 : use fx .\n");
+      
       //TODO printf("Method-2 : method-0 + x-scaling factor.\n");
       printf("====== Pick a method: ");
       temp = scanf("%d", &method);
@@ -103,7 +106,17 @@ void AutoCalibration(){
          temp = scanf("%d", &eCdet);
          Cali_compare(chain, sTree, eCdet);
       }
+
       if( method == 1) Cali_compare2(chain, sTree);
+
+      if( method == 2) {
+         int eCdet = -1; 
+         printf(" Choose detID (-1 for all): ");
+         temp = scanf("%d", &eCdet);
+         Cali_compareF(chain, fs, eCdet);
+      }
+      
+      
       //Cali_compareNew(chain, sTree, eCdet);
    }
    if( option == 3 ) chain->Process("Cali_e.C+");

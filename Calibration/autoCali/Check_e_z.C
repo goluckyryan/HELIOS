@@ -18,15 +18,13 @@
 
 /**///======================================================== read tree and create Canvas
 
-   TFile *f0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)f0->Get(treeName);
+   TFile *file0 = new TFile (rootfile, "read"); 
+   TTree *tree = (TTree*)file0->Get(treeName);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootfile,  tree->GetEntries());
    
-   TFile *f1 = new TFile (simfile, "read"); 
-   TTree *sTree = (TTree*)f1->Get(treeNameS);
+   TFile *file1 = new TFile (simfile, "read"); 
+   TTree *sTree = (TTree*)file1->Get(treeNameS);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", simfile,  sTree->GetEntries());
-   
-   f0->cd();
    
    Int_t Div[2] = {6,4};  //x,y
    Int_t size[2] = {230,230}; //x,y
@@ -65,14 +63,15 @@
       cScript->Update();
    }
    
-   TCanvas * cScript2 = new TCanvas("cScript2", "cScript2", 50, 50,  600, 400);
+   TCanvas * cScript2 = new TCanvas("cScript2", "cScript2", 50, 50,  800, 600);
    cScript2->SetGrid();
    tree->Draw("e:z >> h(400, -500, -100, 400, 0, 10)", "hitID >= 0 " );
+   /*
    fx0->Draw("same");
    fx1->Draw("same");
    fx2->Draw("same");
-   fx3->Draw("same"); 
-   
+   fx3->Draw("same");
+   /**/
    
    TCanvas * cScript3 = new TCanvas("cScript3", "cScript3", 50, 500,  600, 300);
    cScript3->SetGrid();

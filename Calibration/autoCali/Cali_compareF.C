@@ -16,9 +16,9 @@
 #include <TRandom.h>
 #include <TDatime.h>
 
-// Share slope for same position
+//use the fx in refTree, use fx->Eval(x) as e
 
-void Cali_compare2(TTree *expTree, TTree *refTree){
+void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
 /**///======================================================== User Input
 
    double a1Range[2] = {250, 320};
@@ -31,26 +31,21 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
    
    int ExIDMax = 3;
    
-   int nTrial = 60;
+   int nTrial = 1000;
    
-   int scaleDownTo = 400;
    
-   printf("======================== Cali_compare2.\n");
+   printf("======================== \n");
    printf("distant Threshold : %f \n", distThreshold);
    
 /**///======================================================== display tree
    int totnumEntry = expTree->GetEntries();
    
    printf("============== Total #Entry: %10lld \n", expTree->GetEntries());
-   printf("==== reference Total #Entry: %10lld \n", refTree->GetEntries());
    
 /**///======================================================== histogram
    
    TH2F * exPlot  = new TH2F("exPlot" , "exPlot" , 200, -1.3, 1.3, 200, 0, 2500);
-   TH2F * exPlotC = new TH2F("exPlotC", "exPlotC", 200, -1.3, 1.3, 200, 0, 10);
-   TH2F * exPlotR = new TH2F("exPlotR", "exPlotR", 400, -1.3, 1.3, 400, 0, 10);
-   TGraph2D * gDist2D = new TGraph2D();   
-   TGraph * gDist = new TGraph();
+   TGraph2D * gDist = new TGraph2D();   
 
 /**///======================================================== Plot
 
@@ -173,19 +168,13 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
    expTree->SetBranchAddress("xf", xf, &b_XF);
    expTree->SetBranchAddress("xn", xn, &b_XN);
    
-   double      eR;   TBranch * b_e;     //!
-   double      xR;   TBranch * b_x;     //!
-   int      detID;   TBranch * b_detID; //!
-   int       loop;   TBranch * b_loop;  //!
-   int        hit;   TBranch * b_hit;   //!
-   int       ExID;   TBranch * b_ExID;  //!
-
-   refTree->SetBranchAddress("e", &eR, &b_e);
-   refTree->SetBranchAddress("x", &xR, &b_x);
-   refTree->SetBranchAddress("detID", &detID, &b_detID);
-   refTree->SetBranchAddress("loop", &loop, &b_loop);
-   refTree->SetBranchAddress("hit", &hit, &b_hit);
-   refTree->SetBranchAddress("ExID", &ExID, &b_ExID);
+   int numFx = 4;
+   TGraph ** fx = new TGraph *[numFx];
+   TString fxName;
+   for( int i = 0; i < numFx ; i++){
+      fxName.Form("fx%d", i);
+      fx[i] = (TGraph*) refFile->FindObjectAny(fxName);
+   }
    
 /**///======================================================== Extract tree entry, create new smaller trees, use that tree to speed up
    double B1 [numDet]; // best a1 of rDet
@@ -193,15 +182,32 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
 
    TBenchmark clock;  
    
-   for( int idet = 0; idet < numDet; idet ++){
+   int startDet = 0;
+   if(option >= 0 ) {
+      startDet = option;
+      numDet = option + 1;
+   }
+   
+   for( int idet = startDet; idet < numDet; idet ++){
+      
+      double iDet = idet%rDet;
+      double zRange[2];
+      if( firstPos > 0 ){
+         zRange[0] = pos[iDet] - 10;
+         zRange[1] = pos[iDet] + length +10;
+      }else{
+         zRange[0] = pos[iDet] - length -10;
+         zRange[1] = pos[iDet] + 10;
+      }
+      TH2F * exPlotC = new TH2F("exPlotC", "exPlotC", 200, zRange[0], zRange[1], 200, 0, 10);
       
       bool shown = false; clock.Reset(); clock.Start("timer");
       TString title; title.Form("detID-%d", idet);      
       printf("========== creating a smaller trees for detID = %d \n", idet);
          
-      /**///========================================= TODO make a singel tree with detID
+      /**///========================================= TODO is save as an array faster?
       
-      TFile * tempF1 = new TFile("temp1.root", "recreate");
+      TFile * tempF1 = new TFile("temp.root", "recreate");
       TTree * tempTree = new TTree("tree", "tree");
       
       double eTemp, xTemp;
@@ -257,15 +263,15 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
       
       tempTree->Write();
       int totalEventNum = tempTree->GetEntries();
-      printf("========== saved event : %d \n", totalEventNum); 
+      printf("=================== saved event : %d \n", totalEventNum); 
       tempF1->Close();
       
    /**///======================================================== open the tree and plot
       
-      const char* tempfile="temp1.root";
+      const char* tempfile="temp.root";
       TFile *f0 = new TFile (tempfile, "read"); 
       TTree * smallTree = (TTree*)f0->Get("tree"); // s for seleced
-      printf("========== number of event : %lld \n", smallTree->GetEntries()); 
+      //printf("========== number of event : %lld \n", smallTree->GetEntries()); 
       
       double  eS; TBranch * b_eS;   //!
       double  xS; TBranch * b_xS;   //!
@@ -273,25 +279,38 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
       smallTree->SetBranchAddress("e", &eS, &b_eS);
       smallTree->SetBranchAddress("x", &xS, &b_xS);
       
+      if( option >= 0 ){
+         cScript->cd(1);
+         exPlot->Reset();
+         exPlot->SetTitle(title + "(exp)");
+         for( int i = 0; i < smallTree->GetEntries() ; i++){
+            smallTree->GetEntry(i);
+            exPlot->Fill(xS, eS);
+         }
+         exPlot->Draw();
+         cScript->Update();
+         
+         cScript->cd(2);
+         fx[0]->Draw();
+         fx[0]->GetYaxis()->SetRangeUser(0, 10);
+         fx[0]->GetXaxis()->SetRangeUser(zRange[0], zRange[1] );
+         for( int i = 1; i < numFx; i++){
+            fx[i]->Draw("same");
+         }         
+         cScript->Update();
+         
+      }
    /**///======================================================== Get tree entry
 
       clock.Reset(); clock.Start("timer");
       
       double A0 = 0.;
-      double A1 = 250.;
+      double A1 = 200.;
       
       double minTotalMinDist = 99.;
       
-      gDist2D->SetTitle("Total min-dist; a1; a0; min-dist");
-      gDist2D->Clear();
-      gDist->SetTitle("Total min-dist; a0; min-dist");
+      gDist->SetTitle("Total min-dist; a1; a0; min-dist");
       gDist->Clear();
-      
-      int eventSStepSize = smallTree->GetEntries()/scaleDownTo; // restrict number of point be around 200 to 300
-      int eventRStepSize = 2;
-      
-      if( eventSStepSize == 0 ) eventSStepSize = 1;
-      if( eventRStepSize == 0 ) eventRStepSize = 1;
       
       TRandom * ranGen = new TRandom();
       TDatime time;
@@ -299,7 +318,7 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
       
       //calculate number of event will be used.
       int countEvent = 0;
-      for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS += eventSStepSize ){
+      for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS ++ ){
         smallTree->GetEntry(eventS);
         countEvent++;
       }
@@ -310,38 +329,38 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
          
          //TODO better method, not pure random
          double a1, a0;
-         if( idet < rDet ){
-            a1 = a1Range[0] + (a1Range[1] - a1Range[0])*ranGen->Rndm();
-            a0 = a0Range[0] + (a0Range[1] - a0Range[0])*ranGen->Rndm();
-         }else{
-            a1 = B1[idet%rDet];
-            a0 = 2*a0Range[0] + 2*(a0Range[1] - a0Range[0])*ranGen->Rndm();   
-         }
+         a1 = a1Range[0] + (a1Range[1] - a1Range[0])*ranGen->Rndm();
+         a0 = a0Range[0] + (a0Range[1] - a0Range[0])*ranGen->Rndm();
          
-         printf("%3d | %5.1f, %6.2f | ", iTrial, a1, a0);
+         //printf("%3d | %5.1f, %6.2f | ", iTrial, a1, a0);
          
          double totalMinDist    = 0.;
          int count = 0; 
-         for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS += eventSStepSize ){
+         for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS ++ ){
             smallTree->GetEntry(eventS);
             double minDist = 99;
             double eC, xC;
             //printf("==================== %d| %f, %f \n", eventS, eS/a1 - a0, xS);
-            for( int eventR = 0; eventR < refTree->GetEntries(); eventR += eventRStepSize){
-               refTree->GetEntry(eventR);
-               if( detID != idet%rDet ) continue;
-               if( loop  != 1 ) continue;
-               if( hit   != 1 ) continue;
-               if( ExID  >  ExIDMax ) continue;
+            for( int i = 0; i < numFx; i++){
+
+               double zR;
+               
+               if( firstPos < 0 ){
+                  zR = pos[iDet] - (-xS + 1.)*length/2 ; 
+               }else{
+                  zR = pos[iDet] + (xS + 1.)*length/2 ;
+               }
+               
+               double eR = fx[i]->Eval(zR);               
                
                //calculate dist
-               double tempDist = TMath::Power(xS - xR,2) + TMath::Power( (eS/a1 + a0) - eR,2);
+               double tempDist = TMath::Power( (eS/a1 + a0) - eR,2);
                if( tempDist < minDist ) {
                   minDist = tempDist;
                   eC = eR;
-                  xC = xR;
+                  xC = xS;
                }
-               //if( eventR%100 == 0) printf("%d, %8.4f, %8.4f| %8.4f < %8.4f \n", eventR, eR, xR, tempDist, minDist);               
+               //if( eventS%100 == 0) printf("%d, %d, %8.4f, %8.4f| %8.4f < %8.4f \n", eventS, i, eR, eS/a1+a0, tempDist, minDist);               
                        
             }
             if( minDist < distThreshold ) {
@@ -355,27 +374,36 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
          
          if( count == 0 ) totalMinDist = minTotalMinDist + 0.2; // to avoid no fill
          
-         gDist2D->SetPoint(iTrial, a1, a0, totalMinDist);
-         gDist->SetPoint(iTrial, a0, totalMinDist);
+         gDist->SetPoint(iTrial, a1, a0, totalMinDist);
          
-         printf("%7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
-
-         //======== time
-         clock.Stop("timer");
-         Double_t time = clock.GetRealTime("timer");
-         clock.Start("timer");
-         printf( "|%5.2f min| ", time/60.);
          
-         if( totalMinDist < minTotalMinDist && count > countEvent/6. && count >= countMax ) {
+         if( totalMinDist < minTotalMinDist && count >= countMax ) {
             countMax = count; // next best fit must have more data points
             minTotalMinDist = totalMinDist;
             A0 = a0;
             A1 = a1;
+            
+            //======== time
+            clock.Stop("timer");
+            Double_t time = clock.GetRealTime("timer");
+            clock.Start("timer");
+            //display
+            printf("%d | %7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
+            printf( "|%5.2f min| ", time/60.);
             printf("%5.1f, %5.3f \n", A1, A0);
             
+            if( option >= 0 ){
+               exPlotC->Reset();
+               for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS ++ ){
+                  smallTree->GetEntry(eventS);
+                  exPlotC->Fill(xS, eS/A1 + A0);
+               }
+               
+               cScript->cd(2);
+               exPlotC->Draw("same");
+               cScript->Update();      
+            }            
 
-         }else{
-            printf("\n");
          }
             
       }// end of loop
@@ -385,62 +413,66 @@ void Cali_compare2(TTree *expTree, TTree *refTree){
       B1[idet] = A1;
       B0[idet] = A0;
 
-      cScript->cd(1);
-      exPlot->Reset();
-      exPlot->SetTitle(title + "(exp)");
-      for( int i = 0; i < smallTree->GetEntries() ; i++){
-         smallTree->GetEntry(i);
-         exPlot->Fill(xS, eS);
+      if( option == -1 ){
+         cScript->cd(1);
+         exPlot->Reset();
+         exPlot->SetTitle(title + "(exp)");
+         for( int i = 0; i < smallTree->GetEntries() ; i++){
+            smallTree->GetEntry(i);
+            exPlot->Fill(xS, eS);
+         }
+         exPlot->Draw();
+         cScript->Update();
+         
+         cScript->cd(2);
+         fx[0]->Draw();
+         fx[0]->GetYaxis()->SetRangeUser(0, 10);
+         fx[0]->GetXaxis()->SetRangeUser(zRange[0], zRange[1] );
+         for( int i = 1; i < numFx; i++){
+            fx[i]->Draw("same");
+         }  
+         cScript->Update();
+         
       }
-      exPlot->Draw();
-      
-      cScript->cd(2);
-      exPlotR->Reset();
-      exPlotR->SetTitle(title + "(sim)");
-      for( int i = 0; i < refTree->GetEntries() ; i++){
-         refTree->GetEntry(i);
-         if( detID != idet%rDet ) continue;
-         if( loop  != 1 ) continue;
-         if( hit   != 1 ) continue;
-         if( ExID  >  ExIDMax ) continue;
 
-         exPlotR->Fill(xR, eR);
-      }
-      exPlotR->Draw("colz");            
-
+      cScript->cd(2);      
       exPlotC->Reset();
+
       for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS ++ ){
          smallTree->GetEntry(eventS);
-         exPlotC->Fill(xS, eS/A1 + A0);
+         double zS;
+         
+         if( pos[iDet] < 0 ){
+            zS = pos[iDet] - (-xS + 1.)*length/2 ; 
+         }else{
+            zS = pos[iDet] + (xS + 1.)*length/2 ; 
+         }
+         exPlotC->Fill(zS, eS/A1 + A0);
       } 
       exPlotC->Draw("same");
-
-      
       cScript->cd(3);
-      if( idet < rDet ){
-         gDist2D->Draw("tri1");
-         cScript->cd(3)->SetTheta(90);
-         cScript->cd(3)->SetPhi(0);
-      }else{
-         gDist->Draw("A*");
-      }
+      gDist->Draw("tri1");
+      
+      cScript->cd(3)->SetTheta(90);
+      cScript->cd(3)->SetPhi(0);
       cScript->Update();
    
    } // end of loop idet  
 
 /**///======================================================== save result
    
-   FILE * paraOut;
-   TString filename;
-   filename.Form("correction_e2.dat");
-   paraOut = fopen (filename.Data(), "w+");
+   if( option < 0 ){
+      FILE * paraOut;
+      TString filename;
+      filename.Form("correction_e.dat");
+      paraOut = fopen (filename.Data(), "w+");
 
-   printf("=========== save parameters to %s \n", filename.Data());
-   for( int i = 0; i < numDet; i++){
-   fprintf(paraOut, "%9.6f  %9.6f\n", B1[i], B0[i]);
+      printf("=========== save parameters to %s \n", filename.Data());
+      for( int i = 0; i < numDet; i++){
+      fprintf(paraOut, "%9.6f  %9.6f\n", B1[i], B0[i]);
+      }
+
+      fflush(paraOut);
+      fclose(paraOut);
    }
-
-   fflush(paraOut);
-   fclose(paraOut);
-   
 }
