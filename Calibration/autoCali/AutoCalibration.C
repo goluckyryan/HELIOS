@@ -12,10 +12,11 @@
 #include <TGraph.h>
 #include <fstream>
 #include <TProof.h>
-#include "Cali_compare.C"
-#include "Cali_compare2.C"
+//#include "Cali_compare.C"
+//#include "Cali_compare2.C"
+#include "Cali_smallTree.C"
 #include "Cali_compareF.C"
-#include "Cali_compareNew.C"
+//#include "Cali_compareNew.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
 #include "Cali_e.h"
@@ -32,8 +33,9 @@ void AutoCalibration(){
    printf(" ============================================= \n");
    printf(" 0 = alpha source calibration for xf - xn.\n");
    printf(" 1 = xf+xn to e calibration. \n");
-   printf(" 2 = e calibration by compare with simulation.\n");
-   printf(" 3 = Generate new root with calibrated data. \n");
+   printf(" 2 = Generate root file with e, x, z, detID, multi.\n");
+   printf(" 3 = e calibration by compare with simulation.\n");
+   printf(" 4 = Generate new root with calibrated data. \n");
    printf(" ============================================= \n");
    printf(" Choose action (-1 for all): ");
    int temp = scanf("%d", &option);
@@ -88,52 +90,37 @@ void AutoCalibration(){
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
+   
+   TString tempFileName = "temp.root";
    if( option == 2 ) {
-         
-      int method = 0;
-      printf("=====================\n");
-      printf("Method-0 : find e/a+b for each det.\n");
-      printf("Method-1 : same position detector share same.\n");
-      printf("Method-2 : use fx .\n");
-      
-      //TODO printf("Method-2 : method-0 + x-scaling factor.\n");
-      printf("====== Pick a method: ");
-      temp = scanf("%d", &method);
-      
-      if( method == 0 ){
-         int eCdet = -1; 
-         printf(" Choose detID (-1 for all): ");
-         temp = scanf("%d", &eCdet);
-         Cali_compare(chain, sTree, eCdet);
-      }
-
-      if( method == 1) Cali_compare2(chain, sTree);
-
-      if( method == 2) {
-         int eCdet = -1; 
-         printf(" Choose detID (-1 for all): ");
-         temp = scanf("%d", &eCdet);
-         Cali_compareF(chain, fs, eCdet);
-      }
-      
-      
-      //Cali_compareNew(chain, sTree, eCdet);
+      printf("=============== creating smaller tree.\n");
+      Cali_smallTree(chain, tempFileName);   
    }
-   if( option == 3 ) chain->Process("Cali_e.C+");
+   
+   if( option == 3 ) {
+      TFile *caliFile = new TFile (tempFileName, "read"); 
+      TTree * caliTree = (TTree*) caliFile->Get("tree");
+         
+      int eCdet = -1; 
+      printf(" Choose detID (-1 for all): ");
+      temp = scanf("%d", &eCdet);
+      Cali_compareF(caliTree, fs, eCdet);
+   }
+   
+   if( option == 4 ) chain->Process("Cali_e.C+");
 
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
       
-      int method = 0;
-      printf("=====================\n");
-      printf("Method-0 : find e/a+b for each det.\n");
-      printf("Method-1 : same position detector share same.\n");
-      printf("====== Pick a method: ");
-      temp = scanf("%d", &method);
+      printf("=============== creating smaller tree.\n");
+      TString tempFileName = "temp.root";
+      Cali_smallTree(chain, tempFileName);   
       
-      if( method == 0 ) Cali_compare(chain, sTree, -1);
-      if( method == 1 ) Cali_compare2(chain, sTree);
+      TFile *caliFile = new TFile (tempFileName, "read"); 
+      TTree * caliTree = (TTree*) caliFile->Get("tree");
+         
+      Cali_compareF(caliTree, fs, -1);
       
       chain->Process("Cali_e.C+");
    }
