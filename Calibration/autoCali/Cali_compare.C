@@ -16,7 +16,7 @@
 #include <TRandom.h>
 #include <TDatime.h>
 
-void Cali_compare(TTree *expTree, TTree *refTree, int det = -1){
+void Cali_compare(TTree *expTree, TTree *refTree, int option = -1){
 /**///======================================================== User Input
 
    double a1Range[2] = {250, 320};
@@ -191,9 +191,9 @@ void Cali_compare(TTree *expTree, TTree *refTree, int det = -1){
    TBenchmark clock;  
    
    int startDet = 0;
-   if(det >= 0 ) {
-      startDet = det;
-      numDet = det + 1;
+   if(option >= 0 ) {
+      startDet = option;
+      numDet = option + 1;
    }
    
    for( int idet = startDet; idet < numDet; idet ++){
@@ -276,7 +276,7 @@ void Cali_compare(TTree *expTree, TTree *refTree, int det = -1){
       smallTree->SetBranchAddress("e", &eS, &b_eS);
       smallTree->SetBranchAddress("x", &xS, &b_xS);
       
-      if( det >= 0 ){
+      if( option >= 0 ){
          cScript->cd(1);
          exPlot->Reset();
          exPlot->SetTitle(title + "(exp)");
@@ -399,7 +399,7 @@ void Cali_compare(TTree *expTree, TTree *refTree, int det = -1){
             A1 = a1;
             printf("%5.1f, %5.3f \n", A1, A0);
             
-            if( det >= 0 ){
+            if( option >= 0 ){
                exPlotC->Reset();
                for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS ++ ){
                   smallTree->GetEntry(eventS);
@@ -422,7 +422,7 @@ void Cali_compare(TTree *expTree, TTree *refTree, int det = -1){
       B1[idet] = A1;
       B0[idet] = A0;
 
-      if( det == -1 ){
+      if( option == -1 ){
          cScript->cd(1);
          exPlot->Reset();
          exPlot->SetTitle(title + "(exp)");
@@ -468,7 +468,7 @@ void Cali_compare(TTree *expTree, TTree *refTree, int det = -1){
 
 /**///======================================================== save result
    
-   if( det < 0 ){
+   if( option < 0 ){
       FILE * paraOut;
       TString filename;
       filename.Form("correction_e.dat");

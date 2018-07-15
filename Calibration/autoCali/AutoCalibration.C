@@ -13,6 +13,7 @@
 #include <fstream>
 #include <TProof.h>
 #include "Cali_compare.C"
+#include "Cali_compare2.C"
 #include "Cali_compareNew.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
@@ -76,16 +77,33 @@ void AutoCalibration(){
    TTree * atree = (TTree*)fa->Get("gen_tree");
 
    TFile *fs = new TFile (rootfileSim, "read"); 
-   TTree * sTree = (TTree*)fs->Get("tree");
+   TTree * sTree = NULL;
+   if( fs->IsOpen() ){
+      sTree = (TTree*)fs->Get("tree");
+   }else{
+      printf("!!!!!!!!!!! please generate simulation data\n");
+   }
    
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
    if( option == 2 ) {
-      int eCdet = -1; // e-correction detID
-      printf(" Choose detID (-1 for all): ");
-      int temp = scanf("%d", &eCdet);
-      Cali_compare(chain, sTree, eCdet);
+         
+      int method = 0;
+      printf("=====================\n");
+      printf("Method-0 : find e/a+b for each det.\n");
+      printf("Method-1 : same position detector share same.\n");
+      //TODO printf("Method-2 : method-0 + x-scaling factor.\n");
+      printf("====== Pick a method: ");
+      temp = scanf("%d", &method);
+      
+      if( method == 0 ){
+         int eCdet = -1; 
+         printf(" Choose detID (-1 for all): ");
+         temp = scanf("%d", &eCdet);
+         Cali_compare(chain, sTree, eCdet);
+      }
+      if( method == 1) Cali_compare2(chain, sTree);
       //Cali_compareNew(chain, sTree, eCdet);
    }
    if( option == 3 ) chain->Process("Cali_e.C+");
@@ -93,7 +111,17 @@ void AutoCalibration(){
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
-      Cali_compare(chain, sTree);
+      
+      int method = 0;
+      printf("=====================\n");
+      printf("Method-0 : find e/a+b for each det.\n");
+      printf("Method-1 : same position detector share same.\n");
+      printf("====== Pick a method: ");
+      temp = scanf("%d", &method);
+      
+      if( method == 0 ) Cali_compare(chain, sTree, -1);
+      if( method == 1 ) Cali_compare2(chain, sTree);
+      
       chain->Process("Cali_e.C+");
    }
 

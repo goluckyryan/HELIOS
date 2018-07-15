@@ -18,11 +18,11 @@
 
    TFile *f0 = new TFile (rootfile, "read"); 
    TTree *tree = (TTree*)f0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", rootfile,  tree->GetEntries());
+   printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootfile,  tree->GetEntries());
    
    TFile *f1 = new TFile (simfile, "read"); 
    TTree *sTree = (TTree*)f1->Get(treeNameS);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10d \n", simfile,  sTree->GetEntries());
+   printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", simfile,  sTree->GetEntries());
 
    Int_t Div[2] = {6,4};  //x,y
    Int_t size[2] = {230,230}; //x,y
@@ -56,13 +56,30 @@
       name.Form("hEZ%02d", idet);
       hEZ[idet] = new TH2F(name, name, 400, -1.3, 1.3, eRange[0], eRange[1], eRange[2]);
       expression.Form("e:x>>hEZ%02d", idet);
-      gate.Form("detID == %d && hitID == 0", idet);
+      gate.Form("detID == %d && hitID >= 0", idet);
       tree->Draw(expression, gate);
       cScript->Update();
    }
    
-   TCanvas * cScript2 = new TCanvas("cScript2", "cScript2", 100, 100,  800, 600);
-   tree->Draw("e:z >> h(400, -500, -100, 400, 0, 10)", "hitID >= 0 " ); 
+   TCanvas * cScript2 = new TCanvas("cScript2", "cScript2", 50, 50,  600, 400);
+   cScript2->SetGrid();
+   tree->Draw("e:z >> h(400, -500, -100, 400, 0, 10)", "hitID >= 0 " );
+   fx0->Draw("same");
+   fx1->Draw("same");
+   fx2->Draw("same");
+   fx3->Draw("same"); 
    
+   
+   TCanvas * cScript3 = new TCanvas("cScript3", "cScript3", 50, 500,  600, 300);
+   cScript3->SetGrid();
+   tree->Draw("Ex >> hEx(400, -1, 4)"); 
+   
+   TCanvas * cScript4 = new TCanvas("cScript4", "cScript4", 700, 50,  600, 400);
+   cScript4->SetGrid();
+   tree->Draw("thetaCM:z >> htz(400, -500, -100, 400, 0, 45)"); 
+   
+   TCanvas * cScript5 = new TCanvas("cScript5", "cScript5", 700, 500,  600, 400);
+   cScript5->SetGrid();
+   tree->Draw("Ex :z >> hExZ(400, -500, -100, 400, -1, 4)"); 
    
 }

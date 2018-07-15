@@ -254,7 +254,7 @@ public:
    HELIOS();
    ~HELIOS();
    
-   bool SetCoincidentWithRecoil(bool TorF){
+   void SetCoincidentWithRecoil(bool TorF){
       this->isCoincidentWithRecoil = TorF;
    }
    bool SetDetectorGeometry(string filename);

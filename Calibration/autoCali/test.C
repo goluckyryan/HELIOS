@@ -5,7 +5,22 @@
 
 //void test(){
 {  
+   const char* rootfileAlpha="../../H060_ana/data/gen_run11.root";
+   const char* rootfileSim="../../Simulation/transfer.root";
+   
+   TFile *fa = new TFile (rootfileAlpha, "read"); 
+   TTree * atree = (TTree*)fa->Get("gen_tree");
 
+   TFile *fs = new TFile (rootfileSim, "read"); 
+   TTree * sTree = (TTree*)fs->Get("tree");
+   
+   gROOT->ProcessLine(".L Cali_compare2.C");
+   
+   Cali_compare2(atree, sTree);
+   
+
+
+/*
   const char* tempfile="temp.root";
       TFile *f0 = new TFile (tempfile, "read"); 
       TTree * sTree = (TTree*)f0->Get("tree"); // s for seleced

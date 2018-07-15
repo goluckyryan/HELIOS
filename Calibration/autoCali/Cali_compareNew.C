@@ -18,7 +18,7 @@
 
 // this macro aims to align same position dets with saem scale factor but difference offset. 
 
-void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
+void Cali_compareNew(TTree *expTree, TTree *refTree, int option = -1){
 /**///======================================================== User Input
 
    double a1Range[2] = {250, 320};
@@ -194,8 +194,8 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
    
    int startDet = 0;
    int endDet = rDet;
-   if(det >= 0 ) {
-      startDet = det%rDet;
+   if(option >= 0 ) {
+      startDet = option%rDet;
       endDet = startDet + 1;
    }
    
@@ -289,7 +289,7 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
       smallTree->SetBranchAddress("x", &xS, &b_xS);
       smallTree->SetBranchAddress("detID", &detIDS, &b_detIDS);
       
-      if( det >= 0 ){
+      if( option >= 0 ){
          cScript->cd(1);
          exPlot->Reset();
          exPlot->SetTitle(title + "(exp)");
@@ -373,7 +373,7 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
             double minDist = 99;
             double eC, xC;
             //convert detIDS to j = 0,1,2,.. cDet
-            int jdetIDS = (detIDS - det)/rDet;
+            int jdetIDS = (detIDS - option)/rDet;
 
             //printf("==================== %d| %f, %f \n", eventS, eS/a1 - a0, xS);
             for( int eventR = 0; eventR < refTree->GetEntries(); eventR += eventRStepSize){
@@ -429,7 +429,7 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
             exPlotC->Reset();
             for( int eventS = 0 ; eventS < smallTree->GetEntries(); eventS ++ ){
                smallTree->GetEntry(eventS);
-               int jdetIDS = (detIDS - det)/rDet;
+               int jdetIDS = (detIDS - option)/rDet;
                exPlotC->Fill(xS, eS/A1 + A0[jdetIDS]);
             }
             cScript->cd(3);
@@ -445,7 +445,7 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
       //After founded the best fit, plot the result
             
       for( int j = 0; j < cDet; j++){
-        int i = j*rDet + det ;
+        int i = j*rDet + option ;
         B1[i] = A1;
         B0[i] = A0[j];
         printf("==========> %2d: (B1, B0):(%f\t%f)\n",i,  B1[i], B0[i]);
@@ -461,7 +461,7 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
       cScript->Update();      
 
       
-      if( det == -1 ){
+      if( option == -1 ){
          cScript->cd(1);
          exPlot->Reset();
          exPlot->SetTitle(title + "(exp)");
@@ -503,7 +503,7 @@ void Cali_compareNew(TTree *expTree, TTree *refTree, int det = -1){
 
 /**///======================================================== save result
       
-   if( det < 0 ){
+   if( option < 0 ){
       FILE * paraOut;
       TString filename;
       filename.Form("correction_e.dat");
