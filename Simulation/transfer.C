@@ -99,6 +99,24 @@ void transfer(){
    double intercept = q/gamma - mb; // MeV
    printf("=== e-z intercept (ground state) : %f MeV\n", intercept); 
    
+   //============ save reaction.dat
+   FILE * paraOut;
+   TString filename;
+   filename.Form("reaction.dat");
+   paraOut = fopen (filename.Data(), "w+");
+   
+   printf("=========== save reaction constants to %s \n", filename.Data());
+   
+   fprintf(paraOut, "%-15.4f  //%s\n", reaction.GetMass_b(), "mass_b");
+   fprintf(paraOut, "%-15d  //%s\n", zb, "charge_b");
+   fprintf(paraOut, "%-15.8f  //%s\n", beta, "betaCM");
+   fprintf(paraOut, "%-15.4f  //%s\n", reaction.GetCMTotalEnergy(), "Etot");
+   fprintf(paraOut, "%-15.4f  //%s\n", reaction.GetMass_B(), "mass_B");
+   fprintf(paraOut, "%-15.4f  //%s\n", slope/beta, "alpha");
+    
+   fflush(paraOut);
+   fclose(paraOut);
+   
    //==== Target scattering, only energy loss
    if(isTargetScattering) printf("############################################## Target Scattering\n");
    TargetScattering msA;

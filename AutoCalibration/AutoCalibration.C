@@ -12,11 +12,9 @@
 #include <TGraph.h>
 #include <fstream>
 #include <TProof.h>
-//#include "Cali_compare.C"
-//#include "Cali_compare2.C"
+#include "../Simulation/transfer.C"
 #include "Cali_smallTree.C"
 #include "Cali_compareF.C"
-//#include "Cali_compareNew.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
 #include "Cali_e.h"
@@ -29,29 +27,27 @@
 void AutoCalibration(){
    
    int option;
-   printf(" ========= Auto Calibration ================== \n");
-   printf(" ============================================= \n");
+   printf(" ========= Auto Calibration ======================= \n");
+   printf(" ================================================== \n");
    printf(" 0 = alpha source calibration for xf - xn.\n");
    printf(" 1 = xf+xn to e calibration. \n");
    printf(" 2 = Generate root file with e, x, z, detID, multi.\n");
+   printf(" --------- transfer.root reqaure below ------------\n");
    printf(" 3 = e calibration by compare with simulation.\n");
    printf(" 4 = Generate new root with calibrated data. \n");
-   printf(" ============================================= \n");
+   printf(" ================================================== \n");
    printf(" Choose action (-1 for all): ");
    int temp = scanf("%d", &option);
    
 //==================================================== data files
-   //======== alpha data
-   //const char* rootfileAlpha="gen_run11.root";
-   const char* rootfileAlpha="../../H060_ana/data/gen_run09.root";
    
-   //======== Simulation data
-   //const char* rootfileSim="~/Desktop/HELIOS/Simulation/transfer.root";
-   const char* rootfileSim="../../Simulation/transfer.root";
+   //======== alpha data
+   TString rootfileAlpha="../H060_ana/data/gen_run09.root";
+   
 
    //======== experimental data
    TChain * chain = new TChain("gen_tree");
-   chain->Add("../../H060_ana/data/gen_run11.root");  //01
+   chain->Add("../H060_ana/data/gen_run11.root");  //01
 //   chain->Add("gen_run11.root");  //01
 /*   chain->Add("data/gen_run12.root");  //02
    chain->Add("data/gen_run13.root");  //03
@@ -74,24 +70,21 @@ void AutoCalibration(){
       
    //TProof::Open("");
    //chain->SetProof();        
+   printf(" ================ files :  \n");
    chain->GetListOfFiles()->Print();
+   printf(" ================================================== \n");
       
    TFile *fa = new TFile (rootfileAlpha, "read"); 
    TTree * atree = (TTree*)fa->Get("gen_tree");
 
-   TFile *fs = new TFile (rootfileSim, "read"); 
-   TTree * sTree = NULL;
-   if( fs->IsOpen() ){
-      sTree = (TTree*)fs->Get("tree");
-   }else{
-      printf("!!!!!!!!!!! please generate simulation data\n");
-   }
    
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
    
    TString tempFileName = "temp.root";
+   TString rootfileSim="../Simulation/transfer.root";
+      
    if( option == 2 ) {
       printf("=============== creating smaller tree.\n");
       Cali_smallTree(chain, tempFileName);   
@@ -100,11 +93,20 @@ void AutoCalibration(){
    if( option == 3 ) {
       TFile *caliFile = new TFile (tempFileName, "read"); 
       TTree * caliTree = (TTree*) caliFile->Get("tree");
+      
+      TFile *fs = new TFile (rootfileSim, "read"); 
+      
+      if(fs->IsOpen()){
          
-      int eCdet = -1; 
-      printf(" Choose detID (-1 for all): ");
-      temp = scanf("%d", &eCdet);
-      Cali_compareF(caliTree, fs, eCdet);
+         int eCdet = -1; 
+         printf(" Choose detID (-1 for all): ");
+         temp = scanf("%d", &eCdet);
+         Cali_compareF(caliTree, fs, eCdet);
+         
+      }else{
+         printf("!!!!! cannot open transfer.root !!!!! \n");
+         return;
+      }
    }
    
    if( option == 4 ) chain->Process("Cali_e.C+");
@@ -112,15 +114,22 @@ void AutoCalibration(){
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
-      
+    
       printf("=============== creating smaller tree.\n");
       TString tempFileName = "temp.root";
       Cali_smallTree(chain, tempFileName);   
       
       TFile *caliFile = new TFile (tempFileName, "read"); 
       TTree * caliTree = (TTree*) caliFile->Get("tree");
-         
-      Cali_compareF(caliTree, fs, -1);
+      
+      TFile *fs = new TFile (rootfileSim, "read"); 
+      
+      if(fs->IsOpen()){
+         Cali_compareF(caliTree, fs, -1);
+      }else{
+         printf("!!!!! cannot open transfer.root !!!!! \n");
+         return;
+      }   
       
       chain->Process("Cali_e.C+");
    }

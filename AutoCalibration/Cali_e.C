@@ -142,8 +142,9 @@ Bool_t Cali_e::Process(Long64_t entry)
       
       
          //========== Calculate Ex and thetaCM
-         if( TMath::IsNaN(eC[idet]) ){
+         if( TMath::IsNaN(eC[idet]) || isReaction == false ){
             Ex = TMath::QuietNaN();
+            thetaCM = TMath::QuietNaN();
          }else{
             
             double y = eC[idet] + mass;
@@ -156,12 +157,10 @@ Bool_t Cali_e::Process(Long64_t entry)
               double phi = 0; //initial phi = 0 -> ensure the solution has f'(phi) > 0
               double nPhi = 0; // new phi
 
-              //printf("========= H: %f, G:%f, Z:%f \n", H, G, Z);  
               int iter = 0;
               do{
                 phi = nPhi;
                 nPhi = phi - (H * TMath::Sin(phi) - G * TMath::Tan(phi) - Z) / (H * TMath::Cos(phi) - G /TMath::Power( TMath::Cos(phi), 2));               
-                //printf("%d | phi :%f, nPhi:%f, %f < %f\n", iter, phi, nPhi, phi-nPhi, tolerrence);
                 iter ++;
                 if( iter > 10 || TMath::Abs(nPhi) > TMath::PiOver2()) break;
               }while( TMath::Abs(phi - nPhi ) > tolerrence);
@@ -200,7 +199,6 @@ Bool_t Cali_e::Process(Long64_t entry)
    }
    
    if( zMultiHit == 0 ) return kTRUE;
-   
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file

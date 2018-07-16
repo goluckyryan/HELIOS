@@ -138,11 +138,8 @@ void Count(TTree *tree, int detID = -1, int splitCtrl = 0, double threshold = 0.
    printf("============= Fit.....");
    nPeaks  = peak->Search(specS, 1, "", threshold);
    printf(" found %d peaks \n", nPeaks);
-   float * xpos = peak->GetPositionX();
-   float * ypos = peak->GetPositionY();
-   
-   //Double_t * xpos = peak->GetPositionX();
-   //Double_t * ypos = peak->GetPositionY();
+   float * xpos = (float *) peak->GetPositionX();
+   float * ypos = (float *) peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );

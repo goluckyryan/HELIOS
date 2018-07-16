@@ -321,7 +321,7 @@ void Cali_e::Init(TTree *tree)
    
    //========================================= reaction parameters
    printf("----- loading reaction parameter.");
-   file.open("reaction.dat");
+   file.open("../Simulation/reaction.dat");
    isReaction = false;
    if( file.is_open() ){
       string x;

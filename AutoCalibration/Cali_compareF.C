@@ -29,7 +29,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
    double eThreshold = 300;
    double distThreshold   = 0.01;
 
-   int numFx = 4;
+   int numFx = 4;  //number of Ex function
    int nTrial = 1000;
    
    TBenchmark gClock;  
@@ -168,6 +168,10 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
    for( int i = 0; i < numFx ; i++){
       fxName.Form("fx%d", i);
       fx[i] = (TGraph*) refFile->FindObjectAny(fxName);
+      if( fx[i] == NULL ) {
+         numFx = i + 1 ;
+         break;
+      }
    }
    
 /**///======================================================== Extract tree entry, create new smaller trees, use that tree to speed up
