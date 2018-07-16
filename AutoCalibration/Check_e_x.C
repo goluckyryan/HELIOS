@@ -7,20 +7,22 @@
 #include "TCanvas.h"
 #include "TF1.h"
 
-//void Check_e_x(){
-{/**///======================================================== User input
-   const char* rootfile="../H060_ana/data/gen_run11.root"; const char* treeName="gen_tree";
+void Check_e_x(TString rootFile = "temp.root" ){
+/**///======================================================== User input
+   
+   const char* treeName="tree";
    
    double eThreshold = 300;
    
    int numDet = 24;
    double eRange[3]  = {400, 0, 2000};
+   double zRange[3]  = {400, -500, -100};
 
 /**///======================================================== read tree and create Canvas
 
-   TFile *file0 = new TFile (rootfile, "read"); 
+   TFile *file0 = new TFile (rootFile, "read"); 
    TTree *tree = (TTree*)file0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootfile,  tree->GetEntries());
+   printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootFile.Data(),  tree->GetEntries());
    
    Int_t Div[2] = {6,4};  //x,y
    Int_t size[2] = {200,230}; //x,y
@@ -52,12 +54,33 @@
       cCheck->cd(idet+1);  
       name.Form("hEX%02d", idet);
       hEX[idet] = new TH2F(name, name, 400, -1.3, 1.3, eRange[0], eRange[1], eRange[2]);
-      expression.Form("e[%d]:(xf[%d]-xn[%d])/(xf[%d]+xn[%d])>>hEX%02d", idet, idet, idet, idet, idet, idet);
+      expression.Form("e:x>>hEX%02d", idet);
       
-      gate.Form("e[%d] > 0 && (xf[%d] > 0 || xn[%d] > 0 )", idet, idet, idet);
+      gate.Form("detID == %d", idet);
 
       tree->Draw(expression, gate);
       line->Draw("same");
       cCheck->Update();
    }
+   
+/**///======================================================== e vs z
+   TCanvas * cCheck2 = new TCanvas("cCheck2", "cCheck2", 700, 50,  600, 400);
+   cCheck2->SetGrid();
+   
+   gStyle->SetOptStat(11111);
+   gStyle->SetStatY(0.9);
+   gStyle->SetStatX(0.35);
+   gStyle->SetStatW(0.25);
+   gStyle->SetStatH(0.10);
+   gStyle->SetLabelSize(0.035, "X");
+   gStyle->SetLabelSize(0.035, "Y");
+   gStyle->SetTitleFontSize(0.035);
+   
+   TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1], eRange[2]);
+   tree->Draw("e:z >> hEZ", "" );
+   
+   TLine * line2 = new TLine(zRange[1], eThreshold, zRange[2], eThreshold);
+   line2->SetLineColor(2);
+   line2->Draw("same");  
+   cCheck2->Update();
 }

@@ -14,6 +14,7 @@
 #include <TProof.h>
 #include "../Simulation/transfer.C"
 #include "Cali_smallTree.C"
+#include "Check_e_x.C"
 #include "Cali_compareF.C"
 #include "Cali_xf_xn.C"
 #include "Cali_xf_xn_to_e.C"
@@ -88,6 +89,7 @@ void AutoCalibration(){
    if( option == 2 ) {
       printf("=============== creating smaller tree.\n");
       Cali_smallTree(chain, tempFileName);   
+      Check_e_x(tempFileName);
    }
    
    if( option == 3 ) {
