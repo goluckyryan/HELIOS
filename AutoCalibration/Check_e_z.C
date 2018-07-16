@@ -12,6 +12,7 @@
 #include <fstream>
 
 int nPeaks = 16;
+TTree *tree = NULL;
 
 Double_t fpeaks(Double_t *x, Double_t *par) {
    Double_t result = 0;
@@ -43,7 +44,7 @@ void Check_e_z(){
 /**///======================================================== read tree 
 
    TFile *file0 = new TFile (rootfile, "read"); 
-   TTree *tree = (TTree*)file0->Get(treeName);
+   tree = (TTree*)file0->Get(treeName);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootfile,  tree->GetEntries());
    
    TFile *file1 = new TFile (simfile, "read"); 
