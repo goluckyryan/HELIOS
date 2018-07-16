@@ -9,6 +9,7 @@
 #include <TMath.h>
 #include <TSpectrum.h>
 #include <TGraph.h>
+#include <TLegend.h>
 #include <fstream>
 
 int nPeaks = 16;
@@ -38,8 +39,8 @@ void Check_e_z(){
    double ExRange[3] = {200, -1, 4};
    
    int numFx = 6;
-   bool showFx = true;
-   bool showTx = true;
+   bool showFx = false;
+   bool showTx = false;
 
 /**///======================================================== read tree 
 
@@ -51,11 +52,11 @@ void Check_e_z(){
    TTree *sTree = (TTree*)file1->Get(treeNameS);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", simfile,  sTree->GetEntries());
 
-   gStyle->SetOptStat(1111111);
-   gStyle->SetStatY(1.0);
-   gStyle->SetStatX(0.99);
-   gStyle->SetStatW(0.2);
-   gStyle->SetStatH(0.1);
+   gStyle->SetOptStat(10001);
+   gStyle->SetStatY(0.9);
+   gStyle->SetStatX(0.9);
+   gStyle->SetStatW(0.4);
+   gStyle->SetStatH(0.2);
    gStyle->SetLabelSize(0.05, "X");
    gStyle->SetLabelSize(0.05, "Y");
    gStyle->SetTitleFontSize(0.1);
@@ -64,7 +65,7 @@ void Check_e_z(){
 
 
 /**///======================================================== e vs x
-   Int_t size[2] = {150,230}; //x,y
+   Int_t size[2] = {230,230}; //x,y
    TCanvas * cCheck1 = new TCanvas("cCheck1", "cCheck1", 0, 0, size[0]*Div[0], size[1]*Div[1]);
    cCheck1->Divide(Div[0],Div[1]);
    for( int i = 1; i <= Div[0]*Div[1] ; i++){
@@ -82,12 +83,14 @@ void Check_e_z(){
       tree->Draw(expression, gate);
       cCheck1->Update();
    }
-
+   
 /**///======================================================== Ex and fit
+   
    TCanvas * cCheck3 = new TCanvas("cCheck3", "cCheck3", 50, 50,  600, 400);
    cCheck3->Divide(1,2);
    cCheck3->cd(1)->SetGrid();
    cCheck3->cd(1);
+   gStyle->SetOptStat(0);
    TH1F * hEx = new TH1F("hEx", "excitation energy; Ex [MeV]; Count", ExRange[0], ExRange[1], ExRange[2]);
    
    tree->Draw("Ex >> hEx"); 
@@ -145,13 +148,10 @@ void Check_e_z(){
    double bw = specS->GetBinWidth(1);
    
    double * ExPos = new double[nPeaks];
-   
+   double * ExSigma = new double[nPeaks];   
    for(int i = 0; i < nPeaks ; i++){
       ExPos[i] = paraA[3*i+1];
-   }
-   
-   for(int i = 0; i < nPeaks ; i++){
-      ExPos[i] = paraA[3*i+1];
+      ExSigma[i] = paraA[3*i+2];
       printf("%2d , count: %8.0f(%3.0f), mean: %8.4f(%8.4f), sigma: %8.4f(%8.4f) \n", 
               i, 
               paraA[3*i] / bw,   paraE[3*i] /bw, 
@@ -161,6 +161,11 @@ void Check_e_z(){
    cCheck3->Update();
 
 /**///======================================================== e vs z
+   gStyle->SetOptStat(11111);
+   gStyle->SetStatY(0.9);
+   gStyle->SetStatX(0.35);
+   gStyle->SetStatW(0.25);
+   gStyle->SetStatH(0.10);
    gStyle->SetLabelSize(0.035, "X");
    gStyle->SetLabelSize(0.035, "Y");
    gStyle->SetTitleFontSize(0.035);
@@ -206,11 +211,55 @@ void Check_e_z(){
    }
    cCheck4->Update();
 
-/**///======================================================== Ex vs z   
+/**///======================================================== Ex vs z 
+   gStyle->SetStatY(0.35);
+   gStyle->SetStatX(0.9);
+   gStyle->SetStatW(0.25);
+   gStyle->SetStatH(0.10);
    TCanvas * cCheck5 = new TCanvas("cCheck5", "cCheck5", 50, 500,  600, 400);
    cCheck5->SetGrid();
    TH2F * hExZ = new TH2F("hExZ", "z:Ex; Ex [MeV]; z [mm]", ExRange[0], ExRange[1], ExRange[2], zRange[0], zRange[1], zRange[2]);
    tree->Draw("z : Ex >> hExZ"); 
    cCheck5->Update();
+
+
+/**///======================================================== thetaCM   
+   TCanvas * cCheck6 = new TCanvas("cCheck6", "cCheck6", 800, 300,  600, 400);
+   cCheck6->SetGrid();
+   gStyle->SetOptStat(0);
+   
+   TH1F ** hTheta = new TH1F *[nPeaks];
+   double yMax = 0;
+   
+   TLegend * legend = new TLegend(0.6,0.1,0.9,0.35);
+   
+   for(int i = 0; i < nPeaks; i++){
+      TString name, title, gate, expression;
+      name.Form("hTheta%d", i);
+      title.Form("thetaCM +-3Sigma; thetCM [deg]; count");
+      hTheta[i] = new TH1F(name, title, 100, 0, 50);
+      hTheta[i]->SetLineColor(2*i+2);
+      expression.Form("thetaCM >> hTheta%d", i);
+      gate.Form("%f > Ex && Ex > %f", ExPos[i] + 3*ExSigma[i], ExPos[i] - 3*ExSigma[i] );
+      if( i == 0 )tree->Draw(expression, gate);
+      if( i > 0 )tree->Draw(expression, gate, "same");
+      
+      TString lTitle;
+      lTitle.Form("Ex = %6.2f MeV, %3.0f keV", ExPos[i], ExSigma[i]*1000.);
+      legend->AddEntry(name,lTitle, "l");
+   
+      if( hTheta[i]->GetMaximum() > yMax ) yMax = hTheta[i]->GetMaximum();
+      hTheta[0]->GetYaxis()->SetRangeUser(1, yMax*1.5);
+      
+      cCheck6->SetLogy();
+      cCheck6->Update();
+   }
+   
+   legend->Draw();
+   cCheck6->Update();
+   
+   
+   
+   
    
 }

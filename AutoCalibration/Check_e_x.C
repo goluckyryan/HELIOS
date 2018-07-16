@@ -32,8 +32,8 @@
    }
 
    gStyle->SetOptStat(0);
-   gStyle->SetStatY(1.0);
-   gStyle->SetStatX(0.99);
+   gStyle->SetStatY(0.9);
+   gStyle->SetStatX(0.9);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
    gStyle->SetLabelSize(0.05, "X");
