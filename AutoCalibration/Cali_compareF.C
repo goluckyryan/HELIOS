@@ -29,8 +29,10 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    double distThreshold   = 0.01;
    bool isXFXN = true; // only use event for both XF and XN valid
    
-   int numFx = 6;  //number of Ex function
-   int nTrial = 1000;
+   int nTrial = 500;
+
+
+/**///======================================================== 
    
    TBenchmark gClock;  
    gClock.Reset(); gClock.Start("gTimer");
@@ -38,6 +40,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    printf("======================== Cali_compareF\n");
    printf("      e Threshold : %f \n", eThreshold);
    printf("distant Threshold : %f \n", distThreshold);
+
    
 /**///======================================================== display tree
    int totnumEntry = expTree->GetEntries();
@@ -62,6 +65,35 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    gStyle->SetStatH(0.1);
    
 /**///========================================================= load correction
+
+//======================================================== load excitation energy
+   
+   vector<double> ExKnown;
+   printf("----- loading excitation energy levels.");
+   ifstream file;
+   file.open("excitation_energies.txt");
+   string isotopeName;
+   if( file.is_open() ){
+      string line;
+      int i = 0;
+      while( file >> line){
+         //printf("%d, %s \n", i,  line.c_str());
+         if( line.substr(0,2) == "//" ) continue;
+         if( i == 0 ) isotopeName = line; 
+         if ( i >= 1 ){
+            ExKnown.push_back(atof(line.c_str()));
+         }
+         i = i + 1;
+      }
+      file.close();
+      printf("... done.\n");
+   }else{
+       printf("... fail\n");
+       return;
+   }
+   
+   int numFx = (int) ExKnown.size();  
+
 //========================================= detector Geometry
    string detGeoFileName = "detectorGeo_upstream.txt";
    int numDet;
@@ -74,7 +106,6 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
    
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
-   ifstream file;
    file.open(detGeoFileName.c_str());
    int i = 0;
    if( file.is_open() ){
@@ -213,7 +244,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       printf("=============================== detID = %d (%6.2f mm, %6.2f mm) \n", idet, zRange[0], zRange[1]);
       
       TString name;
-      name.Form("exPlot%d", idet);
+      name.Form("exPlot%d[%d]", idet, idet%rDet);
       exPlot[idet]  = new TH2F(name , "exPlot" , 200, zRange[0], zRange[1], 200, 0, 2500);
       exPlot[idet]->Reset();
       exPlot[idet]->SetTitle(title + "(exp)");

@@ -28,15 +28,15 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 
 void Check_e_z(){  
 /**///======================================================== User input
-   const char* rootfile="A_gen_run11.root"; const char* treeName="tree";
+   const char* rootfile="A_H052_Mg25.root"; const char* treeName="tree";
    const char* simfile="transfer.root"; const char* treeNameS="tree";
 
    int numDet = 24;
    int Div[2] = {6,4};  //x,y
    
    double eRange[3]  = {400, 0, 10};
-   double zRange[3]  = {400, -500, -100};
-   double ExRange[3] = {200, -1, 4};
+   double zRange[3]  = {400, -600, -200};
+   double ExRange[3] = {200, -1, 8};
    
    int numFx = 6;
    bool showFx = false;

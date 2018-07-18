@@ -13,7 +13,6 @@
 #include <fstream>
 #include <TProof.h>
 #include "../Simulation/transfer.C"
-#include "../AutoCalibration/Cali_smallTree.C"
 #include "../AutoCalibration/Cali_littleTree.h"
 #include "../AutoCalibration/Check_e_x.C"
 #include "../AutoCalibration/Cali_compareF.C"
@@ -46,7 +45,7 @@ void AutoCalibration(){
 //==================================================== data files
    
    //======== alpha data
-   TString rootfileAlpha="../H060_ana/data/gen_run09.root";
+   TString rootfileAlpha="../H060/data/gen_run09.root";
    
 
    //======== experimental data
@@ -71,7 +70,7 @@ void AutoCalibration(){
    chain->Add("../H060_ana/data/gen_run29.root");  //17
    chain->Add("../H060_ana/data/gen_run30.root");  //18
  */
-   chain->Add("../H052_ana/data/H052_Mg25.root");
+   chain->Add("../H052/data/H052_Mg25.root");
    
    //TProof::Open("");
    //chain->SetProof();        
@@ -87,19 +86,16 @@ void AutoCalibration(){
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
    
-   TString tempFileName = "temp.root";
    TString rootfileSim="transfer.root";
       
    if( option == 2 ) {
       printf("=============== creating smaller tree.\n");
-      //gROOT->ProcessLine(".L Cali_smallTree.C+");
-      //Cali_smallTree(chain, tempFileName);   
       chain->Process("../AutoCalibration/Cali_littleTree.C+");
-      Check_e_x(tempFileName, eThreshold);
+      Check_e_x("temp.root", eThreshold);
    }
    
    if( option == 3 ) {
-      TFile *caliFile = new TFile (tempFileName, "read"); 
+      TFile *caliFile = new TFile ("temp.root", "read"); 
       TTree * caliTree = (TTree*) caliFile->Get("tree");
       
       TFile *fs = new TFile (rootfileSim, "read"); 
@@ -124,10 +120,9 @@ void AutoCalibration(){
       Cali_xf_xn_to_e(chain);
     
       printf("=============== creating smaller tree.\n");
-      TString tempFileName = "temp.root";
-      Cali_smallTree(chain, tempFileName);   
+      chain->Process("../AutoCalibration/Cali_littleTree.C+");
       
-      TFile *caliFile = new TFile (tempFileName, "read"); 
+      TFile *caliFile = new TFile ("temp.root", "read"); 
       TTree * caliTree = (TTree*) caliFile->Get("tree");
       
       TFile *fs = new TFile (rootfileSim, "read"); 

@@ -29,11 +29,13 @@ public :
    Float_t         e[100];
    Float_t         xf[100];
    Float_t         xn[100];
-
+   Float_t         rdt[100];
+   
    // List of branches
    TBranch        *b_Energy;   //!
    TBranch        *b_XF;   //!
    TBranch        *b_XN;   //!
+   TBranch        *b_RDT;   //!
 
    Cali_littleTree(TTree * /*tree*/ =0) : fChain(0) { }
    virtual ~Cali_littleTree() { }
@@ -109,6 +111,7 @@ void Cali_littleTree::Init(TTree *tree)
    fChain->SetBranchAddress("e", e, &b_Energy);
    fChain->SetBranchAddress("xf", xf, &b_XF);
    fChain->SetBranchAddress("xn", xn, &b_XN);
+   fChain->SetBranchAddress("rdt", rdt, &b_RDT);
    
    //======================================
    totnumEntry = tree->GetEntries();

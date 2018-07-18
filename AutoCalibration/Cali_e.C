@@ -92,11 +92,19 @@ Bool_t Cali_e::Process(Long64_t entry)
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);
+   b_RDT->GetEntry(entry,0);
    
    b_ELUM->GetEntry(entry, 0); // for H060_208Pb
    b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
    
    b_EnergyTimestamp->GetEntry(entry,0);
+   
+   bool rdt_energy = false;
+   for( int rID = 0; rID < 8; rID ++){
+      if( rdt[rID] > 5000 ) rdt_energy = true; 
+   }
+   if( !rdt_energy ) return kTRUE;
+   
 
    for(int idet = 0 ; idet < numDet; idet++){
       
