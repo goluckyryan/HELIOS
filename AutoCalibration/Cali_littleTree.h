@@ -5,8 +5,8 @@
 // found on file: gen_run11.root
 //////////////////////////////////////////////////////////
 
-#ifndef Cali_e_h
-#define Cali_e_h
+#ifndef Cali_littleTree_h
+#define Cali_littleTree_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -21,40 +21,22 @@
 // Headers needed by this particular selector
 
 
-class Cali_e : public TSelector {
+class Cali_littleTree : public TSelector {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
    // Declaration of leaf types
    Float_t         e[100];
-   ULong64_t       e_t[100];
    Float_t         xf[100];
-   ULong64_t       xf_t[100];
    Float_t         xn[100];
-   ULong64_t       xn_t[100];
-   Float_t         rdt[100];
-   ULong64_t       rdt_t[100];
-   Float_t         tac[100];
-   ULong64_t       tac_t[100];
-   Float_t         elum[32];
-   ULong64_t       elum_t[32];
 
    // List of branches
    TBranch        *b_Energy;   //!
-   TBranch        *b_EnergyTimestamp;   //!
    TBranch        *b_XF;   //!
-   TBranch        *b_XFTimestamp;   //!
    TBranch        *b_XN;   //!
-   TBranch        *b_XNTimestamp;   //!
-   TBranch        *b_RDT;   //!
-   TBranch        *b_RDTTimestamp;   //!
-   TBranch        *b_TAC;   //!
-   TBranch        *b_TACTimestamp;   //!
-   TBranch        *b_ELUM;   //!
-   TBranch        *b_ELUMTimestamp;   //!
 
-   Cali_e(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~Cali_e() { }
+   Cali_littleTree(TTree * /*tree*/ =0) : fChain(0) { }
+   virtual ~Cali_littleTree() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -69,7 +51,7 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-   ClassDef(Cali_e,0);
+   ClassDef(Cali_littleTree,0);
    
    //=============================== 
    TFile * saveFile;
@@ -80,19 +62,13 @@ public :
    //tree  
    Int_t eventID;
    Int_t run;
-   Float_t eC[24];
-   Float_t eC_t[24];
-   Float_t x[24]; // unadjusted position, range (-1,1)
-   Float_t z[24]; 
-   int det;
+   double eTemp;
+   double xTemp; // unadjusted position, range (-1,1)
+   double zTemp; 
+   int detIDTemp;
    int hitID; // is e, xf, xn are all fired.
    int zMultiHit; // multipicity of z
    
-   Float_t thetaCM;
-   Float_t Ex;   
-   
-   Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb  
-
    //clock   
    TBenchmark clock;
    Bool_t shown;
@@ -110,22 +86,12 @@ public :
    double xnCorr[24]; // xn correction for xn = xf
    double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
    
-   double eCorr[24][2]; // e-correction
-   
-   bool isReaction;
-   double G, Z, H; // for excitation calcualtion
-   double mass, q;
-   double beta, gamma;
-   double alpha ;
-   double Et, massB;
-
-
 };
 
 #endif
 
-#ifdef Cali_e_cxx
-void Cali_e::Init(TTree *tree)
+#ifdef Cali_littleTree_cxx
+void Cali_littleTree::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the reader is initialized.
@@ -144,30 +110,11 @@ void Cali_e::Init(TTree *tree)
    fChain->SetBranchAddress("xf", xf, &b_XF);
    fChain->SetBranchAddress("xn", xn, &b_XN);
    
-   fChain->SetBranchAddress("e_t", e_t, &b_EnergyTimestamp);
-   fChain->SetBranchAddress("rdt", rdt, &b_RDT);
-   fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);   
-   //fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);
-   //fChain->SetBranchAddress("xn_t", xn_t, &b_XNTimestamp);
-
-   fChain->SetBranchAddress("tac", tac, &b_TAC);
-   fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
-   fChain->SetBranchAddress("elum", elum, &b_ELUM);
-   fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
-   
    //======================================
    totnumEntry = tree->GetEntries();
-   printf( "========== Calibration by compare, total Entry : %d \n", totnumEntry);
+   printf( "========== reduce to litte tree, total Entry : %d \n", totnumEntry);
    
-   saveFileName = fChain->GetDirectory()->GetName();
-   //remove any folder path to get the name;
-   int found;
-   do{
-      found = saveFileName.First("/");
-      saveFileName.Remove(0,found+1);
-   }while( found >= 0 );
-   saveFileName = "A_" + saveFileName;
-   
+   saveFileName = "temp.root";
    saveFile = new TFile( saveFileName,"recreate");
    newTree =  new TTree("tree","tree");
    
@@ -177,28 +124,12 @@ void Cali_e::Init(TTree *tree)
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    newTree->Branch("run",&run,"run/I"); 
    
-   newTree->Branch("e" ,  eC, "eC[24]/F");
-   newTree->Branch("x" ,   x, "x[24]/F");
-   newTree->Branch("z" ,   z, "z[24]/F");
-   newTree->Branch("detID", &det, "det/I");
+   newTree->Branch("e" ,  &eTemp, "eTemp/D");
+   newTree->Branch("x" ,   &xTemp, "xTemp/D");
+   newTree->Branch("z" ,   &zTemp, "zTemp/D");
+   newTree->Branch("detID", &detIDTemp, "detIDTemp/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
-   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
-   
-   newTree->Branch("Ex", &Ex, "Ex/F");
-   newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
-   
-   newTree->Branch("e_t", eC_t, "e_t[24]/F");
-   
-   /*
-   newTree->Branch("rdt", rdtC, "rdtC[8]/F");
-   newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
-   newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
-   newTree->Branch("tac", tacC, "tacC[6]/F");
-   newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F"); 
-   */
-   
-   newTree->Branch("ddt", &ddt, "ddt/F");
-   newTree->Branch("ddt_t", &ddt_t, "ddt_t/F");
+   newTree->Branch("multi", &zMultiHit, "zMultiHit/I");
    
    clock.Reset();
    clock.Start("timer");
@@ -293,78 +224,11 @@ void Cali_e::Init(TTree *tree)
    }
    file.close();
 
-   //========================================= e correction
-   
-   printf("----- loading e correction.");
-   file.open("correction_e.dat");
-   if( file.is_open() ){
-      double a, b;
-      int i = 0;
-      while( file >> a >> b){
-         if( i >= numDet) break;
-         eCorr[i][0] = a;
-         eCorr[i][1] = b;
-         //printf("\n%2d, e0: %f, e1: %f ", i, eCorr[i][0], eCorr[i][1]);
-         i = i + 1;
-      }
-      printf("... done.\n");
-      
-   }else{
-      printf("... fail.\n");
-      for( int i = 0; i < 24 ; i++){
-         eCorr[i][0] = 1.;
-         eCorr[i][1] = 0.;
-      }
-      //return;
-   }
-   file.close();
-   
-   //========================================= reaction parameters
-   printf("----- loading reaction parameter.");
-   file.open("reaction.dat");
-   isReaction = false;
-   if( file.is_open() ){
-      string x;
-      int i = 0;
-      while( file >> x ){
-         if( x.substr(0,2) == "//" )  continue;
-         if( i == 0 ) mass = atof(x.c_str());
-         if( i == 1 ) q    = atof(x.c_str());
-         if( i == 2 ) beta = atof(x.c_str()); 
-         if( i == 3 ) Et   = atof(x.c_str()); 
-         if( i == 4 ) massB = atof(x.c_str()); 
-         i = i + 1;
-      }
-      printf("... done.\n");
-
-      isReaction = true;
-      alpha = 299.792458 * Bfield * q / TMath::TwoPi()/1000.;
-      gamma = 1./TMath::Sqrt(1-beta*beta);
-      G = alpha * gamma * beta * a ;
-      printf("============\n");
-      printf("mass-b  : %f MeV/c2 \n", mass);
-      printf("charge-b: %f \n", q);
-      printf("E-total : %f MeV \n", Et);
-      printf("mass-B  : %f MeV/c2 \n", massB);      
-      printf("beta    : %f \n", beta);
-      printf("B-field : %f T \n", Bfield);
-      printf("alpha   : %f MeV/mm \n", alpha);
-      printf("a       : %f mm \n", a);
-      printf("G       : %f MeV \n", G);
-
-
-   }else{
-      printf("... fail.\n");
-      isReaction = false;
-   }
-   file.close();
-
    printf("================================== numDet : %d \n", numDet);
    
-
 }
 
-Bool_t Cali_e::Notify()
+Bool_t Cali_littleTree::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -376,4 +240,4 @@ Bool_t Cali_e::Notify()
 }
 
 
-#endif // #ifdef Cali_e_cxx
+#endif // #ifdef Cali_littleTree_cxx

@@ -7,16 +7,14 @@
 #include "TCanvas.h"
 #include "TF1.h"
 
-void Check_e_x(TString rootFile = "temp.root" ){
+void Check_e_x(TString rootFile = "temp.root" , double eThreshold = 400){
 /**///======================================================== User input
    
    const char* treeName="tree";
    
-   double eThreshold = 300;
-   
    int numDet = 24;
    double eRange[3]  = {400, 0, 2000};
-   double zRange[3]  = {400, -500, -100};
+   double zRange[3]  = {400, -600, -200};
 
 /**///======================================================== read tree and create Canvas
 
@@ -83,4 +81,13 @@ void Check_e_x(TString rootFile = "temp.root" ){
    line2->SetLineColor(2);
    line2->Draw("same");  
    cCheck2->Update();
+   
+/**///======================================================== multi
+   TCanvas * cCheck3 = new TCanvas("cCheck3", "cCheck3", 700, 600,  600, 300);
+   cCheck3->SetGrid();
+   
+   TH1F * hMulti = new TH1F("hMulti", "Multi", 20, 0, 20);
+   tree->Draw("multi >> hMulti", "" );
+   
+   cCheck3->Update();   
 }

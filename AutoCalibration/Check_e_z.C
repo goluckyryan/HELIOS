@@ -29,7 +29,7 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 void Check_e_z(){  
 /**///======================================================== User input
    const char* rootfile="A_gen_run11.root"; const char* treeName="tree";
-   const char* simfile="../Simulation/transfer.root"; const char* treeNameS="tree";
+   const char* simfile="transfer.root"; const char* treeNameS="tree";
 
    int numDet = 24;
    int Div[2] = {6,4};  //x,y
@@ -41,6 +41,7 @@ void Check_e_z(){
    int numFx = 6;
    bool showFx = false;
    bool showTx = false;
+   TString drawOption ="colz"; 
 
 /**///======================================================== read tree 
 
@@ -57,16 +58,16 @@ void Check_e_z(){
    gStyle->SetStatX(0.9);
    gStyle->SetStatW(0.4);
    gStyle->SetStatH(0.2);
-   gStyle->SetLabelSize(0.05, "X");
-   gStyle->SetLabelSize(0.05, "Y");
+   gStyle->SetLabelSize(0.05, "XY");
    gStyle->SetTitleFontSize(0.1);
 
 /**///======================================================== Analysis
 
-
 /**///======================================================== e vs x
    Int_t size[2] = {230,230}; //x,y
    TCanvas * cCheck1 = new TCanvas("cCheck1", "cCheck1", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   if(cCheck1->GetShowEditor() )cCheck1->ToggleEditor();
+   if(cCheck1->GetShowToolBar() )cCheck1->ToggleToolBar();
    cCheck1->Divide(Div[0],Div[1]);
    for( int i = 1; i <= Div[0]*Div[1] ; i++){
       cCheck1->cd(i)->SetGrid();
@@ -87,18 +88,31 @@ void Check_e_z(){
 /**///======================================================== Ex and fit
    
    TCanvas * cCheck3 = new TCanvas("cCheck3", "cCheck3", 50, 50,  600, 400);
+   if(cCheck3->GetShowEditor() )cCheck3->ToggleEditor();
+   if(cCheck3->GetShowToolBar() )cCheck3->ToggleToolBar();
    cCheck3->Divide(1,2);
    cCheck3->cd(1)->SetGrid();
    cCheck3->cd(1);
    gStyle->SetOptStat(0);
-   TH1F * hEx = new TH1F("hEx", "excitation energy; Ex [MeV]; Count", ExRange[0], ExRange[1], ExRange[2]);
-   
+   gStyle->SetLabelSize(0.05, "XY");
+   TString titleH;
+   titleH.Form("excitation energy; Ex [MeV]; Count / %3.0f keV", (ExRange[2] - ExRange[1])*1000/ExRange[0]);
+   TH1F * hEx = new TH1F("hEx", titleH, ExRange[0], ExRange[1], ExRange[2]);
+   hEx->GetXaxis()->SetTitleSize(0.06);
+   hEx->GetYaxis()->SetTitleSize(0.06);
+   hEx->GetXaxis()->SetTitleOffset(0.7);
+   hEx->GetYaxis()->SetTitleOffset(0.6);
    tree->Draw("Ex >> hEx"); 
    
-   TH1F * specS = (TH1F*) hEx->Clone();
-   specS->SetTitle("fitted Spectrum; Ex [MeV]; Count");   
-   specS->SetName("specS");
    
+   TH1F * specS = (TH1F*) hEx->Clone();
+   titleH.Form("fitted spectrum; Ex [MeV]; Count / %3.0f keV", (ExRange[2] - ExRange[1])*1000/ExRange[0]);
+   specS->SetTitle(titleH);   
+   specS->SetName("specS");
+   specS->GetXaxis()->SetTitleSize(0.06);
+   specS->GetYaxis()->SetTitleSize(0.06);
+   specS->GetXaxis()->SetTitleOffset(0.7);
+   specS->GetYaxis()->SetTitleOffset(0.6);
    //=================== find peak and fit
    printf("============= estimate background and find peak\n");
    TSpectrum * peak = new TSpectrum(50);
@@ -116,8 +130,11 @@ void Check_e_z(){
    //========== Fitting 
    printf("============= Fit.....");
    printf(" found %d peaks \n", nPeaks);
-   double * xpos = (double *) peak->GetPositionX();
-   double * ypos = (double *) peak->GetPositionY();
+   float * xpos =  peak->GetPositionX();
+   float * ypos =  peak->GetPositionY();
+   
+   //double * xpos = (double *) peak->GetPositionX();
+   //double * ypos = (double *) peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );
@@ -166,14 +183,15 @@ void Check_e_z(){
    gStyle->SetStatX(0.35);
    gStyle->SetStatW(0.25);
    gStyle->SetStatH(0.10);
-   gStyle->SetLabelSize(0.035, "X");
-   gStyle->SetLabelSize(0.035, "Y");
+   gStyle->SetLabelSize(0.035, "XY");
    gStyle->SetTitleFontSize(0.035);
    
    TCanvas * cCheck2 = new TCanvas("cCheck2", "cCheck2", 700, 50,  600, 400);
+   if(cCheck2->GetShowEditor() )cCheck2->ToggleEditor();
+   if(cCheck2->GetShowToolBar() )cCheck2->ToggleToolBar();
    cCheck2->SetGrid();
    TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1], eRange[2]);
-   tree->Draw("e:z >> hEZ", "hitID >= 0 " );
+   tree->Draw("e:z >> hEZ", "hitID >= 0 " , drawOption);
    
    if( showFx ) {
       TGraph ** fx = new TGraph*[numFx];
@@ -192,9 +210,11 @@ void Check_e_z(){
 
 /**///======================================================== thetaCM vs z
    TCanvas * cCheck4 = new TCanvas("cCheck4", "cCheck4", 700, 500,  600, 400);
+   if(cCheck4->GetShowEditor() )cCheck4->ToggleEditor();
+   if(cCheck4->GetShowToolBar() )cCheck4->ToggleToolBar();
    cCheck4->SetGrid();
    TH2F * hThetaZ = new TH2F("hThetaZ", "thetaCM:z; z [mm]; thetaCM [deg]", zRange[0], zRange[1], zRange[2], 400, 0, 50);
-   tree->Draw("thetaCM:z >> hThetaZ"); 
+   tree->Draw("thetaCM:z >> hThetaZ", "",  drawOption); 
    
    if( showFx ) {
       TGraph ** tx = new TGraph*[numFx];
@@ -217,14 +237,18 @@ void Check_e_z(){
    gStyle->SetStatW(0.25);
    gStyle->SetStatH(0.10);
    TCanvas * cCheck5 = new TCanvas("cCheck5", "cCheck5", 50, 500,  600, 400);
+   if(cCheck5->GetShowEditor() )cCheck5->ToggleEditor();
+   if(cCheck5->GetShowToolBar() )cCheck5->ToggleToolBar();
    cCheck5->SetGrid();
    TH2F * hExZ = new TH2F("hExZ", "z:Ex; Ex [MeV]; z [mm]", ExRange[0], ExRange[1], ExRange[2], zRange[0], zRange[1], zRange[2]);
-   tree->Draw("z : Ex >> hExZ"); 
+   tree->Draw("z : Ex >> hExZ", "", drawOption); 
    cCheck5->Update();
 
 
 /**///======================================================== thetaCM   
-   TCanvas * cCheck6 = new TCanvas("cCheck6", "cCheck6", 800, 300,  600, 400);
+   TCanvas * cCheck6 = new TCanvas("cCheck6", "cCheck6", 1300, 50,  600, 400);
+   if(cCheck6->GetShowEditor() )cCheck6->ToggleEditor();
+   if(cCheck6->GetShowToolBar() )cCheck6->ToggleToolBar();
    cCheck6->SetGrid();
    gStyle->SetOptStat(0);
    
@@ -236,7 +260,7 @@ void Check_e_z(){
    for(int i = 0; i < nPeaks; i++){
       TString name, title, gate, expression;
       name.Form("hTheta%d", i);
-      title.Form("thetaCM +-3Sigma; thetCM [deg]; count");
+      title.Form("thetaCM +-3Sigma; thetCM [deg]; count / 0.5 deg");
       hTheta[i] = new TH1F(name, title, 100, 0, 50);
       hTheta[i]->SetLineColor(2*i+2);
       expression.Form("thetaCM >> hTheta%d", i);

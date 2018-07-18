@@ -6,11 +6,11 @@
 #include <sstream>
 #include <string>
 #include <stdio.h>
-#include "constant.h" // amu
+#include "../Simulation/constant.h" // amu
 #include <stdlib.h>  //atoi
 using namespace std;
 
-string dataPath="mass16.txt";
+string dataPath="../Simulation/mass16.txt";
 
 
 // about the mass**.txt

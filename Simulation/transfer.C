@@ -17,12 +17,12 @@ void transfer(){
 
    //================================================= User Setting
    //---- reaction
-   int AA = 208, zA = 82;
+   int AA = 25, zA = 12;
    int Aa = 2,  za = 1;
    int Ab = 1,  zb = 1;
    
    //---- beam
-   double KEAmean = 8; // MeV/u 
+   double KEAmean = 6; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle

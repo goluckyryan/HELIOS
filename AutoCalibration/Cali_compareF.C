@@ -20,16 +20,16 @@
 
 //use the fx in refTree, use fx->Eval(x) as e
 
-void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
+void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThreshold = 400){
 /**///======================================================== User Input
 
    double a1Range[2] = {230, 320};
-   double a0Range[2] = {-0.7, 0.7}; // the energy gap
-   
-   double eThreshold = 300;
-   double distThreshold   = 0.01;
+   double a0Range[2] = {-0.7, 0.7};
 
-   int numFx = 4;  //number of Ex function
+   double distThreshold   = 0.01;
+   bool isXFXN = true; // only use event for both XF and XN valid
+   
+   int numFx = 6;  //number of Ex function
    int nTrial = 1000;
    
    TBenchmark gClock;  
@@ -55,7 +55,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
       cScript->cd(i)->SetGrid();
    }
 
-   gStyle->SetOptStat(1111111);
+   gStyle->SetOptStat(0);
    gStyle->SetStatY(1.0);
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
@@ -158,10 +158,12 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
    double  eTemp;
    double  zTemp;
    int detIDTemp; 
+   int hitIDTemp;
 
    expTree->SetBranchAddress("e",     &eTemp);
    expTree->SetBranchAddress("z",     &zTemp);
    expTree->SetBranchAddress("detID", &detIDTemp);
+   expTree->SetBranchAddress("hitID", &hitIDTemp);
    
    TGraph ** fx = new TGraph *[numFx];
    TString fxName;
@@ -235,6 +237,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
             expTree->GetEntry(i);
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
+            if( isXFXN && hitIDTemp != 0 ) continue;
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
@@ -269,11 +272,13 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
       for( int eventE = 0 ; eventE < expTree->GetEntries(); eventE ++ ){
         expTree->GetEntry(eventE);
         if( detIDTemp != idet ) continue;
+        if( eTemp < eThreshold) continue;
+        if( isXFXN && hitIDTemp != 0 ) continue;
         countEvent++;
       }
       
       int countMax = 0;
-      printf("======================= find fit by Monle Carlo. #Point: %d, #event: %d\n", nTrial, countEvent);
+      printf("========== find fit by Monle Carlo. #Point: %d, #event: %d\n", nTrial, countEvent);
       for( int iTrial = 0; iTrial < nTrial; iTrial ++){ 
          
          double a1, a0;
@@ -286,6 +291,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
             expTree->GetEntry(eventE);
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
+            if( isXFXN && hitIDTemp != 0 ) continue;
             double minDist = 99;
             
             for( int i = 0; i < numFx; i++){
@@ -313,19 +319,26 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
          gDist->SetPoint(iTrial, a1, a0, totalMinDist);
          
          
+         if( iTrial%(nTrial/5) == 0) {
+            clock.Stop("timer");
+            Double_t time = clock.GetRealTime("timer");
+            clock.Start("timer");
+            printf("%4d | %7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
+            printf( "|%5.0f sec| \n", time);
+         }
+                  
          if( totalMinDist < minTotalMinDist && count >= countMax ) {
             countMax = count; // next best fit must have more data points
             minTotalMinDist = totalMinDist;
             A0 = a0;
             A1 = a1;
             
-            //======== time
             clock.Stop("timer");
             Double_t time = clock.GetRealTime("timer");
             clock.Start("timer");
             //display
             printf("%4d | %7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
-            printf( "|%5.2f min| ", time/60.);
+            printf( "|%5.0f sec| ", time);
             printf("%5.1f, %6.3f \n", A1, A0);
             
             if( option >= 0 ){
@@ -333,6 +346,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
                for( int eventE = 0 ; eventE < expTree->GetEntries(); eventE ++ ){
                   expTree->GetEntry(eventE);
                   if( detIDTemp != idet ) continue;
+                  if( isXFXN && hitIDTemp != 0 ) continue;
                   exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
                }
                cScript->cd(2);
@@ -360,6 +374,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
             expTree->GetEntry(i);         
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
+            if( isXFXN && hitIDTemp != 0 ) continue;
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
@@ -379,6 +394,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1){
       for( int eventE = 0 ; eventE < expTree->GetEntries(); eventE ++ ){
          expTree->GetEntry(eventE);
          if( detIDTemp != idet ) continue;
+         if( isXFXN && hitIDTemp != 0 ) continue;
          exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
       } 
       exPlotC[idet]->Draw("same");

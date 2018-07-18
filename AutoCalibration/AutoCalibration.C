@@ -13,17 +13,20 @@
 #include <fstream>
 #include <TProof.h>
 #include "../Simulation/transfer.C"
-#include "Cali_smallTree.C"
-#include "Check_e_x.C"
-#include "Cali_compareF.C"
-#include "Cali_xf_xn.C"
-#include "Cali_xf_xn_to_e.C"
-#include "Cali_e.h"
+#include "../AutoCalibration/Cali_smallTree.C"
+#include "../AutoCalibration/Cali_littleTree.h"
+#include "../AutoCalibration/Check_e_x.C"
+#include "../AutoCalibration/Cali_compareF.C"
+#include "../AutoCalibration/Cali_xf_xn.C"
+#include "../AutoCalibration/Cali_xf_xn_to_e.C"
+#include "../AutoCalibration/Cali_e.h"
 
 //==========================================
 //         This file show the steps for calibration 
 //
 //==========================================
+
+double eThreshold = 400;
 
 void AutoCalibration(){
    
@@ -48,27 +51,28 @@ void AutoCalibration(){
 
    //======== experimental data
    TChain * chain = new TChain("gen_tree");
-   chain->Add("../H060_ana/data/gen_run11.root");  //01
-//   chain->Add("gen_run11.root");  //01
-/*   chain->Add("data/gen_run12.root");  //02
-   chain->Add("data/gen_run13.root");  //03
-   chain->Add("data/gen_run15.root");  //04
-   chain->Add("data/gen_run16.root");  //05
-   chain->Add("data/gen_run17.root");  //06
-   chain->Add("data/gen_run18.root");  //07
-   chain->Add("data/gen_run19.root");  //08
-   chain->Add("data/gen_run20.root");  //09
-   chain->Add("data/gen_run21.root");  //10
-   chain->Add("data/gen_run22.root");  //11
-   chain->Add("data/gen_run23.root");  //12
-   chain->Add("data/gen_run24.root");  //13
-   chain->Add("data/gen_run25.root");  //14
-   chain->Add("data/gen_run27.root");  //15
-   chain->Add("data/gen_run28.root");  //16
-   chain->Add("data/gen_run29.root");  //17
-   chain->Add("data/gen_run30.root");  //18
-*/ 
-      
+   
+//   chain->Add("../H060_ana/data/gen_run11.root");  //01
+/*   chain->Add("../H060_ana/data/gen_run12.root");  //02
+   chain->Add("../H060_ana/data/gen_run13.root");  //03
+   chain->Add("../H060_ana/data/gen_run15.root");  //04
+   chain->Add("../H060_ana/data/gen_run16.root");  //05
+   chain->Add("../H060_ana/data/gen_run17.root");  //06
+   chain->Add("../H060_ana/data/gen_run18.root");  //07
+   chain->Add("../H060_ana/data/gen_run19.root");  //08
+   chain->Add("../H060_ana/data/gen_run20.root");  //09
+   chain->Add("../H060_ana/data/gen_run21.root");  //10
+   chain->Add("../H060_ana/data/gen_run22.root");  //11
+   chain->Add("../H060_ana/data/gen_run23.root");  //12
+   chain->Add("../H060_ana/data/gen_run24.root");  //13
+   chain->Add("../H060_ana/data/gen_run25.root");  //14
+   chain->Add("../H060_ana/data/gen_run27.root");  //15
+   chain->Add("../H060_ana/data/gen_run28.root");  //16
+   chain->Add("../H060_ana/data/gen_run29.root");  //17
+   chain->Add("../H060_ana/data/gen_run30.root");  //18
+ */
+   chain->Add("../H052_ana/data/H052_Mg25.root");
+   
    //TProof::Open("");
    //chain->SetProof();        
    printf(" ================ files :  \n");
@@ -84,12 +88,14 @@ void AutoCalibration(){
    if( option == 1 ) Cali_xf_xn_to_e(chain);
    
    TString tempFileName = "temp.root";
-   TString rootfileSim="../Simulation/transfer.root";
+   TString rootfileSim="transfer.root";
       
    if( option == 2 ) {
       printf("=============== creating smaller tree.\n");
-      Cali_smallTree(chain, tempFileName);   
-      Check_e_x(tempFileName);
+      //gROOT->ProcessLine(".L Cali_smallTree.C+");
+      //Cali_smallTree(chain, tempFileName);   
+      chain->Process("../AutoCalibration/Cali_littleTree.C+");
+      Check_e_x(tempFileName, eThreshold);
    }
    
    if( option == 3 ) {
@@ -103,7 +109,7 @@ void AutoCalibration(){
          int eCdet = -1; 
          printf(" Choose detID (-1 for all): ");
          temp = scanf("%d", &eCdet);
-         Cali_compareF(caliTree, fs, eCdet);
+         Cali_compareF(caliTree, fs, eCdet, eThreshold);
          
       }else{
          printf("!!!!! cannot open transfer.root !!!!! \n");
@@ -111,7 +117,7 @@ void AutoCalibration(){
       }
    }
    
-   if( option == 4 ) chain->Process("Cali_e.C+");
+   if( option == 4 ) chain->Process("../AutoCalibration/Cali_e.C+");
 
    if( option == -1){
       Cali_xf_xn(atree);
@@ -127,7 +133,7 @@ void AutoCalibration(){
       TFile *fs = new TFile (rootfileSim, "read"); 
       
       if(fs->IsOpen()){
-         Cali_compareF(caliTree, fs, -1);
+         Cali_compareF(caliTree, fs, -1, eThreshold);
       }else{
          printf("!!!!! cannot open transfer.root !!!!! \n");
          return;
