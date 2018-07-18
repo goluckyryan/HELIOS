@@ -6,78 +6,59 @@
 //void test(){
 { 
 
-   int idet = 16;
 
-   TFile *caliFile = new TFile ("temp.root", "read"); 
-   TTree * expTree = (TTree*) caliFile->Get("tree");
+   //expTree->Draw("e:z >> exPlot2", "detID == 16"); 
 
-   double  eTemp; 
-   double  zTemp; 
-   //double  xTemp; 
-   int detIDTemp; 
 
-   expTree->SetBranchAddress("e",     &eTemp);
-   expTree->SetBranchAddress("z",     &zTemp);
-   expTree->SetBranchAddress("detID", &detIDTemp);
+   const char* rootfileAlpha="A_gen_run11.root";
+   const char* rootfileSim="../Simulation/transfer.root";
    
-/**///======================================================== Plot
+   TFile *fa = new TFile (rootfileAlpha, "read"); 
+   TTree * atree = (TTree*)fa->Get("tree");
 
+   TFile *fs = new TFile (rootfileSim, "read"); 
+   TTree * sTree = (TTree*)fs->Get("tree");
+   
+   
    Int_t Div[2] = {2,1};  //x,y
-   Int_t size[2] = {400,400}; //x,y
+   Int_t size[2] = {400,800}; //x,y
    
    TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, size[0]*Div[0], size[1]*Div[1]);
    cScript->Divide(Div[0],Div[1]);
    for( int i = 1; i <= Div[0]+Div[1] ; i++){
       cScript->cd(i)->SetGrid();
    }
-
-   gStyle->SetOptStat(1111111);
-   gStyle->SetStatY(1.0);
-   gStyle->SetStatX(0.99);
-   gStyle->SetStatW(0.2);
-   gStyle->SetStatH(0.1);   
    
+   double zRange[2]= {-290, -220};
    
-   cScript->cd(1);
-   TH2F * exPlot  = new TH2F("exPlot" , "exPlot" , 200, -230, -160, 200, 0, 2500);
-   exPlot->Reset();
-   //exPlot->GetXaxis()->SetRangeUser(-230, -160);
-   for( int i = 0; i < expTree->GetEntries() ; i++){
-      expTree->GetEntry(i);
-      if( detIDTemp != idet ) continue;
-      exPlot->Fill(zTemp, eTemp);
-   }
-   exPlot->Draw();
-   
+   gStyle->SetOptStat(0);
    cScript->cd(2);
-   TH2F * exPlot2  = new TH2F("exPlot2" , "exPlot2" , 200, -1000, 1000, 200, 0, 2500);
-   exPlot2->Reset();
-   exPlot2->GetXaxis()->SetRangeUser(-230, -160);
-   for( int i = 0; i < expTree->GetEntries() ; i++){
-      expTree->GetEntry(i);
-      if( detIDTemp != idet ) continue;
-      exPlot2->Fill(zTemp, eTemp);
-   }
-   exPlot2->Draw();
-   
-   //expTree->Draw("e:z >> exPlot2", "detID == 16"); 
+   TH2F * h1 = new TH2F ("h1", "e:z; z [mm]; e [a.u.]", 100, zRange[0], zRange[1], 100, 0, 2000);
+   TH2F * h2 = new TH2F ("h2", "e:z; z [mm]; e [a.u.]", 100, zRange[0], zRange[1], 100, 0, 2000);
+   TH2F * h3 = new TH2F ("h3", "e:z; z [mm]; e [a.u.]", 100, zRange[0], zRange[1], 100, 0, 2000);
+   TH2F * h4 = new TH2F ("h4", "e:z; z [mm]; e [a.u.]", 100, zRange[0], zRange[1], 100, 0, 2000);
 
-   
-/*
-   const char* rootfileAlpha="../../H060_ana/data/gen_run11.root";
-   const char* rootfileSim="../../Simulation/transfer.root";
-   
-   TFile *fa = new TFile (rootfileAlpha, "read"); 
-   TTree * atree = (TTree*)fa->Get("gen_tree");
+   h1->SetMarkerColor(2);
+   h2->SetMarkerColor(4);
+   h3->SetMarkerColor(8);
+   h4->SetMarkerColor(7);
 
-   TFile *fs = new TFile (rootfileSim, "read"); 
-   TTree * sTree = (TTree*)fs->Get("tree");
+   atree->Draw("e*260:z >> h1", "detID == 3");   
+   atree->Draw("e*260:z >> h2", "detID == 9", "same");  
+   atree->Draw("e*260:z >> h3", "detID == 15", "same");  
+   atree->Draw("e*260:z >> h4", "detID == 21", "same"); 
    
-   gROOT->ProcessLine(".L Cali_compare2.C");
+   /*
+   sTree->Draw("e*500:z >> h2", "detID == 2");  
    
-   Cali_compare2(atree, sTree);
-   
-
+   TGraph * fx0 = (TGraph *) fs->FindObjectAny("fx0");
+   TGraph * fx1 = (TGraph *) fs->FindObjectAny("fx1");
+   TGraph * fx2 = (TGraph *) fs->FindObjectAny("fx2");
+   TGraph * fx3 = (TGraph *) fs->FindObjectAny("fx3");
+   fx0->Draw("same");
+   fx1->Draw("same");
+   fx2->Draw("same");
+   fx3->Draw("same");
 
 /*
   const char* tempfile="temp.root";
@@ -151,7 +132,7 @@
          exPlotC->Draw("");            
          cScript->Update();
          
-     
+  */   
   /*
    TCanvas *c = new TCanvas("c","Graph2D example",0,0,600,400);
    Double_t x, y, z, P = 6.;
