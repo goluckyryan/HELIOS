@@ -163,7 +163,7 @@ void Cali_root::Init(TTree *tree)
    fChain->SetBranchAddress("xf", xf, &b_XF);
    fChain->SetBranchAddress("xn", xn, &b_XN);
    
-   fChain->SetBranchAddress("e_t", e_t, &b_EnergyTimestamp);
+   fChain->SetBranchAddress("e_t", e_t, &b_EnergyTimefChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);  stamp);
    fChain->SetBranchAddress("rdt", rdt, &b_RDT);
    fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);   
    //fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);

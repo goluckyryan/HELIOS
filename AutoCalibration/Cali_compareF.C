@@ -23,13 +23,13 @@
 void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThreshold = 400){
 /**///======================================================== User Input
 
-   double a1Range[2] = {230, 320};
+   double a1Range[2] = {240, 300};
    double a0Range[2] = {-0.7, 0.7};
 
    double distThreshold   = 0.01;
    bool isXFXN = true; // only use event for both XF and XN valid
    
-   int nTrial = 500;
+   int nTrial = 1000;
 
 
 /**///======================================================== 

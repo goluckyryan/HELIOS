@@ -86,12 +86,20 @@ Bool_t Cali_littleTree::Process(Long64_t entry)
    b_XN->GetEntry(entry,0);
    b_RDT->GetEntry(entry,0);
    
+   //========== gate
    bool rdt_energy = false;
+   bool coincident_t = false;
    for( int rID = 0; rID < 8; rID ++){
-      if( rdt[rID] > 5000 ) rdt_energy = true; 
+      if( rdt[rID] > 5000 ) rdt_energy = true;
+      for( int i = 0; i < numDet; i++){
+         int dt = (int) e_t[i] - rdt_t[rID];
+         if( e[i] > 0 &&  TMath::Abs(dt) < 10) coincident_t = true;
+      }   
    }
    if( !rdt_energy ) return kTRUE;
+   if( !coincident_t ) return kTRUE;
    
+   //================
    for(int idet = 0 ; idet < numDet; idet++){
       
       if( e[idet] == 0 ) continue;

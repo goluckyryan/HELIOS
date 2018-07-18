@@ -31,11 +31,17 @@ public :
    Float_t         xn[100];
    Float_t         rdt[100];
    
+   ULong64_t       e_t[100];
+   ULong64_t       rdt_t[100];
+   
    // List of branches
    TBranch        *b_Energy;   //!
    TBranch        *b_XF;   //!
    TBranch        *b_XN;   //!
    TBranch        *b_RDT;   //!
+   
+   TBranch        *b_EnergyTimestamp;   //!
+   TBranch        *b_RDTTimestamp;   //!
 
    Cali_littleTree(TTree * /*tree*/ =0) : fChain(0) { }
    virtual ~Cali_littleTree() { }
@@ -112,6 +118,9 @@ void Cali_littleTree::Init(TTree *tree)
    fChain->SetBranchAddress("xf", xf, &b_XF);
    fChain->SetBranchAddress("xn", xn, &b_XN);
    fChain->SetBranchAddress("rdt", rdt, &b_RDT);
+   
+   fChain->SetBranchAddress("e_t", e_t, &b_EnergyTimestamp);
+   fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);  
    
    //======================================
    totnumEntry = tree->GetEntries();

@@ -49,7 +49,7 @@ Isotope::Isotope(string name){
     this->dataSource = dataPath;
 }
 
-void Isotope::FindMassByAZ(int a, int z){
+void Isotope::FindMassByAZ(int A, int Z){
   string line;
   int    lineNum=0;
   int    list_A, list_Z;
