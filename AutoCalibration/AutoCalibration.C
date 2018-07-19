@@ -103,9 +103,11 @@ void AutoCalibration(){
       if(fs->IsOpen()){
          
          int eCdet = -1; 
-         printf(" Choose detID (-1 for all): ");
+         printf(" Choose detID (-1 for all & make new root): ");
          temp = scanf("%d", &eCdet);
          Cali_compareF(caliTree, fs, eCdet, eThreshold);
+         
+         if( eCdet == -1) chain->Process("../AutoCalibration/Cali_e.C+");
          
       }else{
          printf("!!!!! cannot open transfer.root !!!!! \n");

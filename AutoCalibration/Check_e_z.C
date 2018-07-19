@@ -42,6 +42,8 @@ void Check_e_z(){
    bool showFx = false;
    bool showTx = false;
    TString drawOption ="colz"; 
+   
+   TString exGate = "detID%6 < 5";
 
 /**///======================================================== read tree 
 
@@ -102,7 +104,7 @@ void Check_e_z(){
    hEx->GetYaxis()->SetTitleSize(0.06);
    hEx->GetXaxis()->SetTitleOffset(0.7);
    hEx->GetYaxis()->SetTitleOffset(0.6);
-   tree->Draw("Ex >> hEx"); 
+   tree->Draw("Ex >> hEx", exGate); 
    
    
    TH1F * specS = (TH1F*) hEx->Clone();
@@ -214,7 +216,7 @@ void Check_e_z(){
    if(cCheck4->GetShowToolBar() )cCheck4->ToggleToolBar();
    cCheck4->SetGrid();
    TH2F * hThetaZ = new TH2F("hThetaZ", "thetaCM:z; z [mm]; thetaCM [deg]", zRange[0], zRange[1], zRange[2], 400, 0, 50);
-   tree->Draw("thetaCM:z >> hThetaZ", "",  drawOption); 
+   tree->Draw("thetaCM:z >> hThetaZ", exGate,  drawOption); 
    
    if( showFx ) {
       TGraph ** tx = new TGraph*[numFx];
@@ -241,7 +243,7 @@ void Check_e_z(){
    if(cCheck5->GetShowToolBar() )cCheck5->ToggleToolBar();
    cCheck5->SetGrid();
    TH2F * hExZ = new TH2F("hExZ", "z:Ex; Ex [MeV]; z [mm]", ExRange[0], ExRange[1], ExRange[2], zRange[0], zRange[1], zRange[2]);
-   tree->Draw("z : Ex >> hExZ", "", drawOption); 
+   tree->Draw("z : Ex >> hExZ", exGate, drawOption); 
    cCheck5->Update();
 
 

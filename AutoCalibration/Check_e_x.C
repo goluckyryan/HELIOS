@@ -5,16 +5,17 @@
 #include "TH2F.h"
 #include "TLine.h"
 #include "TCanvas.h"
+#include "TCutG.h"
 #include "TF1.h"
 
-void Check_e_x(TString rootFile = "temp.root" , double eThreshold = 400){
+void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
 /**///======================================================== User input
    
    const char* treeName="tree";
    
    int numDet = 24;
    double eRange[3]  = {400, 0, 2000};
-   double zRange[3]  = {400, -600, -200};
+   double zRange[3]  = {400, -600, -100};
 
 /**///======================================================== read tree and create Canvas
 
@@ -40,6 +41,16 @@ void Check_e_x(TString rootFile = "temp.root" , double eThreshold = 400){
    gStyle->SetLabelSize(0.05, "Y");
    gStyle->SetTitleFontSize(0.1);
    
+   TFile * cutFile = new TFile("cut.root", "read");
+   TCutG * cut = NULL;
+   if( cutFile->IsOpen() ){
+      cut = (TCutG *) cutFile->FindObjectAny("cutEZ");
+      if( cut != NULL ) {
+         printf("======== loaded TCutG with name : %s, X: %s, Y: %s \n", cut->GetName(), cut->GetVarX(), cut->GetVarY()); 
+         cut->SetLineColor(4);
+         cut->SetLineWidth(2);   
+      }
+   }
 
 /**///======================================================== Analysis
    
@@ -54,9 +65,9 @@ void Check_e_x(TString rootFile = "temp.root" , double eThreshold = 400){
       hEX[idet] = new TH2F(name, name, 400, -1.3, 1.3, eRange[0], eRange[1], eRange[2]);
       expression.Form("e:x>>hEX%02d", idet);
       
-      gate.Form("detID == %d", idet);
+      gate.Form("detID == %d && !cutEZ", idet);
 
-      tree->Draw(expression, gate);
+      tree->Draw(expression, gate, "colz");
       line->Draw("same");
       cCheck->Update();
    }
@@ -74,20 +85,29 @@ void Check_e_x(TString rootFile = "temp.root" , double eThreshold = 400){
    gStyle->SetLabelSize(0.035, "Y");
    gStyle->SetTitleFontSize(0.035);
    
-   TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1], eRange[2]);
+   TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1]-100, eRange[2]);
+   
    tree->Draw("e:z >> hEZ", "" );
+   if( cut != NULL ) cut->Draw("same");
    
    TLine * line2 = new TLine(zRange[1], eThreshold, zRange[2], eThreshold);
    line2->SetLineColor(2);
    line2->Draw("same");  
    cCheck2->Update();
    
+   printf("=========== you may want to make a TCutG and rename it as cutEZ, and save into cut.root.\n");
+   
 /**///======================================================== multi
    TCanvas * cCheck3 = new TCanvas("cCheck3", "cCheck3", 700, 600,  600, 300);
    cCheck3->SetGrid();
-   
+   gStyle->SetStatY(0.9);
+   gStyle->SetStatX(0.9);
+   gStyle->SetStatH(0.3);
+   if(!cCheck3->GetShowToolBar() )cCheck3->ToggleToolBar(); // force show tool bar
+   cCheck3->SetLogy();
    TH1F * hMulti = new TH1F("hMulti", "Multi", 20, 0, 20);
    tree->Draw("multi >> hMulti", "" );
-   
    cCheck3->Update();   
+   
+   
 }

@@ -11,6 +11,7 @@
 #include <TCanvas.h>
 #include <TGraph2D.h>
 #include <TGraph.h>
+#include <TCutG.h>
 #include <TRandom.h>
 #include <string>
 #include <fstream>
@@ -23,14 +24,13 @@
 void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThreshold = 400){
 /**///======================================================== User Input
 
-   double a1Range[2] = {240, 300};
+   double a1Range[2] = {200, 290};
    double a0Range[2] = {-0.7, 0.7};
 
    double distThreshold   = 0.01;
-   bool isXFXN = true; // only use event for both XF and XN valid
+   bool isXFXN = false; // only use event for both XF and XN valid
    
-   int nTrial = 1000;
-
+   int nTrial = 500;
 
 /**///======================================================== 
    
@@ -41,6 +41,16 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    printf("      e Threshold : %f \n", eThreshold);
    printf("distant Threshold : %f \n", distThreshold);
 
+   TFile * cutFile = new TFile("cut.root", "read");
+   TCutG * cut = NULL;
+   if( cutFile->IsOpen() ){
+      cut = (TCutG *) cutFile->FindObjectAny("cutEZ");
+      if( cut != NULL ) {
+         printf("======== loaded TCutG with name : %s, X: %s, Y: %s \n", cut->GetName(), cut->GetVarX(), cut->GetVarY()); 
+         cut->SetLineColor(4);
+         cut->SetLineWidth(2);   
+      }
+   }
    
 /**///======================================================== display tree
    int totnumEntry = expTree->GetEntries();
@@ -228,7 +238,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    for( int idet = startDet; idet < endDet; idet ++){
 
       bool shown = false; clock.Reset(); clock.Start("timer");
-      TString title; title.Form("detID-%d", idet);      
+      TString title; title.Form("detID-%d[%d]", idet,  idet%rDet);      
       
       /**///======================================================== histogram
       double iDet = idet%rDet;
@@ -244,7 +254,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       printf("=============================== detID = %d (%6.2f mm, %6.2f mm) \n", idet, zRange[0], zRange[1]);
       
       TString name;
-      name.Form("exPlot%d[%d]", idet, idet%rDet);
+      name.Form("exPlot%d", idet, idet%rDet);
       exPlot[idet]  = new TH2F(name , "exPlot" , 200, zRange[0], zRange[1], 200, 0, 2500);
       exPlot[idet]->Reset();
       exPlot[idet]->SetTitle(title + "(exp)");
@@ -268,7 +278,9 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             expTree->GetEntry(i);
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
+            if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
             if( isXFXN && hitIDTemp != 0 ) continue;
+            
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
@@ -305,6 +317,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
         if( detIDTemp != idet ) continue;
         if( eTemp < eThreshold) continue;
         if( isXFXN && hitIDTemp != 0 ) continue;
+        if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
         countEvent++;
       }
       
@@ -323,6 +336,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
             if( isXFXN && hitIDTemp != 0 ) continue;
+            if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
             double minDist = 99;
             
             for( int i = 0; i < numFx; i++){
@@ -378,6 +392,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
                   expTree->GetEntry(eventE);
                   if( detIDTemp != idet ) continue;
                   if( isXFXN && hitIDTemp != 0 ) continue;
+                  if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
                   exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
                }
                cScript->cd(2);
@@ -406,6 +421,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
             if( isXFXN && hitIDTemp != 0 ) continue;
+            if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
@@ -426,6 +442,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          expTree->GetEntry(eventE);
          if( detIDTemp != idet ) continue;
          if( isXFXN && hitIDTemp != 0 ) continue;
+         if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
          exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
       } 
       exPlotC[idet]->Draw("same");
