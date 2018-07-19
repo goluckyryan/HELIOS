@@ -257,7 +257,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       printf("=============================== detID = %d (%6.2f mm, %6.2f mm) \n", idet, zRange[0], zRange[1]);
       
       TString name;
-      name.Form("exPlot%d", idet, idet%rDet);
+      name.Form("exPlot%d[%d]", idet, idet%rDet);
       exPlot[idet]  = new TH2F(name , "exPlot" , 200, zRange[0], zRange[1], 200, 0, 2500);
       exPlot[idet]->Reset();
       exPlot[idet]->SetTitle(title + "(exp)");
@@ -456,12 +456,20 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
       } 
       exPlotC[idet]->Draw("same");
-      caliResult->cd(); exPlotC[idet]->Write(); caliResult->Write();
-         
+      if( option == -1 ) {
+         caliResult->cd(); 
+         exPlotC[idet]->Write(); 
+         caliResult->Write();
+      }   
+
       cScript->cd(3);
       gDist->Draw("tri1");
-      caliResult->cd(); gDist->Write(); caliResult->Write();
-               
+      if( option == -1 ){
+         caliResult->cd(); 
+         gDist->Write(); 
+         caliResult->Write();
+      }
+         
       cScript->cd(3)->SetTheta(90);
       cScript->cd(3)->SetPhi(0);
       cScript->Update();

@@ -65,7 +65,7 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
       hEX[idet] = new TH2F(name, name, 400, -1.3, 1.3, eRange[0], eRange[1], eRange[2]);
       expression.Form("e:x>>hEX%02d", idet);
       
-      gate.Form("detID == %d && !cutEZ", idet);
+      gate.Form("detID == %d", idet);
 
       tree->Draw(expression, gate, "colz");
       line->Draw("same");
