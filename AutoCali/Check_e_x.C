@@ -7,18 +7,17 @@
 #include "TCanvas.h"
 #include "TCutG.h"
 #include "TF1.h"
+#include <fstream>
 
 void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
 /**///======================================================== User input
    
    const char* treeName="tree";
-   
-   int numDet = 24;
    double eRange[3]  = {400, 0, 2000};
-   double zRange[3]  = {400, -600, -100};
 
 /**///======================================================== read tree and create Canvas
-
+   printf("################### Check_e_x.C ######################\n");
+   
    TFile *file0 = new TFile (rootFile, "read"); 
    TTree *tree = (TTree*)file0->Get(treeName);
    printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootFile.Data(),  tree->GetEntries());
@@ -50,6 +49,70 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
          cut->SetLineColor(4);
          cut->SetLineWidth(2);   
       }
+   }
+
+//========================================= detector Geometry
+   string detGeoFileName = "detectorGeo_upstream.txt";
+   int numDet;
+   int rDet = 6; // number of detector at different position, row-Det
+   int cDet = 4; // number of detector at same position, column-Det
+   vector<double> pos;
+   double length = 50.5;
+   double firstPos = -110;
+   double xnCorr[24]; // xn correction for xn = xf
+   double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
+   
+   printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
+   ifstream file;
+   file.open(detGeoFileName.c_str());
+   int i = 0;
+   if( file.is_open() ){
+      string x;
+      while( file >> x){
+         //printf("%d, %s \n", i,  x.c_str());
+         if( x.substr(0,2) == "//" )  continue;
+         if( i == 6 ) length   = atof(x.c_str());
+         if( i == 8 ) firstPos = atof(x.c_str());
+         if( i == 9 ) cDet = atoi(x.c_str());
+         if( i >= 10 ) {
+            pos.push_back(atof(x.c_str()));
+         }
+         i = i + 1;
+      }
+      
+      rDet = pos.size();
+      file.close();
+      printf("... done.\n");
+      
+      for(int id = 0; id < rDet; id++){
+         pos[id] = firstPos + pos[id];
+      }
+      
+      for(int i = 0; i < rDet ; i++){
+         if( firstPos > 0 ){
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + length);
+         }else{
+            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - length , pos[i]);
+         }
+      }
+      printf("=======================\n");
+      
+   }else{
+       printf("... fail\n");
+       return;
+   }
+   
+   numDet = rDet * cDet;
+   
+   double zRange[3];
+   zRange[0] = 400; // number of bin
+   
+   if( firstPos > 0 ){
+      zRange[1] = pos[0]-50;
+      zRnage[2] = pos[rDet-1] + length + 50;
+   }else{
+      zRange[1] = pos[0]- length - 50;
+      zRnage[2] = pos[rDet-1] + 50;
    }
 
 /**///======================================================== Analysis

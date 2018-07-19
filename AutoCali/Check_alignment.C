@@ -23,6 +23,7 @@ void Check_alignment(){
    int detID = 1; // use when mode = 1
       
 /**///========================================================== tree and canvas   
+   printf("################### Check_aligment.C ######################\n");
    
    TFile *fa = new TFile (rootfileAlpha, "read"); 
    TTree * atree = (TTree*)fa->Get("tree");

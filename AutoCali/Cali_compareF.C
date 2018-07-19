@@ -33,7 +33,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    int nTrial = 1000;
 
 /**///======================================================== 
-   
+   printf("################### Cali_compareF.C ######################\n");
    TBenchmark gClock;  
    gClock.Reset(); gClock.Start("gTimer");
    
