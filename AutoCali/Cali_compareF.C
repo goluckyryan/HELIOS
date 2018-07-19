@@ -30,7 +30,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    double distThreshold   = 0.01;
    bool isXFXN = false; // only use event for both XF and XN valid
    
-   int nTrial = 500;
+   int nTrial = 1000;
 
 /**///======================================================== 
    
@@ -52,9 +52,11 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       }
    }
    
+   TFile * caliResult = NULL;
+   if( option == -1 ) caliResult = new TFile("caliResult.root", "recreate");
+
 /**///======================================================== display tree
    int totnumEntry = expTree->GetEntries();
-   
    printf("============== Total #Entry: %10lld \n", expTree->GetEntries());
    
 /**///======================================================== Plot
@@ -67,13 +69,14 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    for( int i = 1; i <= Div[0]+Div[1] ; i++){
       cScript->cd(i)->SetGrid();
    }
-
+   if( cScript->GetShowEditor()) cScript->ToggleEditor();
+   if( cScript->GetShowToolBar()) cScript->ToggleToolBar();
+   
    gStyle->SetOptStat(0);
    gStyle->SetStatY(1.0);
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
-   
 /**///========================================================= load correction
 
 //======================================================== load excitation energy
@@ -303,6 +306,9 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       
       double minTotalMinDist = 99.;
       
+      TString gDistName; 
+      gDistName.Form("gDist%d", idet);
+      gDist->SetName(gDistName);
       gDist->SetTitle("Total min-dist; a1; a0; min-dist");
       gDist->Clear();
       
@@ -426,11 +432,15 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          }
          exPlot[idet]->Draw();
          cScript->Update();
+         caliResult->cd(); exPlot[idet]->Write(); caliResult->Write();
          
          cScript->cd(2);
          dummy[idet]->Draw();
+         caliResult->cd(); dummy[idet]->Write(); caliResult->Write();
+         
          for( int i = 0; i < numFx; i++){
             fx[i]->Draw("same");
+            caliResult->cd(); fx[i]->Write(); caliResult->Write();
          }  
          cScript->Update();
          
@@ -446,15 +456,17 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
       } 
       exPlotC[idet]->Draw("same");
+      caliResult->cd(); exPlotC[idet]->Write(); caliResult->Write();
+         
       cScript->cd(3);
       gDist->Draw("tri1");
-      
+      caliResult->cd(); gDist->Write(); caliResult->Write();
+               
       cScript->cd(3)->SetTheta(90);
       cScript->cd(3)->SetPhi(0);
       cScript->Update();
    
    } // end of loop idet  
-
 /**///======================================================== save result
    
    if( option < 0 ){

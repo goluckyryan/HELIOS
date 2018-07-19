@@ -13,12 +13,12 @@
 #include <fstream>
 #include <TProof.h>
 #include "../Simulation/transfer.C"
-#include "../AutoCalibration/Cali_littleTree.h"
-#include "../AutoCalibration/Check_e_x.C"
-#include "../AutoCalibration/Cali_compareF.C"
-#include "../AutoCalibration/Cali_xf_xn.C"
-#include "../AutoCalibration/Cali_xf_xn_to_e.C"
-#include "../AutoCalibration/Cali_e.h"
+#include "../AutoCali/Cali_littleTree.h"
+#include "../AutoCali/Check_e_x.C"
+#include "../AutoCali/Cali_compareF.C"
+#include "../AutoCali/Cali_xf_xn.C"
+#include "../AutoCali/Cali_xf_xn_to_e.C"
+#include "../AutoCali/Cali_e.h"
 
 //==========================================
 //         This file show the steps for calibration 
@@ -90,7 +90,7 @@ void AutoCalibration(){
       
    if( option == 2 ) {
       printf("=============== creating smaller tree.\n");
-      chain->Process("../AutoCalibration/Cali_littleTree.C+");
+      chain->Process("../AutoCali/Cali_littleTree.C+");
       Check_e_x("temp.root", eThreshold);
    }
    
@@ -107,7 +107,7 @@ void AutoCalibration(){
          temp = scanf("%d", &eCdet);
          Cali_compareF(caliTree, fs, eCdet, eThreshold);
          
-         if( eCdet == -1) chain->Process("../AutoCalibration/Cali_e.C+");
+         if( eCdet == -1) chain->Process("../AutoCali/Cali_e.C+");
          
       }else{
          printf("!!!!! cannot open transfer.root !!!!! \n");
@@ -115,14 +115,14 @@ void AutoCalibration(){
       }
    }
    
-   if( option == 4 ) chain->Process("../AutoCalibration/Cali_e.C+");
+   if( option == 4 ) chain->Process("../AutoCali/Cali_e.C+");
 
    if( option == -1){
       Cali_xf_xn(atree);
       Cali_xf_xn_to_e(chain);
     
       printf("=============== creating smaller tree.\n");
-      chain->Process("../AutoCalibration/Cali_littleTree.C+");
+      chain->Process("../AutoCali/Cali_littleTree.C+");
       
       TFile *caliFile = new TFile ("temp.root", "read"); 
       TTree * caliTree = (TTree*) caliFile->Get("tree");
@@ -136,7 +136,7 @@ void AutoCalibration(){
          return;
       }   
       
-      chain->Process("Cali_e.C+");
+      chain->Process("../AutoCali/Cali_e.C+");
    }
 
    

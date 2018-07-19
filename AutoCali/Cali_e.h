@@ -157,7 +157,7 @@ void Cali_e::Init(TTree *tree)
    
    //======================================
    totnumEntry = tree->GetEntries();
-   printf( "========== Calibration by compare, total Entry : %d \n", totnumEntry);
+   printf( "========== Make a new tree with calibration, total Entry : %d \n", totnumEntry);
    
    saveFileName = fChain->GetDirectory()->GetName();
    //remove any folder path to get the name;
