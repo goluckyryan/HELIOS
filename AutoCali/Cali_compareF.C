@@ -18,6 +18,7 @@
 #include <math.h>
 #include <TRandom.h>
 #include <TDatime.h>
+#include <TObjArray.h>
 
 //use the fx in refTree, use fx->Eval(x) as e
 
@@ -79,34 +80,6 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    gStyle->SetStatH(0.1);
 /**///========================================================= load correction
 
-//======================================================== load excitation energy
-   
-   vector<double> ExKnown;
-   printf("----- loading excitation energy levels.");
-   ifstream file;
-   file.open("excitation_energies.txt");
-   string isotopeName;
-   if( file.is_open() ){
-      string line;
-      int i = 0;
-      while( file >> line){
-         //printf("%d, %s \n", i,  line.c_str());
-         if( line.substr(0,2) == "//" ) continue;
-         if( i == 0 ) isotopeName = line; 
-         if ( i >= 1 ){
-            ExKnown.push_back(atof(line.c_str()));
-         }
-         i = i + 1;
-      }
-      file.close();
-      printf("... done.\n");
-   }else{
-       printf("... fail\n");
-       return;
-   }
-   
-   int numFx = (int) ExKnown.size();  
-
 //========================================= detector Geometry
    string detGeoFileName = "detectorGeo_upstream.txt";
    int numDet;
@@ -119,6 +92,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
    
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
+   ifstream file;
    file.open(detGeoFileName.c_str());
    int i = 0;
    if( file.is_open() ){
@@ -209,15 +183,11 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    expTree->SetBranchAddress("detID", &detIDTemp);
    expTree->SetBranchAddress("hitID", &hitIDTemp);
    
+   TObjArray * fxList = (TObjArray*) refFile->FindObjectAny("fxList");
+   int numFx = fxList->GetEntries()-1;
    TGraph ** fx = new TGraph *[numFx];
-   TString fxName;
    for( int i = 0; i < numFx ; i++){
-      fxName.Form("fx%d", i);
-      fx[i] = (TGraph*) refFile->FindObjectAny(fxName);
-      if( fx[i] == NULL ) {
-         numFx = i + 1 ;
-         break;
-      }
+      fx[i] = (TGraph*) fxList->At(i);
    }
    
 /**///======================================================== Extract tree entry, create new smaller trees, use that tree to speed up

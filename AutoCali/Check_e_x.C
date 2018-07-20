@@ -109,10 +109,10 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    
    if( firstPos > 0 ){
       zRange[1] = pos[0]-50;
-      zRnage[2] = pos[rDet-1] + length + 50;
+      zRange[2] = pos[rDet-1] + length + 50;
    }else{
       zRange[1] = pos[0]- length - 50;
-      zRnage[2] = pos[rDet-1] + 50;
+      zRange[2] = pos[rDet-1] + 50;
    }
 
 /**///======================================================== Analysis

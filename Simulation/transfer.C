@@ -8,6 +8,7 @@
 #include "TRandom.h"
 #include <vector>
 #include <fstream>
+#include <TObjArray.h>
 
 //----------- usage 
 // $root transfer.C+ | tee output.txt
@@ -241,13 +242,14 @@ void transfer(){
    
    //======= function for e-z plot for ideal case
    printf("##################  generate functions and save to *root");
-   
+   TObjArray * gList = new TObjArray();
    TF1* g0 = new TF1("g0", "TMath::Sqrt([0] + [1] * x*x) - [2]", -1000, 1000);
    g0->SetParameter(0, mb*mb);
    g0->SetParameter(1, TMath::Power(slope/beta,2));
    g0->SetParameter(2, mb);
    g0->SetNpx(1000);
-   g0->Write();
+   gList->Add(g0);
+   //g0->Write();      
    printf("/");
    
    TF1 ** gx = new TF1*[20];
@@ -264,12 +266,15 @@ void transfer(){
       gx[i]->SetParameter(4, mb);
       gx[i]->SetParameter(5, -gS2*slope);
       gx[i]->SetNpx(1000);
-      gx[i]->Write();
+      gList->Add(gx[i]);
+      //gx[i]->Write();
       printf("/");
    }
+   gList->Write("gList", TObject::kSingleKey);
    
 
    int n = ExKnown.size();
+   TObjArray * fList = new TObjArray();
    TF1** f = new TF1*[n];
    for( int i = 0; i< n ; i++){
       name.Form("f%d", i);     
@@ -277,11 +282,14 @@ void transfer(){
       f[i]->SetParameter(0, y0[i]);
       f[i]->SetParameter(1, slope);
       f[i]->SetNpx(1000);
-      f[i]->Write();
+      fList->Add(f[i]);
+      //f[i]->Write();
       printf(".");
    }
+   fList->Write("fList", TObject::kSingleKey);
    
    //--- cal modified f
+   TObjArray * fxList = new TObjArray();
    TGraph ** fx = new TGraph*[n];
    for( int j = 0 ; j < n; j++){
       double px[100];
@@ -300,11 +308,14 @@ void transfer(){
       name.Form("fx%d", j);
       fx[j]->SetName(name);
       fx[j]->SetLineColor(4);
-      fx[j]->Write();
+      fxList->Add(fx[j]);
+      //fx[j]->Write();
       printf(",");
    }
+   fxList->Write("fxList", TObject::kSingleKey);
    
    //--- cal modified thetaCM vs z
+   TObjArray * txList = new TObjArray();
    TGraph ** tx = new TGraph*[n];
    for( int j = 0 ; j < n; j++){
       double px[100];
@@ -323,9 +334,11 @@ void transfer(){
       name.Form("tx%d", j);
       tx[j]->SetName(name);
       tx[j]->SetLineColor(4);
-      tx[j]->Write();
+      txList->Add(tx[j]);
+      //tx[j]->Write();
       printf("*");
    }
+   txList->Write("txList", TObject::kSingleKey);
    printf("done!\n");
    
    //========timer

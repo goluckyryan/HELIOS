@@ -2,6 +2,7 @@
 #include <TTree.h>
 #include <TCanvas.h>
 #include <TROOT.h>
+#include <TObjArray.h>
 #include <TStyle.h>
 #include <TH2F.h>
 #include <TH1F.h>
@@ -36,9 +37,8 @@ void Check_e_z(){
    double eRange[3]  = {400, 0, 10};
    double ExRange[3] = {200, -1, 8};
    
-   int numFx = 6;
-   bool showFx = false;
-   bool showTx = false;
+   bool showFx = true;
+   bool showTx = true;
 
    TString drawOption ="colz"; 
    
@@ -123,10 +123,10 @@ void Check_e_z(){
    
    if( firstPos > 0 ){
       zRange[1] = pos[0]-50;
-      zRnage[2] = pos[rDet-1] + length + 50;
+      zRange[2] = pos[rDet-1] + length + 50;
    }else{
       zRange[1] = pos[0]- length - 50;
-      zRnage[2] = pos[rDet-1] + 50;
+      zRange[2] = pos[rDet-1] + 50;
    }
 
 
@@ -263,16 +263,10 @@ void Check_e_z(){
    tree->Draw("e:z >> hEZ", "hitID >= 0 " , drawOption);
    
    if( showFx ) {
-      TGraph ** fx = new TGraph*[numFx];
-      for( int i = 0 ; i < numFx ; i++){
-         TString name;
-         name.Form("fx%d", i);
-         fx[i] = (TGraph *) file1->FindObjectAny(name);
-         if( fx[i] != NULL ){
-            fx[i]->Draw("same");
-         }else{
-            break;
-         }
+      TObjArray * fxList = (TObjArray*) file1->FindObjectAny("fxList");
+      int numFx = fxList->GetEntries()-1;
+      for( int i = 0; i < numFx ; i++){
+         fxList->At(i)->Draw("same");
       }
    }
    cCheck2->Update();
@@ -285,17 +279,11 @@ void Check_e_z(){
    TH2F * hThetaZ = new TH2F("hThetaZ", "thetaCM:z; z [mm]; thetaCM [deg]", zRange[0], zRange[1], zRange[2], 400, 0, 50);
    tree->Draw("thetaCM:z >> hThetaZ", exGate,  drawOption); 
    
-   if( showFx ) {
-      TGraph ** tx = new TGraph*[numFx];
-      for( int i = 0 ; i < numFx ; i++){
-         TString name;
-         name.Form("tx%d", i);
-         tx[i] = (TGraph *) file1->FindObjectAny(name);
-         if( tx[i] != NULL ){
-            tx[i]->Draw("same");
-         }else{
-            break;
-         }
+   if( showTx ) {
+      TObjArray * txList = (TObjArray*)  file1->FindObjectAny("txList");
+      int numFx = txList->GetEntries()-1;
+      for( int i = 0; i < numFx ; i++){
+         txList->At(i)->Draw("same");
       }
    }
    cCheck4->Update();
