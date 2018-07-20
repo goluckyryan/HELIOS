@@ -144,8 +144,8 @@ public :
    TClonesArray * arrC ;//!
    TGraph * gConVo; //!
    
-   TClonesArray * arrF ;//!
-   TF1 * gFit; //!
+   //TClonesArray * arrF ;//!
+   //TF1 * gFit; //!
    
    
    int peak;
@@ -224,11 +224,11 @@ void Ana_Trace::Init(TTree *tree)
    arrC = new TClonesArray("TGraph");
    newTree->Branch("convo", arrC, 256000);
    arrC->BypassStreamer();
-   
+   /*
    arrF = new TClonesArray("TF1");
    newTree->Branch("fit", arrF, 256000);
    arrF->BypassStreamer();
-   
+   */
    newTree->Branch("peak", &peak, "peak/I");
    
 

@@ -75,6 +75,7 @@ Bool_t Ana_Trace::Process(Long64_t entry)
    arrC->Clear();
    gConVo = (TGraph*) arrC->ConstructedAt(0);
    
+   /*
    arrF->Clear();
    gFit = new TF1("gFit", "[2]/(1+TMath::Exp(-(x-[0])/[1])) + [3]", 0, 100);
    gFit = (TF1*) arrF->ConstructedAt(0);
@@ -82,11 +83,11 @@ Bool_t Ana_Trace::Process(Long64_t entry)
    gFit->SetParameter(1,   10);
    gFit->SetParameter(2, 1000);
    gFit->SetParameter(3, 8000);
-   
+   */
    b_trace->GetEntry(entry, 0);
    
    int base = 0;
-   for( int i = 0; i < 200; i++){
+   for( int i = 0; i < 150; i++){
       if( trace[0][i] < 16000){
          base = trace[0][i];
          gTrace->SetPoint(i, i, trace[0][i]);
@@ -95,11 +96,11 @@ Bool_t Ana_Trace::Process(Long64_t entry)
       }
    }
 
-   gTrace->Fit("gFit", "q");
+   //gTrace->Fit("gFit", "q");
 
    int yMax = 0;
    peak = 0;   
-   for( int i = 0; i < 200; i++){
+   for( int i = 0; i < 150; i++){
       double gC = -gTrace->Eval(i) + gTrace->Eval(i+2);
       gConVo->SetPoint(i+1, i+1, gC);
       if( gC > yMax) {
