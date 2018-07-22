@@ -90,6 +90,7 @@ public :
    
    Float_t thetaCM;
    Float_t Ex;   
+   Float_t thetaLab;
    
    Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb  
 
@@ -186,6 +187,7 @@ void Cali_e::Init(TTree *tree)
    
    newTree->Branch("Ex", &Ex, "Ex/F");
    newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
+   newTree->Branch("thetaLab", &thetaLab, "thetaLab/F");
    
    newTree->Branch("e_t", eC_t, "e_t[24]/F");
    

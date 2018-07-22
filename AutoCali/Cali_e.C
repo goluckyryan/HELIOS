@@ -81,6 +81,7 @@ Bool_t Cali_e::Process(Long64_t entry)
    
    Ex  = TMath::QuietNaN();
    thetaCM  = TMath::QuietNaN();
+   thetaLab  = TMath::QuietNaN();
 
    ddt = TMath::QuietNaN(); // H060
    ddt_t = TMath::QuietNaN(); // H060
@@ -99,12 +100,13 @@ Bool_t Cali_e::Process(Long64_t entry)
    
    b_EnergyTimestamp->GetEntry(entry,0);
    
+   /*//=========== gate
    bool rdt_energy = false;
    for( int rID = 0; rID < 8; rID ++){
       if( rdt[rID] > 5000 ) rdt_energy = true; 
    }
    if( !rdt_energy ) return kTRUE;
-   
+   */
 
    for(int idet = 0 ; idet < numDet; idet++){
       
@@ -153,6 +155,7 @@ Bool_t Cali_e::Process(Long64_t entry)
          if( TMath::IsNaN(eC[idet]) || isReaction == false ){
             Ex = TMath::QuietNaN();
             thetaCM = TMath::QuietNaN();
+            thetaLab = TMath::QuietNaN();
          }else{
             
             double y = eC[idet] + mass;
@@ -186,14 +189,22 @@ Bool_t Cali_e::Process(Long64_t entry)
                 double hahaha1 = gamma* TMath::Sqrt(mass * mass + k * k) - y;
                 double hahaha2 = gamma* beta * k;
                 thetaCM = TMath::ACos(hahaha1/hahaha2) * TMath::RadToDeg();
+                
+                double pt = k * TMath::Sin(thetaCM * TMath::DegToRad());
+                double pp = gamma*beta*TMath::Sqrt(mass*mass + k*k) - gamma * k * TMath::Cos(thetaCM * TMath::DegToRad());
+                
+                thetaLab = TMath::ATan(pt/pp) * TMath::RadToDeg();
+                
               }else{
                 Ex = TMath::QuietNaN();
                 thetaCM = TMath::QuietNaN();
+                thetaLab = TMath::QuietNaN();
               }
 
             }else{
               Ex = TMath::QuietNaN();
               thetaCM = TMath::QuietNaN();  
+              thetaLab = TMath::QuietNaN();
             } // end of if |Z| > H
          } //end of e is valid
       }//end of x is valid

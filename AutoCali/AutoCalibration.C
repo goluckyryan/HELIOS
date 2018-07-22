@@ -47,30 +47,29 @@ void AutoCalibration(){
    //======== alpha data
    TString rootfileAlpha="../H060/data/gen_run09.root";
    
-
    //======== experimental data
    TChain * chain = new TChain("gen_tree");
    
-//   chain->Add("../H060_ana/data/gen_run11.root");  //01
-/*   chain->Add("../H060_ana/data/gen_run12.root");  //02
-   chain->Add("../H060_ana/data/gen_run13.root");  //03
-   chain->Add("../H060_ana/data/gen_run15.root");  //04
-   chain->Add("../H060_ana/data/gen_run16.root");  //05
-   chain->Add("../H060_ana/data/gen_run17.root");  //06
-   chain->Add("../H060_ana/data/gen_run18.root");  //07
-   chain->Add("../H060_ana/data/gen_run19.root");  //08
-   chain->Add("../H060_ana/data/gen_run20.root");  //09
-   chain->Add("../H060_ana/data/gen_run21.root");  //10
-   chain->Add("../H060_ana/data/gen_run22.root");  //11
-   chain->Add("../H060_ana/data/gen_run23.root");  //12
-   chain->Add("../H060_ana/data/gen_run24.root");  //13
-   chain->Add("../H060_ana/data/gen_run25.root");  //14
-   chain->Add("../H060_ana/data/gen_run27.root");  //15
-   chain->Add("../H060_ana/data/gen_run28.root");  //16
-   chain->Add("../H060_ana/data/gen_run29.root");  //17
-   chain->Add("../H060_ana/data/gen_run30.root");  //18
- */
-   chain->Add("../H052/data/H052_Mg25.root");
+   chain->Add("../H060/data/gen_run11.root");  //01
+   chain->Add("../H060/data/gen_run12.root");  //02
+   chain->Add("../H060/data/gen_run13.root");  //03
+   chain->Add("../H060/data/gen_run15.root");  //04
+   chain->Add("../H060/data/gen_run16.root");  //05
+   chain->Add("../H060/data/gen_run17.root");  //06
+   chain->Add("../H060/data/gen_run18.root");  //07
+   chain->Add("../H060/data/gen_run19.root");  //08
+   chain->Add("../H060/data/gen_run20.root");  //09
+   chain->Add("../H060/data/gen_run21.root");  //10
+   chain->Add("../H060/data/gen_run22.root");  //11
+   chain->Add("../H060/data/gen_run23.root");  //12
+   chain->Add("../H060/data/gen_run24.root");  //13
+   chain->Add("../H060/data/gen_run25.root");  //14
+   chain->Add("../H060/data/gen_run27.root");  //15
+   chain->Add("../H060/data/gen_run28.root");  //16
+   chain->Add("../H060/data/gen_run29.root");  //17
+   chain->Add("../H060/data/gen_run30.root");  //18
+
+//   chain->Add("../H052/data/H052_Mg25.root");
    
    //TProof::Open("");
    //chain->SetProof();        
@@ -96,6 +95,10 @@ void AutoCalibration(){
    
    if( option == 3 ) {
       TFile *caliFile = new TFile ("temp.root", "read"); 
+      if( !caliFile->IsOpen() ){
+			printf("!!!!!!!!!!! no temp.root, please run step 2.!!!!!!!\n");
+			return;
+		}
       TTree * caliTree = (TTree*) caliFile->Get("tree");
       
       TFile *fs = new TFile (rootfileSim, "read"); 
@@ -125,6 +128,10 @@ void AutoCalibration(){
       chain->Process("../AutoCali/Cali_littleTree.C+");
       
       TFile *caliFile = new TFile ("temp.root", "read"); 
+      if( !caliFile->IsOpen() ){
+			printf("!!!!!!!!!!! no temp.root, please run step 2.!!!!!!!\n");
+			return;
+		}
       TTree * caliTree = (TTree*) caliFile->Get("tree");
       
       TFile *fs = new TFile (rootfileSim, "read"); 

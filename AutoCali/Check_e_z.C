@@ -11,6 +11,7 @@
 #include <TSpectrum.h>
 #include <TGraph.h>
 #include <TLegend.h>
+#include <TObjArray.h>
 #include <fstream>
 
 int nPeaks = 16;
@@ -29,25 +30,25 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 
 void Check_e_z(){  
 /**///======================================================== User input
-   const char* rootfile="A_H052_Mg25.root"; const char* treeName="tree";
+   const char* rootfile="A_gen_run30.root"; const char* treeName="tree";
    const char* simfile="transfer.root"; const char* treeNameS="tree";
 
    int Div[2] = {6,4};  //x,y
    
-   double eRange[3]  = {400, 0, 10};
-   double ExRange[3] = {200, -1, 8};
+   double ExRange[3] = {200, -1, 4};
+	double eRange[3]  = {400, 0, 10};
    
-   bool showFx = true;
-   bool showTx = true;
+   bool showFx = false;
+   bool showTx = false;
 
    TString drawOption ="colz"; 
    
-   TString exGate = "detID%6 < 5";
+   TString detGate = "detID%6 < 5";
 
 /**///======================================================== read tree   
    printf("################### Check_e_z.C ######################\n");
    
-   printf("Gate : %s \n ", exGate.Data());
+   printf("Gate : %s \n", detGate.Data());
    
    TFile *file0 = new TFile (rootfile, "read"); 
    tree = (TTree*)file0->Get(treeName);
@@ -171,7 +172,7 @@ void Check_e_z(){
    hEx->GetYaxis()->SetTitleSize(0.06);
    hEx->GetXaxis()->SetTitleOffset(0.7);
    hEx->GetYaxis()->SetTitleOffset(0.6);
-   tree->Draw("Ex >> hEx", exGate); 
+   tree->Draw("Ex >> hEx", detGate); 
    
    
    TH1F * specS = (TH1F*) hEx->Clone();
@@ -199,11 +200,12 @@ void Check_e_z(){
    //========== Fitting 
    printf("============= Fit.....");
    printf(" found %d peaks \n", nPeaks);
-   float * xpos =  peak->GetPositionX();
-   float * ypos =  peak->GetPositionY();
    
-   //double * xpos = (double *) peak->GetPositionX();
-   //double * ypos = (double *) peak->GetPositionY();
+   //float * xpos =  peak->GetPositionX();
+   //float * ypos =  peak->GetPositionY();
+	// in root-6, 
+   double * xpos = peak->GetPositionX();
+   double * ypos = peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );
@@ -260,7 +262,7 @@ void Check_e_z(){
    if(cCheck2->GetShowToolBar() )cCheck2->ToggleToolBar();
    cCheck2->SetGrid();
    TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1], eRange[2]);
-   tree->Draw("e:z >> hEZ", "hitID >= 0 " , drawOption);
+   tree->Draw("e:z >> hEZ", "hitID >= 0 &&" + detGate , drawOption);
    
    if( showFx ) {
       TObjArray * fxList = (TObjArray*) file1->FindObjectAny("fxList");
@@ -271,13 +273,15 @@ void Check_e_z(){
    }
    cCheck2->Update();
 
-/**///======================================================== thetaCM vs z
+/**///======================================================== thetaCM vs Ex
+   gStyle->SetStatY(0.9);
+   gStyle->SetStatX(0.9);
    TCanvas * cCheck4 = new TCanvas("cCheck4", "cCheck4", 700, 500,  600, 400);
    if(cCheck4->GetShowEditor() )cCheck4->ToggleEditor();
    if(cCheck4->GetShowToolBar() )cCheck4->ToggleToolBar();
    cCheck4->SetGrid();
-   TH2F * hThetaZ = new TH2F("hThetaZ", "thetaCM:z; z [mm]; thetaCM [deg]", zRange[0], zRange[1], zRange[2], 400, 0, 50);
-   tree->Draw("thetaCM:z >> hThetaZ", exGate,  drawOption); 
+   TH2F * hExTheta = new TH2F("hExTheta", "Ex:thetaCM:z; thetaCM [deg]; Ex [MeV]", 400, 0, 45, ExRange[0], ExRange[1], ExRange[2]);
+   tree->Draw("Ex:thetaCM >> hExTheta", detGate,  drawOption); 
    
    if( showTx ) {
       TObjArray * txList = (TObjArray*)  file1->FindObjectAny("txList");
@@ -298,7 +302,7 @@ void Check_e_z(){
    if(cCheck5->GetShowToolBar() )cCheck5->ToggleToolBar();
    cCheck5->SetGrid();
    TH2F * hExZ = new TH2F("hExZ", "z:Ex; Ex [MeV]; z [mm]", ExRange[0], ExRange[1], ExRange[2], zRange[0], zRange[1], zRange[2]);
-   tree->Draw("z : Ex >> hExZ", exGate, drawOption); 
+   tree->Draw("z : Ex >> hExZ", detGate, drawOption); 
    cCheck5->Update();
 
 
@@ -313,17 +317,18 @@ void Check_e_z(){
    double yMax = 0;
    
    TLegend * legend = new TLegend(0.6,0.1,0.9,0.35);
+   legend->SetName("legend");
    
    for(int i = 0; i < nPeaks; i++){
       TString name, title, gate, expression;
       name.Form("hTheta%d", i);
       title.Form("thetaCM +-3Sigma; thetCM [deg]; count / 0.5 deg");
-      hTheta[i] = new TH1F(name, title, 100, 0, 50);
+      hTheta[i] = new TH1F(name, title, 100, 0, 45);
       hTheta[i]->SetLineColor(2*i+2);
       expression.Form("thetaCM >> hTheta%d", i);
       gate.Form("%f > Ex && Ex > %f", ExPos[i] + 3*ExSigma[i], ExPos[i] - 3*ExSigma[i] );
-      if( i == 0 )tree->Draw(expression, gate);
-      if( i > 0 )tree->Draw(expression, gate, "same");
+      if( i == 0 )tree->Draw(expression, gate + "&&" + detGate);
+      if( i > 0 )tree->Draw(expression, gate + "&&" + detGate, "same");
       
       TString lTitle;
       lTitle.Form("Ex = %6.2f MeV, %3.0f keV", ExPos[i], ExSigma[i]*1000.);
@@ -339,8 +344,32 @@ void Check_e_z(){
    legend->Draw();
    cCheck6->Update();
    
+   //========================== save histograms and fit result
+   TFile * saveFile = new TFile("checkResult.root", "recreate");
    
+   TObjArray * hEXList = new TObjArray();
+   for(int i = 0 ; i < numDet; i++){
+		hEXList->Add(hEX[i]);
+	}
+	hEXList->Write("hEXList", TObject::kSingleKey);
+	
+	hEx->Write();
+	h1->Write();
+	specS->Write();
+	fit->Write();
+	
+	hEZ->Write();
+	hExZ->Write();
+	hExTheta->Write();
+	
+	TObjArray * hThetaList = new TObjArray();
+   for(int i = 0 ; i < nPeaks; i++){
+		hThetaList->Add(hTheta[i]);
+	}
+	hThetaList->Write("hThetaList", TObject::kSingleKey);
+	legend->Write();
+	
+	saveFile->Write();
    
-   
-   
+   printf("=========> saved histograms in checkResult.root \n");
 }
