@@ -94,11 +94,11 @@ Bool_t Cali_e::Process(Long64_t entry)
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);
    b_RDT->GetEntry(entry,0);
+   b_EnergyTimestamp->GetEntry(entry,0);
    
    b_ELUM->GetEntry(entry, 0); // for H060_208Pb
    b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
-   
-   b_EnergyTimestamp->GetEntry(entry,0);
+   b_TAC->GetEntry(entry,0);
    
    /*//=========== gate
    bool rdt_energy = false;
@@ -214,10 +214,11 @@ Bool_t Cali_e::Process(Long64_t entry)
    //for H060
    if( elum[0] != 0){
       ddt = elum[0];
-      ddt_t = elum_t[0];
+      ddt_t = elum_t[0]/1e8; //sec
+      tacS = tac[0];
    }
    
-   if( zMultiHit == 0 ) return kTRUE;
+   //if( zMultiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file

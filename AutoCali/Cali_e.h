@@ -92,7 +92,8 @@ public :
    Float_t Ex;   
    Float_t thetaLab;
    
-   Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb  
+   Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb 
+   Float_t tacS; 
 
    //clock   
    TBenchmark clock;
@@ -199,6 +200,7 @@ void Cali_e::Init(TTree *tree)
    newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F"); 
    */
    
+   newTree->Branch("tac", &tacS, "tacS/F");
    newTree->Branch("ddt", &ddt, "ddt/F");
    newTree->Branch("ddt_t", &ddt_t, "ddt_t/F");
    
