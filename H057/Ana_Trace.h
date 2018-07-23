@@ -141,14 +141,14 @@ public :
    TClonesArray * arr ;//!
    TGraph * gTrace; //!
    
-   TClonesArray * arrC ;//!
-   TGraph * gConVo; //!
    
    //TClonesArray * arrF ;//!
-   //TF1 * gFit; //!
+   TF1 * gFit; //!
    
-   
-   int peak;
+   double base;
+   double energy;
+   double time;
+   double riseTime;
    
 };
 
@@ -221,16 +221,12 @@ void Ana_Trace::Init(TTree *tree)
    newTree->Branch("trace", arr, 256000);
    arr->BypassStreamer();
    
-   arrC = new TClonesArray("TGraph");
-   newTree->Branch("convo", arrC, 256000);
-   arrC->BypassStreamer();
-   /*
-   arrF = new TClonesArray("TF1");
-   newTree->Branch("fit", arrF, 256000);
-   arrF->BypassStreamer();
-   */
-   newTree->Branch("peak", &peak, "peak/I");
+	gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 100);
    
+   newTree->Branch("base", &base, "base/D");
+   newTree->Branch("energy", &energy, "energy/D");
+   newTree->Branch("time", &time, "time/D");
+   newTree->Branch("riseTime", &riseTime, "riseTime/D");
 
    clock.Reset();
    clock.Start("timer");

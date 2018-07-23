@@ -72,8 +72,6 @@ Bool_t Ana_Trace::Process(Long64_t entry)
    arr->Clear();
    gTrace = (TGraph*) arr->ConstructedAt(0);
    
-   arrC->Clear();
-   gConVo = (TGraph*) arrC->ConstructedAt(0);
    
    /*
    arrF->Clear();
@@ -96,21 +94,21 @@ Bool_t Ana_Trace::Process(Long64_t entry)
       }
    }
 
-   //gTrace->Fit("gFit", "q");
+	base = gTrace->Eval(1);
+	energy = gTrace->Eval(80) - base;
+	gFit->SetParameter(3, base);
+	gFit->SetParameter(1, 50);
+	gFit->SetParameter(2, 1);
+	gFit->SetParameter(0, energy);
 
-   int yMax = 0;
-   peak = 0;   
-   for( int i = 0; i < 150; i++){
-      double gC = -gTrace->Eval(i) + gTrace->Eval(i+2);
-      gConVo->SetPoint(i+1, i+1, gC);
-      if( gC > yMax) {
-         yMax = gC;
-         peak = i;   
-      }
-   }
+   gTrace->Fit("gFit", "qR");
    
-   
-   
+   energy   = gFit->GetParameter(0);
+   time     = gFit->GetParameter(1);
+   riseTime = gFit->GetParameter(2);
+   base     = gFit->GetParameter(3);
+
+
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file
    newTree->Fill();  
@@ -121,11 +119,12 @@ Bool_t Ana_Trace::Process(Long64_t entry)
 
    if ( !shown ) {
       if (fmod(time, 10) < 1 ){
-         printf( "%10d[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
+         printf( "%10lld[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
                entry, 
                TMath::Nint((entry+1)*100./totnumEntry),
-               TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
-               totnumEntry*time/(entry+1.)/60.);
+               TMath::Floor(time/60.), 
+               time - TMath::Floor(time/60.)*60.,
+               (Float_t)totnumEntry*time/(entry+1.)/60.);
                shown = 1;
       }
    }else{
