@@ -1,75 +1,74 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Fri Jul 20 13:19:29 2018 by ROOT version 5.34/36
+// Thu May  7 16:10:02 2015 by ROOT version 5.32/00
 // from TTree tree/tree
-// found on file: data/run234.root
+// found on file: run5113.root
 //////////////////////////////////////////////////////////
 
-#ifndef Ana_Trace_h
-#define Ana_Trace_h
+#ifndef GeneralSort_h
+#define GeneralSort_h
 
 #include <TROOT.h>
+#include <TCanvas.h>
 #include <TChain.h>
+#include <TCutG.h>
 #include <TFile.h>
 #include <TSelector.h>
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TClonesArray.h>
-#include <TBenchmark.h>
-#include <TMath.h>
-#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TStopwatch.h>
+#include <TStyle.h>
 
 // Header file for the classes stored in the TTree if any.
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-class Ana_Trace : public TSelector {
+class GeneralSort : public TSelector {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
    // Declaration of leaf types
    Int_t           RunNum;
    Int_t           NumHits;
-   Short_t         id[71];   //[NumHits]
-   UShort_t        tpe[71];   //[NumHits]
-   UShort_t        tid[71];   //[NumHits]
-   UShort_t        chan_id[71];   //[NumHits]
-   UShort_t        board_id[71];   //[NumHits]
-   UShort_t        geo_addr[71];   //[NumHits]
-   UShort_t        packet_length[71];   //[NumHits]
-   UShort_t        header_type[71];   //[NumHits]
-   UShort_t        event_type[71];   //[NumHits]
-   UShort_t        header_length[71];   //[NumHits]
-   ULong64_t       event_timestamp[71];   //[NumHits]
-   ULong64_t       last_disc_timestamp[71];   //[NumHits]
-   ULong64_t       peak_timestamp[71];   //[NumHits]
-   UShort_t        timestamp_match_flag[71];   //[NumHits]
-   UShort_t        external_disc_flag[71];   //[NumHits]
-   UShort_t        cfd_valid_flag[71];   //[NumHits]
-   UShort_t        pileup_only_flag[71];   //[NumHits]
-   UShort_t        offset_flag[71];   //[NumHits]
-   UShort_t        sync_error_flag[71];   //[NumHits]
-   UShort_t        general_error_flag[71];   //[NumHits]
-   UShort_t        peak_valid_flag[71];   //[NumHits]
-   UShort_t        pileup_flag[71];   //[NumHits]
-   Int_t           sampled_baseline[71];   //[NumHits]
-   Int_t           cfd_sample_0[71];   //[NumHits]
-   Int_t           cfd_sample_1[71];   //[NumHits]
-   Int_t           cfd_sample_2[71];   //[NumHits]
-   Int_t           pre_rise_energy[71];   //[NumHits]
-   Int_t           post_rise_energy[71];   //[NumHits]
-   UShort_t        m1_begin_sample[71];   //[NumHits]
-   UShort_t        m1_end_sample[71];   //[NumHits]
-   UShort_t        m2_begin_sample[71];   //[NumHits]
-   UShort_t        m2_end_sample[71];   //[NumHits]
-   UShort_t        peak_sample[71];   //[NumHits]
-   UShort_t        base_sample[71];   //[NumHits]
-   Int_t           baseline[71];   //[NumHits]
-   UShort_t        trace_length[71];   //[NumHits]
-   Short_t         trace[71][1024];   //[NumHits]
+   Short_t         id[200];   //[NumHits]
+   UShort_t        tpe[200];   //[NumHits]
+   UShort_t        tid[200];   //[NumHits]
+   UShort_t        chan_id[200];   //[NumHits]
+   UShort_t        board_id[200];   //[NumHits]
+   UShort_t        geo_addr[200];   //[NumHits]
+   UShort_t        packet_length[200];   //[NumHits]
+   UShort_t        header_type[200];   //[NumHits]
+   UShort_t        event_type[200];   //[NumHits]
+   UShort_t        header_length[200];   //[NumHits]
+   ULong64_t       event_timestamp[200];   //[NumHits]
+   ULong64_t       last_disc_timestamp[200];   //[NumHits]
+   ULong64_t       peak_timestamp[200];   //[NumHits]
+   UShort_t        timestamp_match_flag[200];   //[NumHits]
+   UShort_t        external_disc_flag[200];   //[NumHits]
+   UShort_t        cfd_valid_flag[200];   //[NumHits]
+   UShort_t        pileup_only_flag[200];   //[NumHits]
+   UShort_t        offset_flag[200];   //[NumHits]
+   UShort_t        sync_error_flag[200];   //[NumHits]
+   UShort_t        general_error_flag[200];   //[NumHits]
+   UShort_t        peak_valid_flag[200];   //[NumHits]
+   UShort_t        pileup_flag[200];   //[NumHits]
+   Int_t           sampled_baseline[200];   //[NumHits]
+   Int_t           cfd_sample_0[200];   //[NumHits]
+   Int_t           cfd_sample_1[200];   //[NumHits]
+   Int_t           cfd_sample_2[200];   //[NumHits]
+   Int_t           pre_rise_energy[200];   //[NumHits]
+   Int_t           post_rise_energy[200];   //[NumHits]
+   UShort_t        m1_begin_sample[200];   //[NumHits]
+   UShort_t        m1_end_sample[200];   //[NumHits]
+   UShort_t        m2_begin_sample[200];   //[NumHits]
+   UShort_t        m2_end_sample[200];   //[NumHits]
+   UShort_t        peak_sample[200];   //[NumHits]
+   UShort_t        base_sample[200];   //[NumHits]
+   Int_t           baseline[200];   //[NumHits]
+   UShort_t        trace_length[200];   //[NumHits]
 
    // List of branches
-   TBranch        *b_RunNum;   //!
+   TBranch        *b_RunNum;
    TBranch        *b_NumHits;   //!
    TBranch        *b_id;   //!
    TBranch        *b_tpe;   //!
@@ -107,10 +106,9 @@ public :
    TBranch        *b_base_sample;   //!
    TBranch        *b_baseline;   //!
    TBranch        *b_trace_length;   //!
-   TBranch        *b_trace;   //!
 
-   Ana_Trace(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~Ana_Trace() { }
+   GeneralSort(TTree * /*tree*/ =0) : fChain(0) { }
+   virtual ~GeneralSort() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -125,42 +123,13 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-   ClassDef(Ana_Trace,0);
-   
-   //===========================================
-   TFile * saveFile; //!
-   TTree * newTree; //!
-   int totnumEntry; // of original root
-   
-   //clock   
-   TBenchmark clock;
-   Bool_t shown;
-   Int_t count;
-   
-   //tree
-   TClonesArray * arr ;//!
-   TGraph * gTrace; //!
-
-   int ch[71];   
-   int kind[71];
-   float energy[71];
-   float xf[71];
-   float xn[71];
-   
-   TF1 * gFit; //!
-   
-   double tBase[71];
-   double tEnergy[71];
-   double tTime[71];
-   double tRiseTime[71];
-   double tChiSq[71];
-   
+   ClassDef(GeneralSort,0);
 };
 
 #endif
 
-#ifdef Ana_Trace_cxx
-void Ana_Trace::Init(TTree *tree)
+#ifdef GeneralSort_cxx
+void GeneralSort::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -213,44 +182,9 @@ void Ana_Trace::Init(TTree *tree)
    fChain->SetBranchAddress("base_sample", base_sample, &b_base_sample);
    fChain->SetBranchAddress("baseline", baseline, &b_baseline);
    fChain->SetBranchAddress("trace_length", trace_length, &b_trace_length);
-   fChain->SetBranchAddress("trace", trace, &b_trace);
-   
-   //============================================
-   totnumEntry = tree->GetEntries();
-   printf( "========== Make a new tree with trace, total Entry : %d \n", totnumEntry);
-
-   saveFile = new TFile( "trace.root","recreate");
-   newTree =  new TTree("tree","tree");
-
-   newTree->Branch("NumHits", &NumHits , "NumHits/I");
-   newTree->Branch("ch",             ch, "ch[NumHits]/I");
-   newTree->Branch("kind",         kind, "kind[NumHits]/I");
-   newTree->Branch("e",          energy, "energy[NumHits]/F");
-   newTree->Branch("xf",             xf, "xf[NumHits]/F");
-   newTree->Branch("xn",             xn, "xn[NumHits]/F");
-
-   arr = new TClonesArray("TGraph");
-   newTree->Branch("trace", arr, 256000);
-   arr->BypassStreamer();
-   
-	gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
-   
-   newTree->Branch("tBase",     tBase,     "tBase[NumHits]/D");
-   newTree->Branch("tEnergy",   tEnergy,   "tEnergy[NumHits]/D");
-   newTree->Branch("tTime",     tTime,     "tTime[NumHits]/D");
-   newTree->Branch("tRiseTime", tRiseTime, "tRiseTime[NumHits]/D");
-   newTree->Branch("tChiSq",    tChiSq,    "tChiSq[NumHits]/D");
-   
-   clock.Reset();
-   clock.Start("timer");
-   shown = 0;
-   count = 0;
-   
-   printf("====================== started \n");
-
 }
 
-Bool_t Ana_Trace::Notify()
+Bool_t GeneralSort::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -261,4 +195,4 @@ Bool_t Ana_Trace::Notify()
    return kTRUE;
 }
 
-#endif // #ifdef Ana_Trace_cxx
+#endif // #ifdef GeneralSort_cxx
