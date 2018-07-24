@@ -13,7 +13,7 @@
 void readTrace(){
    
 /**///==============================================================   
-   TFile * f1 = new TFile ("trace_2.root", "read");
+   TFile * f1 = new TFile ("trace.root", "read");
    TTree * tree = (TTree *) f1->Get("tree");
    
 	int totnumEntry = tree->GetEntries();
@@ -39,6 +39,8 @@ void readTrace(){
    int ch[20];
    int kind[20];
    int numHit;
+   int eventID;
+   float energy, xf, xn;
    
    tree->SetBranchAddress("tBase",     tBase);  
    tree->SetBranchAddress("tEnergy",   tEnergy);  
@@ -48,6 +50,10 @@ void readTrace(){
    tree->SetBranchAddress("ch",        ch);    
    tree->SetBranchAddress("kind",      kind);   
    tree->SetBranchAddress("NumHits",   &numHit);
+   tree->SetBranchAddress("eventID",   &eventID);
+   tree->SetBranchAddress("e",         &energy);
+   tree->SetBranchAddress("xf",        &xf);
+   tree->SetBranchAddress("xn",        &xn);
 
 	char s [1] ;
 	char b [1] ;
@@ -62,8 +68,12 @@ void readTrace(){
       arr->Clear();
       tree->GetEntry(ev);
       
-      printf("========= ev: %d, #trace: %d , numHit: %d\n", ev, arr->GetEntriesFast(), numHit);
-      for( int j = 0; j < numHit ; j++){
+      //tree->Show(ev);
+      
+      
+      printf("========= ev: %d, #trace: %d , numHit: %d, (e, xf, xn) = (%7.2f, %7.2f, %7.2f)\n", 
+                    eventID, arr->GetEntriesFast(), numHit, energy, xf, xn);
+      for( int j = 0; j < arr->GetEntriesFast() ; j++){
 
          TGraph * g  = (TGraph*) arr->At(j);
          //TF1 * gFit = (TF1 *) g->FindObject("gFit");
@@ -74,7 +84,7 @@ void readTrace(){
          //base     = gFit->GetParameter(3);
          
          TString gTitle;
-         gTitle.Form("event : %d[%d],ch:%d, kind:%d, base: %5.1f, time: %5.2f ch, rise: %5.3f ch, energy: %6.1f | chi2: %6.2f", 
+         gTitle.Form("event : %d[%d],ch:%d, kind:%2d, base: %5.1f, time: %5.2f ch, rise: %5.3f ch, energy: %6.1f | chi2: %6.2f", 
                        ev, j, ch[j], kind[j], tBase[j], tTime[j], tRiseTime[j], tEnergy[j], tChisq[j]);
          printf("%s", gTitle.Data());
          g->SetTitle(gTitle);

@@ -63,22 +63,101 @@ Int_t idKindMap[160] = { 6,-1,-1,-1,-1,-1,-1,-1,-1,-1,
                          2, 2, 2, 2, 2, 2, 1, 1,-1,-1,//9
                         -1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 
+//===========================================
+TFile * saveFile; //!
+TTree * newTree; //!
+int totnumEntry; // of original root
 
-int maxEntry = 10000;
+//gClock   
+TBenchmark gClock;
+Bool_t shown;
+Int_t psdValidCount;
+
+//tree
+TClonesArray * arr ;//!
+TGraph * gTrace; //!
+
+int eventID;
+int ch[71];   
+int kind[71];
+//float energy[71];
+//float xf[71];
+//float xn[71];
+
+float energy;
+float xf;
+float xn;
+
+float te;
+float txf;
+float txn;
+
+TF1 * gFit; //!
+
+double tBase[71];
+double tEnergy[71];
+double tTime[71];
+double tRiseTime[71];
+double tChiSq[71];
+
+
+int maxEntry = 100000;
 int effEntry = 0;
 
+int traceLength = 200;
 
-void Ana_Trace::Begin(TTree * /*tree*/)
+void Ana_Trace::Begin(TTree * tree)
 {
    // The Begin() function is called at the start of the query.
    // When running with PROOF Begin() is only called on the client.
    // The tree argument is deprecated (on PROOF 0 is passed).
 
-   TString option = GetOption();
+   TString option = GetOption();   
    
-   effEntry = TMath::Min(maxEntry, totnumEntry);
+	//============================================
+   totnumEntry = tree->GetEntries();
+	effEntry = TMath::Min(maxEntry, totnumEntry);
+   printf( "========== Make a new tree with trace, total Entry : %d \n", totnumEntry);
+	printf("==== use entry : %d \n", effEntry);
    
-   printf("==== use entry : %d \n", effEntry);
+   saveFile = new TFile( "trace.root","recreate");
+   newTree =  new TTree("tree","tree");
+
+	newTree->Branch("eventID", &eventID , "eventID/I");
+   newTree->Branch("NumHits", &NumHits , "NumHits/I");
+   newTree->Branch("ch",             ch, "ch[NumHits]/I");
+   newTree->Branch("kind",         kind, "kind[NumHits]/I");
+   
+   //newTree->Branch("e",          energy, "energy[NumHits]/F");
+   //newTree->Branch("xf",             xf, "xf[NumHits]/F");
+   //newTree->Branch("xn",             xn, "xn[NumHits]/F");
+	
+	newTree->Branch("e",         &energy, "energy/F");
+   newTree->Branch("xf",            &xf, "xf/F");
+   newTree->Branch("xn",            &xn, "xn/F");
+   
+	newTree->Branch("te",             &te, "te/F");
+   newTree->Branch("txf",           &txf, "txf/F");
+   newTree->Branch("txn",           &txn, "txn/F");
+
+   arr = new TClonesArray("TGraph");
+   newTree->Branch("trace", arr, 256000);
+   arr->BypassStreamer();
+   
+	gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
+   
+   newTree->Branch("tBase",     tBase,     "tBase[NumHits]/D");
+   newTree->Branch("tEnergy",   tEnergy,   "tEnergy[NumHits]/D");
+   newTree->Branch("tTime",     tTime,     "tTime[NumHits]/D");
+   newTree->Branch("tRiseTime", tRiseTime, "tRiseTime[NumHits]/D");
+   newTree->Branch("tChiSq",    tChiSq,    "tChiSq[NumHits]/D");
+   
+   gClock.Reset();
+   gClock.Start("timer");
+   shown = 0;
+   psdValidCount = 0;
+   
+   printf("====================== started \n");
    
 }
 
@@ -111,18 +190,23 @@ Bool_t Ana_Trace::Process(Long64_t entry)
    // Use fStatus to set the return value of TTree::Process().
    //
    // The return value is currently not used.
-
+	
    if( entry >= maxEntry)  return kTRUE;
 /**///===================================================== initialization
-
+	eventID = entry;
+	
    for(int i = 0; i < 71; i++){
       ch[i] = -1;
       kind[i] = -1;
-      energy[i] = TMath::QuietNaN();
-      xf[i] = TMath::QuietNaN();
-      xn[i] = TMath::QuietNaN();
+      //energy[i] = TMath::QuietNaN();
+      //xf[i] = TMath::QuietNaN();
+      //xn[i] = TMath::QuietNaN();
    }
    
+	energy = TMath::QuietNaN();
+	xf = TMath::QuietNaN();
+	xn = TMath::QuietNaN();
+
    arr->Clear();
 
    for(int i = 0; i < 71; i++){
@@ -135,13 +219,19 @@ Bool_t Ana_Trace::Process(Long64_t entry)
 
 /**///===================================================== basic
    b_NumHits->GetEntry(entry);
+
+	if( NumHits < 3 ) return kTRUE;
+
    b_id->GetEntry(entry);
    b_pre_rise_energy->GetEntry(entry);
    b_post_rise_energy->GetEntry(entry);
 
    bool okFlag = false;
+   int countE = 0;
+   int countXF = 0;
+   int countXN = 0;
    for( int i = 0 ; i < NumHits; i++){
-      int map = id[i]-1010;
+		int map = id[i]-1010;
       int psd8Chan = id[i]%10; 
       ch[i] = idDetMap[map];
       kind[i] = idKindMap[map];
@@ -151,29 +241,42 @@ Bool_t Ana_Trace::Process(Long64_t entry)
          okFlag = true;
          switch(kind[i]){
             case 0: /* Energy signal */
-               energy[i] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               //energy[i] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               energy = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               countE ++;
                break;
             case 1: // XF
-               xf[i] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               //xf[i] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               xf = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               countXF ++;
                break;
             case 2: // XN
-               xn[i] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               //xn[i] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               xn = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/100.;
+               countXN ++;
                break;
          }
       }
    }
    
+   if( countE != 1 || countXF != 1 || countXN != 1 ) return kTRUE;
+   
    if( okFlag == false ) return kTRUE;
 /**///===================================================== trace 
    b_trace->GetEntry(entry);
    
+   int numTrace = 0;
    for( int i = 0; i < NumHits; i++){
+      
+      if( ch[i] < 0 || ch[i] > 2 ) break; 
+      
+      numTrace ++;
       gTrace = (TGraph*) arr->ConstructedAt(i);
       gTrace->Clear();
       //printf("============= %d \n", i);   
       
       double base = 0;
-      for( int j = 0; j < 150; j++){
+      for( int j = 0; j < traceLength; j++){
          //printf("%d, %f \n", j, trace[i][j]); 
          if( trace[i][j] < 16000){
             base = trace[i][j];
@@ -190,10 +293,10 @@ Bool_t Ana_Trace::Process(Long64_t entry)
 	   gFit->SetParameter(3, base);
       gFit->SetParameter(2, 1); //riseTime
 	      
-	   if( gTrace->Eval(120) < tBase[i] ) {
+	   if( gTrace->Eval(120) < base ) {
 	      gFit->SetRange(0, 100);
       }else{
-         gFit->SetRange(0, 140);
+         gFit->SetRange(0, traceLength);
       }
       
       if( gTrace->Eval(20) < tBase[i]){
@@ -209,16 +312,31 @@ Bool_t Ana_Trace::Process(Long64_t entry)
       tRiseTime[i] = gFit->GetParameter(2);
       tBase[i]     = gFit->GetParameter(3);
       tChiSq[i]    = gFit->GetChisquare()/gFit->GetNDF();
+      
+		switch(kind[i]){
+			case 0: /* Energy signal */
+				te = tEnergy[i];
+				break;
+			case 1: // XF
+				txf = tEnergy[i];
+				break;
+			case 2: // XN
+				txn = tEnergy[i];
+				break;
+		}
+      
    }
    
+   if( numTrace == 0 ) return kTRUE;
+   
    //#################################################################### Timer  
-   count++;
+   psdValidCount++;
    saveFile->cd(); //set focus on this file
    newTree->Fill();  
 
-   clock.Stop("timer");
-   Double_t time = clock.GetRealTime("timer");
-   clock.Start("timer");
+   gClock.Stop("timer");
+   Double_t time = gClock.GetRealTime("timer");
+   gClock.Start("timer");
 
    if ( !shown ) {
       if (fmod(time, 10) < 1 ){
@@ -228,7 +346,7 @@ Bool_t Ana_Trace::Process(Long64_t entry)
                TMath::Floor(time/60.), 
                time - TMath::Floor(time/60.)*60.,
                effEntry*time/(entry+1.)/60.);
-               shown = 1;
+			shown = 1;
       }
    }else{
       if (fmod(time, 10) > 9 ){
@@ -254,5 +372,5 @@ void Ana_Trace::Terminate()
    // the results graphically or save the results to file.
    newTree->Write();
    saveFile->Close();
-   printf("-------- saved as %s. count: %d ", "trace.root", count); 
+   printf("-------- saved as %s. psdValidCount: %d ", "trace.root", psdValidCount); 
 }

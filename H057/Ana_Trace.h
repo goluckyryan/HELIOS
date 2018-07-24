@@ -127,34 +127,6 @@ public :
 
    ClassDef(Ana_Trace,0);
    
-   //===========================================
-   TFile * saveFile; //!
-   TTree * newTree; //!
-   int totnumEntry; // of original root
-   
-   //clock   
-   TBenchmark clock;
-   Bool_t shown;
-   Int_t count;
-   
-   //tree
-   TClonesArray * arr ;//!
-   TGraph * gTrace; //!
-
-   int ch[71];   
-   int kind[71];
-   float energy[71];
-   float xf[71];
-   float xn[71];
-   
-   TF1 * gFit; //!
-   
-   double tBase[71];
-   double tEnergy[71];
-   double tTime[71];
-   double tRiseTime[71];
-   double tChiSq[71];
-   
 };
 
 #endif
@@ -214,39 +186,6 @@ void Ana_Trace::Init(TTree *tree)
    fChain->SetBranchAddress("baseline", baseline, &b_baseline);
    fChain->SetBranchAddress("trace_length", trace_length, &b_trace_length);
    fChain->SetBranchAddress("trace", trace, &b_trace);
-   
-   //============================================
-   totnumEntry = tree->GetEntries();
-   printf( "========== Make a new tree with trace, total Entry : %d \n", totnumEntry);
-
-   saveFile = new TFile( "trace.root","recreate");
-   newTree =  new TTree("tree","tree");
-
-   newTree->Branch("NumHits", &NumHits , "NumHits/I");
-   newTree->Branch("ch",             ch, "ch[NumHits]/I");
-   newTree->Branch("kind",         kind, "kind[NumHits]/I");
-   newTree->Branch("e",          energy, "energy[NumHits]/F");
-   newTree->Branch("xf",             xf, "xf[NumHits]/F");
-   newTree->Branch("xn",             xn, "xn[NumHits]/F");
-
-   arr = new TClonesArray("TGraph");
-   newTree->Branch("trace", arr, 256000);
-   arr->BypassStreamer();
-   
-	gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
-   
-   newTree->Branch("tBase",     tBase,     "tBase[NumHits]/D");
-   newTree->Branch("tEnergy",   tEnergy,   "tEnergy[NumHits]/D");
-   newTree->Branch("tTime",     tTime,     "tTime[NumHits]/D");
-   newTree->Branch("tRiseTime", tRiseTime, "tRiseTime[NumHits]/D");
-   newTree->Branch("tChiSq",    tChiSq,    "tChiSq[NumHits]/D");
-   
-   clock.Reset();
-   clock.Start("timer");
-   shown = 0;
-   count = 0;
-   
-   printf("====================== started \n");
 
 }
 
