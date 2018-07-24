@@ -12,12 +12,6 @@
 #include <TChain.h>
 #include <TFile.h>
 #include <TSelector.h>
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TClonesArray.h>
-#include <TBenchmark.h>
-#include <TMath.h>
-#include <TF1.h>
 
 // Header file for the classes stored in the TTree if any.
 

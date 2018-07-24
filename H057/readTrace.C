@@ -31,35 +31,17 @@ void readTrace(){
    tree->GetBranch("trace")->SetAutoDelete(kFALSE);
    tree->SetBranchAddress("trace", &arr);
    
-   double tBase[20];
-   double tChisq[20];
-   double tEnergy[20];
-   double tTime[20];
-   double tRiseTime[20];
-   int ch[20];
-   int kind[20];
-   int numHit;
    int eventID;
-   float energy, xf, xn;
+   float e[24], xf[24], xn[24];
    
-   tree->SetBranchAddress("tBase",     tBase);  
-   tree->SetBranchAddress("tEnergy",   tEnergy);  
-   tree->SetBranchAddress("tTime",     tTime);
-   tree->SetBranchAddress("tRiseTime", tRiseTime);    
-   tree->SetBranchAddress("tChiSq",    tChisq);   
-   tree->SetBranchAddress("ch",        ch);    
-   tree->SetBranchAddress("kind",      kind);   
-   tree->SetBranchAddress("NumHits",   &numHit);
    tree->SetBranchAddress("eventID",   &eventID);
-   tree->SetBranchAddress("e",         &energy);
-   tree->SetBranchAddress("xf",        &xf);
-   tree->SetBranchAddress("xn",        &xn);
+   tree->SetBranchAddress("e",         e);
+   tree->SetBranchAddress("xf",        xf);
+   tree->SetBranchAddress("xn",        xn);
 
 	char s [1] ;
 	char b [1] ;
 	b[0] = '1';
-
-	//TF1 * fit = new TF1("fit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 100);
 
    TLine timeVLine;
 
@@ -68,46 +50,40 @@ void readTrace(){
       arr->Clear();
       tree->GetEntry(ev);
       
-      //tree->Show(ev);
-      
-      
-      printf("========= ev: %d, #trace: %d , numHit: %d, (e, xf, xn) = (%7.2f, %7.2f, %7.2f)\n", 
-                    eventID, arr->GetEntriesFast(), numHit, energy, xf, xn);
+      for( int i = 0; i < 24; i++){
+         if( TMath::IsNaN(e[i]) ) continue;    
+         printf("========= ev: %d, #trace: %d , (e, xf, xn) = (%7.2f, %7.2f, %7.2f)\n", 
+                    eventID, arr->GetEntriesFast(), e[i], xf[i], xn[i]);
+      }
+
       for( int j = 0; j < arr->GetEntriesFast() ; j++){
 
          TGraph * g  = (TGraph*) arr->At(j);
-         //TF1 * gFit = (TF1 *) g->FindObject("gFit");
-         //double base, time, riseTime, energy;
-         //energy   = gFit->GetParameter(0);
-         //time     = gFit->GetParameter(1);
-         //riseTime = gFit->GetParameter(2);
-         //base     = gFit->GetParameter(3);
+         TF1 * gFit = (TF1 *) g->FindObject("gFit");
+         double base, time, riseTime, energy;
+         energy   = gFit->GetParameter(0);
+         time     = gFit->GetParameter(1);
+         riseTime = gFit->GetParameter(2);
+         base     = gFit->GetParameter(3);
+         int kind = gFit->GetLineColor();
          
          TString gTitle;
-         gTitle.Form("event : %d[%d],ch:%d, kind:%2d, base: %5.1f, time: %5.2f ch, rise: %5.3f ch, energy: %6.1f | chi2: %6.2f", 
-                       ev, j, ch[j], kind[j], tBase[j], tTime[j], tRiseTime[j], tEnergy[j], tChisq[j]);
+         gTitle.Form("kind: %d, base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f ",
+                  kind, base, time, riseTime, energy);
+         
          printf("%s", gTitle.Data());
          g->SetTitle(gTitle);
         
-         timeVLine.SetX1(tTime[j]);
-         timeVLine.SetX2(tTime[j]);
+         timeVLine.SetX1(time);
+         timeVLine.SetX2(time);
          timeVLine.SetY1(-1000);
          timeVLine.SetY2(20000);
          timeVLine.SetLineColor(4);
-         timeVLine.Draw("same");
-         
-         //double base = g->Eval(1);
-         //double height = g->Eval(80) - base;
-         //fit->SetParameter(3, base);
-         //fit->SetParameter(1, 50);
-         //fit->SetParameter(2, 1);
-         //fit->SetParameter(0, height);
-         //
-         //g->Fit("fit", "R");
          
          cRead->cd(1);
          cRead->Clear();
          g->Draw("");
+         timeVLine.Draw("same");
          cRead->Update();
          
          gets(s);    
