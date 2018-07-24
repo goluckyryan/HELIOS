@@ -33,11 +33,13 @@ void readTrace(){
    
    int eventID;
    float e[24], xf[24], xn[24];
+   float te[24];
    
    tree->SetBranchAddress("eventID",   &eventID);
    tree->SetBranchAddress("e",         e);
    tree->SetBranchAddress("xf",        xf);
    tree->SetBranchAddress("xn",        xn);
+   tree->SetBranchAddress("te",        te);
 
 	char s [1] ;
 	char b [1] ;
@@ -50,29 +52,42 @@ void readTrace(){
       arr->Clear();
       tree->GetEntry(ev);
       
+      bool nextFlag = true;
+      
       for( int i = 0; i < 24; i++){
          if( TMath::IsNaN(e[i]) ) continue;    
-         printf("========= ev: %d, #trace: %d , (e, xf, xn) = (%7.2f, %7.2f, %7.2f)\n", 
-                    eventID, arr->GetEntriesFast(), e[i], xf[i], xn[i]);
+         if( te[i] < 1000 ){
+            nextFlag = false;
+         }
+         printf("========= ev: %d, #trace: %d , (e, xf, xn , te[i]) = (%7.2f, %7.2f, %7.2f, %7.2f)\n", 
+                    eventID, arr->GetEntriesFast(), e[i], xf[i], xn[i], te[i]);
+        
       }
-
+      
+      if( nextFlag ) continue;
+      
       for( int j = 0; j < arr->GetEntriesFast() ; j++){
 
          TGraph * g  = (TGraph*) arr->At(j);
+         
          TF1 * gFit = (TF1 *) g->FindObject("gFit");
-         double base, time, riseTime, energy;
+         double base, time, riseTime, energy, chiSq;
          energy   = gFit->GetParameter(0);
          time     = gFit->GetParameter(1);
          riseTime = gFit->GetParameter(2);
          base     = gFit->GetParameter(3);
+         chSq     = gFit->GetChisquare()/gFit->GetNDF();
          int kind = gFit->GetLineColor();
          
+         if( kind == 9 || energy > 1000) continue;
+         
          TString gTitle;
-         gTitle.Form("kind: %d, base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f ",
-                  kind, base, time, riseTime, energy);
+         gTitle.Form("kind: %d, base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
+                  kind, base, time, riseTime, energy, chSq, TMath::Sqrt(chSq)/energy);
          
          printf("%s", gTitle.Data());
          g->SetTitle(gTitle);
+        
         
          timeVLine.SetX1(time);
          timeVLine.SetX2(time);
@@ -80,9 +95,12 @@ void readTrace(){
          timeVLine.SetY2(20000);
          timeVLine.SetLineColor(4);
          
+         
          cRead->cd(1);
          cRead->Clear();
          g->Draw("");
+         g->GetXaxis()->SetRangeUser(0, 100);
+         g->GetYaxis()->SetRangeUser(7500, 9000);
          timeVLine.Draw("same");
          cRead->Update();
          
@@ -95,4 +113,16 @@ void readTrace(){
       if( breakFlag ) break;
    }
 
+/*
+   TH2F * hEE = new TH2F("hEE", "jj; e(trace); e(digit)", 500, 0, 8000, 500, 0, 8000);
+   for( int ev = 0; ev < totnumEntry; ev++){
+      tree->GetEntry(ev);
+      for( int i = 0; i < 24; i++){
+         if( TMath::IsNaN(te[i]) || TMath::IsNaN(e[i]) ) continue;  
+         hEE->Fill(te[i] , e[i]);
+      }
+   }
+   hEE->Draw();
+   
+*/   
 }

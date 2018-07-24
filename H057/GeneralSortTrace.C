@@ -62,6 +62,7 @@ ULong64_t NumEntries = 0;
 ULong64_t ProcessedEntries = 0;
 
 bool isTraceON = true;
+int traceMethod = 1; // 0 = no process, 1, fit, 2, constant fraction 
 int traceLength = 200;
 
 bool isTACRF = true;
@@ -74,8 +75,9 @@ TClonesArray * arr ;//!
 TGraph * gTrace; //!
 TF1 * gFit; //!
 
-double te_t[24];
-double ttac_t;
+float te[24];
+float te_t[24];
+float ttac_t;
 
 //PSD struct
 typedef struct {
@@ -116,7 +118,7 @@ void GeneralSortTrace::Begin(TTree * tree)
    printf( "  Recoil : %s \n", isRecoil ? "On" : "Off");
    printf( "  Elum   : %s \n", isElum ?   "On" : "Off");
    printf( "  EZero  : %s \n", isEZero ?  "On" : "Off");
-   printf( "  Trace  : %s \n", isTraceON ?  "On" : "Off");
+   printf( "  Trace  : %s , Method: %d \n", isTraceON ?  "On" : "Off", traceMethod);
 
    saveFile = new TFile("trace.root","RECREATE");
    newTree = new TTree("tree","PSD Tree w/ trace");
@@ -157,8 +159,9 @@ void GeneralSortTrace::Begin(TTree * tree)
       arr->BypassStreamer();
       
 	   gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
-      newTree->Branch("te_t",    te_t,  "te_t[24]/D");
-      newTree->Branch("ttac_t",    &ttac_t,  "ttac_t/D");
+      newTree->Branch("te",             te,  "te[24]/F");
+      newTree->Branch("te_t",         te_t,  "te_t[24]/F");
+      newTree->Branch("ttac_t",    &ttac_t,  "ttac_t/F");
    }
    
    gClock.Reset();
@@ -206,6 +209,7 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
    
    if( isTraceON ){
       for(int i = 0; i < 24; i++){
+         te[i]  = TMath::QuietNaN();
          te_t[i] = TMath::QuietNaN();
       }
       ttac_t = TMath::QuietNaN();
@@ -330,35 +334,48 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
          countTrace ++;
          
          //Set gTrace
-         double base = 0;
-         for( int j = 0; j < traceLength; j++){ 
-            if( trace[i][j] < 16000){
-               base = trace[i][j];
+         
+         if( traceMethod == 0 ){
+            for ( int j = 0 ; j < 300; j++){
                gTrace->SetPoint(j, j, trace[i][j]);
-            }else{
-               gTrace->SetPoint(j, j, base);
             }
+            continue;
          }
          
-         //Set gFit
-         gFit->SetLineColor(idKind == 0 ? 2 : idKind);
-         gFit->SetRange(0, traceLength);
+         if( traceMethod == 1){
+            double base = 0;
+            for( int j = 0; j < traceLength; j++){ 
+               if( trace[i][j] < 16000){
+                  base = trace[i][j];
+                  gTrace->SetPoint(j, j, trace[i][j]);
+               }else{
+                  gTrace->SetPoint(j, j, base);
+               }
+            }
+            
+            //Set gFit
+            gFit->SetLineColor(idKind == 0 ? 2 : idKind);
+            gFit->SetRange(0, traceLength);
 
-         base = gTrace->Eval(1);
-         double temp = gTrace->Eval(80) - base;
+            base = gTrace->Eval(1);
+            double temp = gTrace->Eval(80) - base;
 
-         gFit->SetParameter(0, temp); //energy
-         gFit->SetParameter(1, 50); // time
-         gFit->SetParameter(2, 1); //riseTime
-         gFit->SetParameter(3, base);
+            gFit->SetParameter(0, temp); //energy
+            gFit->SetParameter(1, 50); // time
+            gFit->SetParameter(2, 1); //riseTime
+            gFit->SetParameter(3, base);
 
-         if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
-         if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
+            if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
+            if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
 
-         gTrace->Fit("gFit", "qR");
+            gTrace->Fit("gFit", "qR");
+         }
          
          switch (idKind) {
-            case 0 : te_t[idDet] = gFit->GetParameter(1); break;
+            case 0 : 
+               te[idDet] = gFit->GetParameter(0);
+               te_t[idDet] = gFit->GetParameter(1); 
+               break;
             case 9 : ttac_t        = gFit->GetParameter(1); break; 
          }
       
