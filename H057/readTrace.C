@@ -56,7 +56,7 @@ void readTrace(){
       
       for( int i = 0; i < 24; i++){
          if( TMath::IsNaN(e[i]) ) continue;    
-         if( te[i] < 1000 ){
+         if( e[i] > 8000 ){
             nextFlag = false;
          }
          printf("========= ev: %d, #trace: %d , (e, xf, xn , te[i]) = (%7.2f, %7.2f, %7.2f, %7.2f)\n", 
@@ -71,36 +71,37 @@ void readTrace(){
          TGraph * g  = (TGraph*) arr->At(j);
          
          TF1 * gFit = (TF1 *) g->FindObject("gFit");
-         double base, time, riseTime, energy, chiSq;
-         energy   = gFit->GetParameter(0);
-         time     = gFit->GetParameter(1);
-         riseTime = gFit->GetParameter(2);
-         base     = gFit->GetParameter(3);
-         chSq     = gFit->GetChisquare()/gFit->GetNDF();
-         int kind = gFit->GetLineColor();
-         
-         if( kind == 9 || energy > 1000) continue;
-         
-         TString gTitle;
-         gTitle.Form("kind: %d, base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
-                  kind, base, time, riseTime, energy, chSq, TMath::Sqrt(chSq)/energy);
-         
-         printf("%s", gTitle.Data());
-         g->SetTitle(gTitle);
-        
-        
-         timeVLine.SetX1(time);
-         timeVLine.SetX2(time);
-         timeVLine.SetY1(-1000);
-         timeVLine.SetY2(20000);
-         timeVLine.SetLineColor(4);
-         
+         if( gFit != NULL ){ 
+            double base, time = 0, riseTime, energy, chiSq;
+            energy   = gFit->GetParameter(0);
+            time     = gFit->GetParameter(1);
+            riseTime = gFit->GetParameter(2);
+            base     = gFit->GetParameter(3);
+            chSq     = gFit->GetChisquare()/gFit->GetNDF();
+            int kind = gFit->GetLineColor();
+            
+            if( kind == 9 ) continue;
+            
+            TString gTitle;
+            gTitle.Form("kind: %d, base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
+                     kind, base, time, riseTime, energy, chSq, TMath::Sqrt(chSq)/energy);
+            
+            printf("%s", gTitle.Data());
+            g->SetTitle(gTitle);
+           
+           
+            timeVLine.SetX1(time);
+            timeVLine.SetX2(time);
+            timeVLine.SetY1(-1000);
+            timeVLine.SetY2(20000);
+            timeVLine.SetLineColor(4);
+         }
          
          cRead->cd(1);
          cRead->Clear();
          g->Draw("");
-         g->GetXaxis()->SetRangeUser(0, 100);
-         g->GetYaxis()->SetRangeUser(7500, 9000);
+         g->GetXaxis()->SetRangeUser(0, 200);
+         g->GetYaxis()->SetRangeUser(7500, 35000);
          timeVLine.Draw("same");
          cRead->Update();
          

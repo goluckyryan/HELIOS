@@ -75,9 +75,11 @@ TClonesArray * arr ;//!
 TGraph * gTrace; //!
 TF1 * gFit; //!
 
-float te[24];
-float te_t[24];
+float te[24];    // energy from trace
+float te_r[24];  // rising time from frace
+float te_t[24];  // time
 float ttac_t;
+float ttac_r;
 
 //PSD struct
 typedef struct {
@@ -160,8 +162,10 @@ void GeneralSortTrace::Begin(TTree * tree)
       
 	   gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
       newTree->Branch("te",             te,  "te[24]/F");
+      newTree->Branch("te_r",         te_r,  "te_r[24]/F");
       newTree->Branch("te_t",         te_t,  "te_t[24]/F");
       newTree->Branch("ttac_t",    &ttac_t,  "ttac_t/F");
+      newTree->Branch("ttac_r",    &ttac_r,  "ttac_r/F");
    }
    
    gClock.Reset();
@@ -210,6 +214,7 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
    if( isTraceON ){
       for(int i = 0; i < 24; i++){
          te[i]  = TMath::QuietNaN();
+         te_r[i]  = TMath::QuietNaN();
          te_t[i] = TMath::QuietNaN();
       }
       ttac_t = TMath::QuietNaN();
@@ -354,7 +359,7 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             }
             
             //Set gFit
-            gFit->SetLineColor(idKind == 0 ? 2 : idKind);
+            gFit->SetLineColor(idKind < 9 ? idKind+1 : idKind);
             gFit->SetRange(0, traceLength);
 
             base = gTrace->Eval(1);
@@ -368,17 +373,20 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
             if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
 
-            gTrace->Fit("gFit", "qR");
+            gTrace->Fit("gFit", "qR0");
          }
          
          switch (idKind) {
             case 0 : 
-               te[idDet] = gFit->GetParameter(0);
-               te_t[idDet] = gFit->GetParameter(1); 
+               te[idDet]   = gFit->GetParameter(0);
+               te_t[idDet] = gFit->GetParameter(1);
+               te_r[idDet] = gFit->GetParameter(2);
                break;
-            case 9 : ttac_t        = gFit->GetParameter(1); break; 
+            case 9 : 
+               ttac_t = gFit->GetParameter(1);
+               ttac_r = gFit->GetParameter(2);
+               break; 
          }
-      
       } // End NumHits Loop
    }// end of trace
 
@@ -386,7 +394,7 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
    /************************************************************************/
    saveFile->cd(); //set focus on this file
    newTree->Fill();  
-
+   
    gClock.Stop("timer");
    Double_t time = gClock.GetRealTime("timer");
    gClock.Start("timer");
@@ -399,7 +407,8 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
                TMath::Floor(time/60.), 
                time - TMath::Floor(time/60.)*60.,
                EffEntries*time/(entry+1.)/60.);
-               shown = 1;
+         shown = 1;
+         newTree->Write();
       }
    }else{
       if (fmod(time, 10) > 9 ){
