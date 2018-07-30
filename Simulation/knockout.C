@@ -6,6 +6,7 @@
 #include "TF1.h"
 #include "TTree.h"
 #include "TRandom.h"
+#include "TClonesArray.h"
 #include <vector>
 #include <fstream>
 
@@ -26,7 +27,7 @@ void knockout(){
    double maxkb = 200.;
    
    //---- beam
-   double KEAmean = 290; // MeV/u 
+   double KEAmean = 300; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
@@ -48,7 +49,7 @@ void knockout(){
    string separationFile = "separation_energies.txt";
    
    //---- save root file name
-   TString saveFileName = "test_k.root";
+   TString saveFileName = "knockout.root";
    
    //---- Auxiliary setting
    bool isTargetScattering = false;
@@ -176,7 +177,7 @@ void knockout(){
 
    double ExA;
    int ExAID;
-   double KEA, KEAnew, theta, phi;
+   double KEA, KEAscattered, theta, phi;
    
    double mB,mb;
 
@@ -212,12 +213,23 @@ void knockout(){
    
    tree->Branch("ExAID", &ExAID, "ExAID/I");
    tree->Branch("KEA", &KEA, "KEA/D");
-   tree->Branch("KEAnew", &KEAnew, "KEAnew/D");
+   tree->Branch("KEAscattered", &KEAscattered, "KEAscattered/D");
    tree->Branch("theta", &theta, "theta/D");
    tree->Branch("phi", &phi, "phi/D");
 
    tree->Branch("mB", &mB, "mB/D");
    tree->Branch("mb", &mb, "mb/D");
+   
+   TClonesArray * arr = new TClonesArray("TLorentzVector");
+   tree->Branch("fourVect", arr, 256000);
+   arr->BypassStreamer();
+   
+   TClonesArray * arrN = new TClonesArray("TLorentzVector");
+   tree->Branch("fourVectN", arrN, 256000);
+   arrN->BypassStreamer();
+   
+   TLorentzVector* fourVector = NULL;
+  
 
 /*
    tree->Branch("hit", &hit, "hit/I");
@@ -287,8 +299,8 @@ void knockout(){
             depth = targetThickness * gRandom->Rndm();
             msA.SetTarget(density, depth); 
             TLorentzVector PAnew = msA.Scattering(PA);
-            KEAnew = msA.GetKE()/AA;
-            reaction.SetIncidentEnergyAngle(KEAnew, theta, phi);
+            KEAscattered = msA.GetKE()/AA;
+            reaction.SetIncidentEnergyAngle(KEAscattered, theta, phi);
          }*/
          
          //==== Calculate reaction
@@ -302,7 +314,10 @@ void knockout(){
          reaction.SetBSpk(Sp, kb, thetab, phib);
          reaction.CalReactionConstant(isNormalKinematics);
          reaction.Event(thetaNN, phiNN);
-      
+
+         TLorentzVector PA = reaction.GetPA();
+         TLorentzVector Pa = reaction.GetPa();
+               
          TLorentzVector P1 = reaction.GetP1();
          TLorentzVector P2 = reaction.GetP2();
          TLorentzVector Pb = reaction.GetPb();
@@ -351,6 +366,35 @@ void knockout(){
          
          mB = PB.M();
          mb = Pb.M();
+         
+         
+         TVector3 bA = PA.BoostVector();
+            
+         for(int i = 0; i < 6 ; i++){
+            TLorentzVector temp;
+            double xyzt[4];
+            switch(i){
+               case 0: temp = PA; break;
+               case 1: temp = Pa; break;
+               case 2: temp = P1; break;
+               case 3: temp = P2; break;
+               case 4: temp = PB; break;
+               case 5: temp = Pb; break;
+            }
+            
+            temp.GetXYZT(xyzt);
+            
+            fourVector = (TLorentzVector*) arr->ConstructedAt(i);
+            fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
+            
+            //into normal kinematic
+            temp.Boost(-bA);  
+            temp.GetXYZT(xyzt);
+            
+            fourVector = (TLorentzVector*) arrN->ConstructedAt(i);
+            fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
+            
+         }
          /*
          //==== Helios
          hit = helios.CalHit(Pb, zb, PB, zB);
