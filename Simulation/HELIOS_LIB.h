@@ -914,9 +914,9 @@ public:
       
       AB = AA + Aa - A1 - A2;
       ZB = ZA + Za - Z1 - Z2;
-      Isotope temp(AB,ZB);
-      mB0 = temp.Mass;
-      nameB = temp.Name;
+      Isotope temp2(AB,ZB);
+      mB0 = temp2.Mass;
+      nameB = temp2.Name;
       
    }
    

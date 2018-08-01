@@ -77,7 +77,7 @@ void knockout(){
    
    printf("===================================================\n");
    printf("=========== %s ===========\n", reaction.GetReactionName().Data());
-   printf("=========== KE: %9.4f +- %5.4f MeV/u, dp/p = %5.2f \% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
+   printf("=========== KE: %9.4f +- %5.4f MeV/u, dp/p = %5.2f %% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
    printf("======== theta: %9.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
    printf("===================================================\n");
 
@@ -187,8 +187,6 @@ void knockout(){
    int loop, detID;
    double dphi, rho;
 
-
-/*
    double rhoHit, rhoBHit; // rhoHit = radius of particle-b hit on z-pos of recoil detector
    double decayTheta; // the change of thetaB due to decay 
    double xHit, yHit;
@@ -289,9 +287,10 @@ void knockout(){
          
          KEA = 50.*gRandom->Integer(10);
          
+         reaction.SetIncidentEnergyAngle(KEA, theta, 0.);
+
          /*
          //For target scattering
-         reaction.SetIncidentEnergyAngle(KEA, theta, 0.);
          reaction.CalIncidentChannel(isNormalKinematics); // but only need is PA
          TLorentzVector PA = reaction.GetPA();            
          
