@@ -32,7 +32,7 @@ void knockout(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000;
+   int numEvent = 1000000;
    
    //---- HELIOS detector geometry
    //string heliosDetGeoFile = "detectorGeo_upstream.txt";
@@ -286,6 +286,8 @@ void knockout(){
          }else{
             theta = gRandom->Gaus(thetaMean, thetaSigma);
          }
+         
+         KEA = 50.*gRandom->Integer(10);
          
          /*
          //For target scattering
