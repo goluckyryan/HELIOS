@@ -59,13 +59,14 @@ Bool_t shown = 0;
 TFile *saveFile; //!
 TTree *newTree; //!
 
-ULong64_t MaxProcessedEntries=10000;
+ULong64_t MaxProcessedEntries=1000000;
 int EffEntries;
 ULong64_t NumEntries = 0;
 ULong64_t ProcessedEntries = 0;
 
 bool isTraceON = true;
-int traceMethod = 1; // 0 = no process, 1, fit, 2, constant fraction 
+bool isSaveTrace = false;
+int traceMethod = 1; //0 = no process, 1, fit, 2, constant fraction 
 int traceLength = 200;
 
 bool isTACRF = true;
@@ -129,7 +130,7 @@ void GeneralSortTrace::Begin(TTree * tree)
    printf( "  Recoil : %s \n", isRecoil ? "On" : "Off");
    printf( "  Elum   : %s \n", isElum ?   "On" : "Off");
    printf( "  EZero  : %s \n", isEZero ?  "On" : "Off");
-   printf( "  Trace  : %s , Method: %d \n", isTraceON ?  "On" : "Off", traceMethod);
+   printf( "  Trace  : %s , Method: %d, Save: %s \n", isTraceON ?  "On" : "Off", traceMethod, isSaveTrace? "Yes": "No:");
 
    saveFile = new TFile("trace.root","RECREATE");
    newTree = new TTree("tree","PSD Tree w/ trace");
@@ -165,8 +166,11 @@ void GeneralSortTrace::Begin(TTree * tree)
    }
    if( isTraceON ){
       arr = new TClonesArray("TGraph");
-      newTree->Branch("trace", arr, 256000);
-      arr->BypassStreamer();
+         
+      if( isSaveTrace){
+         newTree->Branch("trace", arr, 256000);
+         arr->BypassStreamer();
+      }
       
       if( traceMethod > 0 ){
 	      gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
@@ -262,15 +266,14 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
    Int_t idDet   = -1; // Detector number
    
    /* -- Loop over NumHits -- */
-   for(Int_t i=0;i<NumHits;i++) {
-      Int_t psd8Chan = id[i]%10;     
+   for(Int_t i=0;i<NumHits;i++) {    
       Int_t idTemp   = id[i] - idConst;
       idDet  = idDetMap[idTemp];
       idKind = idKindMap[idTemp];
       
       //PSD
       /***********************************************************************/
-      if( (id[i] > 1000 && id[i] < 2000) && psd8Chan<8 &&  idDet>-1 ) {
+      if( (id[i] > 1000 && id[i] < 2000) &&  30> idDet && idDet>-1 ) {
          
          switch(idKind){
             case 0: /* Energy signal */
@@ -414,7 +417,7 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
             if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
 
-            gTrace->Fit("gFit", "qR");
+            gTrace->Fit("gFit", "qR0");
          
             double rise, time;
             if( 30 > idDet && idDet >= 0 && idKind == 0 ) {

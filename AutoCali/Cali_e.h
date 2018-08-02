@@ -81,7 +81,7 @@ public :
    Int_t eventID;
    Int_t run;
    Float_t eC[24];
-   Float_t eC_t[24];
+   ULong64_t eC_t[24];
    Float_t x[24]; // unadjusted position, range (-1,1)
    Float_t z[24]; 
    int det;
@@ -91,6 +91,10 @@ public :
    Float_t thetaCM;
    Float_t Ex;   
    Float_t thetaLab;
+   
+   Float_t rdtC[8];
+   ULong64_t rdtC_t[8];
+   ULong64_t coin_t; // when zMultiHit == 1 and rdtC_t(max(rdtC))
    
    Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb 
    Float_t tacS; 
@@ -190,11 +194,14 @@ void Cali_e::Init(TTree *tree)
    newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
    newTree->Branch("thetaLab", &thetaLab, "thetaLab/F");
    
-   newTree->Branch("e_t", eC_t, "e_t[24]/F");
+   newTree->Branch("e_t", eC_t, "e_t[24]/l");
+   
+   newTree->Branch("rdt", rdtC, "rdtC[8]/F");
+   newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/l");
+   
+   newTree->Branch("coin_t", &coin_t, "coin_t/l");
    
    /*
-   newTree->Branch("rdt", rdtC, "rdtC[8]/F");
-   newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/F");
    newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
    newTree->Branch("tac", tacC, "tacC[6]/F");
    newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F"); 

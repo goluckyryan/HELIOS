@@ -72,7 +72,7 @@ Bool_t Cali_e::Process(Long64_t entry)
       eC[i]    = TMath::QuietNaN();
       x[i]     = TMath::QuietNaN();
       z[i]     = TMath::QuietNaN();
-      eC_t[i]  = TMath::QuietNaN();
+      eC_t[i]  = 0;
    }
    
    det = -4;
@@ -82,6 +82,12 @@ Bool_t Cali_e::Process(Long64_t entry)
    Ex  = TMath::QuietNaN();
    thetaCM  = TMath::QuietNaN();
    thetaLab  = TMath::QuietNaN();
+   
+   for(int i = 0; i < 8 ; i++){
+      rdtC[i] = TMath::QuietNaN();
+      rdtC_t[i] = 0;
+   }
+   coin_t = 0;
 
    ddt = TMath::QuietNaN(); // H060
    ddt_t = TMath::QuietNaN(); // H060
@@ -107,7 +113,13 @@ Bool_t Cali_e::Process(Long64_t entry)
    }
    if( !rdt_energy ) return kTRUE;
    */
+   
+   for(int i = 0 ; i < 8 ; i++){
+      rdtC[i]   = rdt[i];
+      rdtC_t[i] = rdt_t[i]; 
+   }
 
+   ULong64_t eTime = 0; //this will be the time for Ex valid
    for(int idet = 0 ; idet < numDet; idet++){
       
       if( e[idet] > 0 ){
@@ -156,8 +168,9 @@ Bool_t Cali_e::Process(Long64_t entry)
             Ex = TMath::QuietNaN();
             thetaCM = TMath::QuietNaN();
             thetaLab = TMath::QuietNaN();
-         }else{
             
+         }else{
+         
             double y = eC[idet] + mass;
             Z = alpha * gamma * beta * z[idet];
             H = TMath::Sqrt(TMath::Power(gamma * beta,2) * (y*y - mass * mass) ) ;
@@ -195,6 +208,8 @@ Bool_t Cali_e::Process(Long64_t entry)
                 
                 thetaLab = TMath::ATan(pt/pp) * TMath::RadToDeg();
                 
+                eTime = eC_t[idet];
+                
               }else{
                 Ex = TMath::QuietNaN();
                 thetaCM = TMath::QuietNaN();
@@ -216,6 +231,21 @@ Bool_t Cali_e::Process(Long64_t entry)
       ddt = elum[0];
       ddt_t = elum_t[0]/1e8; //sec
       tacS = tac[0];
+   }
+   
+   //for coincident time bewteen array and rdt
+   if( zMultiHit == 1 ) {
+      ULong64_t rdtTime = 0;
+      Float_t rdtQ = 0;
+      for(int i = 0; i < 8 ; i++){
+         if( rdt[i] > rdtQ ) {
+            rdtQ = rdt[i];
+            rdtTime = rdt_t[i];
+         }
+      }
+      
+      coin_t = eTime - rdtTime;
+      
    }
    
    //if( zMultiHit == 0 ) return kTRUE;

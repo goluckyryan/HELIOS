@@ -115,7 +115,7 @@ void GeneralSortTrace::Begin(TTree * tree)
    printf( "=====================================================\n");
    printf( "==========  General Sort w/ Trace  ==================\n");
    printf( "=====================================================\n");
-   printf( "========== Make a new tree with trace, total Entry : %d, use : %d\n", NumEntries, EffEntries);
+   printf( "========== Make a new tree with trace, total Entry : %d, use : %d [%4.1f%]\n", NumEntries, EffEntries, EffEntries*100./NumEntries);
    printf( "  TAC/RF : %s \n", isTACRF ?  "On" : "Off");
    printf( "  Recoil : %s \n", isRecoil ? "On" : "Off");
    printf( "  Elum   : %s \n", isElum ?   "On" : "Off");
@@ -376,10 +376,15 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             gTrace->Fit("gFit", "qR0");
          }
          
+         double rise, time;
+         
          switch (idKind) {
             case 0 : 
                te[idDet]   = gFit->GetParameter(0);
-               te_t[idDet] = gFit->GetParameter(1);
+               rise = gFit->GetParameter(2);
+               time = gFit->GetParameter(1);
+                
+               te_t[idDet] = time - rise.;
                te_r[idDet] = gFit->GetParameter(2);
                break;
             case 9 : 
