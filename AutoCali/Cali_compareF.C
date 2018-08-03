@@ -184,7 +184,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    expTree->SetBranchAddress("hitID", &hitIDTemp);
    
    TObjArray * fxList = (TObjArray*) refFile->FindObjectAny("fxList");
-   int numFx = fxList->GetEntries()-1;
+   int numFx = fxList->GetEntries();
    TGraph ** fx = new TGraph *[numFx];
    for( int i = 0; i < numFx ; i++){
       fx[i] = (TGraph*) fxList->At(i);

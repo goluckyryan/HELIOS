@@ -14,7 +14,7 @@
 
 void Check_alignment(){ 
 
-   const char* rootfileAlpha="A_H052_Mg25.root";
+   const char* rootfileAlpha="A_gen_run107.root";
    const char* rootfileSim="transfer.root";
    
    double eRange[3] = {200, 0, 10};

@@ -30,20 +30,20 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 
 void Check_e_z(){  
 /**///======================================================== User input
-   const char* rootfile="A_gen_run30.root"; const char* treeName="tree";
+   const char* rootfile="A_gen_run107.root"; const char* treeName="tree";
    const char* simfile="transfer.root"; const char* treeNameS="tree";
 
    int Div[2] = {6,4};  //x,y
    
-   double ExRange[3] = {200, -1, 4};
+   double ExRange[3] = {200, -1, 10};
 	double eRange[3]  = {400, 0, 10};
    
-   bool showFx = false;
+   bool showFx = true;
    bool showTx = false;
 
    TString drawOption ="colz"; 
    
-   TString detGate = "detID%6 < 5";
+   TString detGate = "detID%6 < 6 && !(800> coin_t && coin_t > 2)";
 
 /**///======================================================== read tree   
    printf("################### Check_e_z.C ######################\n");
@@ -201,11 +201,11 @@ void Check_e_z(){
    printf("============= Fit.....");
    printf(" found %d peaks \n", nPeaks);
    
-   //float * xpos =  peak->GetPositionX();
-   //float * ypos =  peak->GetPositionY();
+   float * xpos =  peak->GetPositionX();
+   float * ypos =  peak->GetPositionY();
 	// in root-6, 
-   double * xpos = peak->GetPositionX();
-   double * ypos = peak->GetPositionY();
+   //double * xpos = peak->GetPositionX();
+   //double * ypos = peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );
@@ -266,7 +266,7 @@ void Check_e_z(){
    
    if( showFx ) {
       TObjArray * fxList = (TObjArray*) file1->FindObjectAny("fxList");
-      int numFx = fxList->GetEntries()-1;
+      int numFx = fxList->GetEntries();
       for( int i = 0; i < numFx ; i++){
          fxList->At(i)->Draw("same");
       }
@@ -285,7 +285,7 @@ void Check_e_z(){
    
    if( showTx ) {
       TObjArray * txList = (TObjArray*)  file1->FindObjectAny("txList");
-      int numFx = txList->GetEntries()-1;
+      int numFx = txList->GetEntries();
       for( int i = 0; i < numFx ; i++){
          txList->At(i)->Draw("same");
       }

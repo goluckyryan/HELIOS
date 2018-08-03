@@ -101,18 +101,19 @@ Bool_t Cali_e::Process(Long64_t entry)
    b_XN->GetEntry(entry,0);
    b_RDT->GetEntry(entry,0);
    b_EnergyTimestamp->GetEntry(entry,0);
+   b_RDTTimestamp->GetEntry(entry,0);
    
    b_ELUM->GetEntry(entry, 0); // for H060_208Pb
    b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
    b_TAC->GetEntry(entry,0);
    
-   /*//=========== gate
+   //=========== gate
    bool rdt_energy = false;
    for( int rID = 0; rID < 8; rID ++){
       if( rdt[rID] > 5000 ) rdt_energy = true; 
    }
    if( !rdt_energy ) return kTRUE;
-   */
+   
    
    for(int i = 0 ; i < 8 ; i++){
       rdtC[i]   = rdt[i];
@@ -123,8 +124,8 @@ Bool_t Cali_e::Process(Long64_t entry)
    for(int idet = 0 ; idet < numDet; idet++){
       
       if( e[idet] > 0 ){
-         eC[idet] = e[idet]/eCorr[idet][0] + eCorr[idet][1];  
-         eC_t[idet] = e_t[idet]/1e8; // into sec
+         eC[idet]   = e[idet]/eCorr[idet][0] + eCorr[idet][1];  
+         eC_t[idet] = e_t[idet]; // ch
       }
       
       double xfC = 0, xnC = 0;
@@ -171,6 +172,8 @@ Bool_t Cali_e::Process(Long64_t entry)
             
          }else{
          
+            eTime = eC_t[idet];
+         
             double y = eC[idet] + mass;
             Z = alpha * gamma * beta * z[idet];
             H = TMath::Sqrt(TMath::Power(gamma * beta,2) * (y*y - mass * mass) ) ;
@@ -208,8 +211,6 @@ Bool_t Cali_e::Process(Long64_t entry)
                 
                 thetaLab = TMath::ATan(pt/pp) * TMath::RadToDeg();
                 
-                eTime = eC_t[idet];
-                
               }else{
                 Ex = TMath::QuietNaN();
                 thetaCM = TMath::QuietNaN();
@@ -223,14 +224,13 @@ Bool_t Cali_e::Process(Long64_t entry)
             } // end of if |Z| > H
          } //end of e is valid
       }//end of x is valid
-      
    }//end of idet-loop
    
    //for H060
    if( elum[0] != 0){
-      ddt = elum[0];
+      ddt   = elum[0];
       ddt_t = elum_t[0]/1e8; //sec
-      tacS = tac[0];
+      tacS  = tac[0];
    }
    
    //for coincident time bewteen array and rdt
@@ -248,7 +248,7 @@ Bool_t Cali_e::Process(Long64_t entry)
       
    }
    
-   //if( zMultiHit == 0 ) return kTRUE;
+   if( zMultiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file

@@ -49,8 +49,11 @@ void AutoCalibration(){
    
    //======== experimental data
    TChain * chain = new TChain("gen_tree");
+
+   chain->Add("../H052/data/gen_run107.root"); 
+
    
-   chain->Add("../H060/data/gen_run11.root");  //01
+/*   chain->Add("../H060/data/gen_run11.root");  //01
    chain->Add("../H060/data/gen_run12.root");  //02
    chain->Add("../H060/data/gen_run13.root");  //03
    chain->Add("../H060/data/gen_run15.root");  //04
@@ -68,7 +71,7 @@ void AutoCalibration(){
    chain->Add("../H060/data/gen_run28.root");  //16
    chain->Add("../H060/data/gen_run29.root");  //17
    chain->Add("../H060/data/gen_run30.root");  //18
-
+*/
 //   chain->Add("../H052/data/H052_Mg25.root");
    
    //TProof::Open("");
