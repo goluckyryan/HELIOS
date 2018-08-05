@@ -258,6 +258,7 @@ public:
       this->isCoincidentWithRecoil = TorF;
    }
    bool SetDetectorGeometry(string filename);
+   void SetMagneticField(double BField){ this->Bfield = BField;}
    int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
    
    int GetNumberOfDetectorsInSamePos(){return mDet;}
@@ -284,6 +285,7 @@ public:
    }
    
    double GetRecoilEnergy(){return eB;}
+   double GetRecoilZ(){return zB;}
    double GetRecoilTime(){return tB;}
    double GetRecoilRho(){return rhoB;}
    double GetRecoilRhoHit(){return rhoBHit;}
@@ -311,10 +313,10 @@ private:
    int detID, loop, hitMDetID;   // multiloop
    
    double thetaB, phiB;
-   double eB, rhoB, tB;
+   double eB, zB, rhoB, tB;
    double vt0B, vp0B;
    double rhoBHit; // particle-B hit radius
-   bool isReady;
+   bool isDetReady;
    
    double z0, t0; // infinite detector 
    
@@ -351,10 +353,11 @@ HELIOS::HELIOS(){
    thetaB = TMath::QuietNaN();
    phiB = TMath::QuietNaN();
    eB = TMath::QuietNaN();
+   zB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
    rhoBHit = TMath::QuietNaN();
    tB = TMath::QuietNaN();
-   isReady = false;
+   isDetReady = false;
 
    z0 = TMath::QuietNaN();
    t0 = TMath::QuietNaN();
@@ -428,21 +431,18 @@ bool HELIOS::SetDetectorGeometry(string filename){
          }
       }
       printf("=======================\n");
-      
+		isDetReady = true;
+   
    }else{
        printf("... fail\n");
-       isReady = false;
+       printf("    ----> Use no-detector setting.\n");
+       isDetReady = false;
    }
-   isReady = true;
    
-   return isReady;  
+   return isDetReady;  
 }
 
 int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
-   if( isReady == false ) {
-      printf("Please Set Detector Geometry. SetDetectorGeometry(TString filename)");
-      return 0;
-   }
    
    //initialization
    int hit = 0;
@@ -458,13 +458,39 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    loop = -1;
    hitMDetID = -1;
    eB = TMath::QuietNaN();
-   rhoB = TMath::QuietNaN();
+   zB = TMath::QuietNaN();
    tB = TMath::QuietNaN();
+   rhoB = TMath::QuietNaN();
+   phiB = TMath::QuietNaN();
+
    
    //====================== X-Y plane
    rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
    theta = Pb.Theta();
    phi = Pb.Phi();
+
+
+   if( isDetReady == false ) {
+      //====================== infinite small detector   
+      vt0 = Pb.Beta() * TMath::Sin(theta) * c ; // mm / nano-second  
+      vp0 = Pb.Beta() * TMath::Cos(theta) * c ; // mm / nano-second  
+      t = TMath::TwoPi() * rho / vt0; // nano-second   
+      z = vp0 * t; // mm        
+      e = Pb.E() - Pb.M();
+      dphi = TMath::TwoPi();
+      
+		//======================  recoil detector
+      thetaB = PB.Theta();
+      phiB = PB.Phi();
+      rhoB = PB.Pt() / Bfield / ZB / c * 1000; //mm
+      vt0B = Pb.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
+      vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
+      tB   = TMath::TwoPi() * rhoB / vt0B; // nano-second
+      eB   = PB.E() - PB.M();
+      zB   = vp0 * tB;
+     
+      return 0;
+   }
    
    if( bore > 2 * rho && ((firstPos > 0 && theta < TMath::PiOver2())  || (firstPos < 0 && theta > TMath::PiOver2())) ){
       //====================== infinite small detector   
@@ -479,6 +505,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       rhoB = PB.Pt() / Bfield / ZB / c * 1000; //mm
       tB   = posRecoil / (PB.Beta() * TMath::Cos(thetaB) * c ); // nano-second
       eB   = PB.E() - PB.M();
+      zB   = vp0 * tB;
       
       //========= check is particle-b was blocked by recoil detector
       rhoHit = GetR(posRecoil) ;// radius of light particle b at recoil detector
@@ -1115,6 +1142,10 @@ void Knockout::CalReactionConstant(bool isNormalKinematics){
    gamma = 1 / TMath::Sqrt(1- beta * beta);   
    Etot = TMath::Sqrt(TMath::Power(E,2) - k * k);
    p = TMath::Sqrt( (Etot*Etot - TMath::Power(m1 + m2,2)) * (Etot*Etot - TMath::Power(m1 - m2 ,2)) ) / 2 / Etot;
+
+	//if( TMath::IsNaN(p) ){
+	//	printf(" Mc: %f, m1+m2: %f, kb:%f, thetab:%f, phib:%f\n", Etot, m1+m2, kb, thetab, phib); 
+	//}
 
 }
 

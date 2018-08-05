@@ -18,9 +18,9 @@ void knockout(){
 
    //================================================= User Setting
    //---- reaction
-   int AA = 23, zA = 9;
-   int Aa = 1,  za = 1;
-   int A2 = 1,  z2 = 1;
+   int AA = 23, ZA = 9;
+   int Aa = 1,  Za = 1;
+   int A2 = 1,  Z2 = 1;
    
    bool isNormalKinematics = false;
    bool isOverRideExNegative = true;
@@ -35,9 +35,10 @@ void knockout(){
    int numEvent = 1000000;
    
    //---- HELIOS detector geometry
-   //string heliosDetGeoFile = "detectorGeo_upstream.txt";
-   //double eSigma = 0.0001 ; // detector energy sigma MeV
-   //double zSigma = 0.1 ; // detector position sigma mm
+   string heliosDetGeoFile = "";//"detectorGeo_upstream.txt";
+   double BField = 4.0; // if not detector, must set B-field, else, this value is not used.
+   double eSigma = 0.0001 ; // detector energy sigma MeV
+   double zSigma = 0.1 ; // detector position sigma mm
    
    //---- excitation of Beam 
    int nExA = 1;
@@ -68,10 +69,11 @@ void knockout(){
    //=============================================================
    //===== Set Reaction
    Knockout reaction;
-   int AB = AA-A2, zB = zA-z2;
-   reaction.SetA(AA,zA);
-   reaction.Seta(Aa,za);
-   reaction.Set2(A2,z2);
+   int AB = AA-A2, ZB = ZA-Z2;
+   int A1 = Aa   , Z1 = Za;
+   reaction.SetA(AA,ZA);
+   reaction.Seta(Aa,Za);
+   reaction.Set2(A2,Z2);
    reaction.SetIncidentEnergyAngle(KEAmean, 0, 0);
    reaction.OverRideExNegative(isOverRideExNegative);
    
@@ -81,26 +83,24 @@ void knockout(){
    printf("======== theta: %9.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
    printf("===================================================\n");
 
-/*   
+   
    //======== Set HELIOS
    printf("############################################## HELIOS configuration\n");   
-   HELIOS helios;
-   bool sethelios = helios.SetDetectorGeometry(heliosDetGeoFile);
-   if( !sethelios) return;
-   int mDet = helios.GetNumberOfDetectorsInSamePos();
-   printf("========== energy resol.: %f MeV\n", eSigma);
-   printf("=========== pos-Z resol.: %f mm \n", zSigma);
-   double beta = reaction.GetReactionBeta() ;
-   double gamma = reaction.GetReactionGamma();
-   double mb = reaction.GetMass_b();
-   double pCM = reaction.GetMomentumbCM();
-   double q = TMath::Sqrt(mb*mb + pCM*pCM);
-   double slope = 299.792458 * zb * helios.GetBField() / TMath::TwoPi() * beta / 1000.; // MeV/mm
-   printf("====================== e-z slope : %f MeV/mm\n", slope);   
-   double intercept = q/gamma - mb; // MeV
-   printf("=== e-z intercept (ground state) : %f MeV\n", intercept); 
-   
-   //==== Target scattering, only energy loss
+   HELIOS helios1; // for particle-1
+   HELIOS helios2; // for particle-2
+   bool sethelios1 = helios1.SetDetectorGeometry(heliosDetGeoFile);
+   bool sethelios2 = helios2.SetDetectorGeometry(heliosDetGeoFile);
+   if( sethelios1 && sethelios2 ) {
+		int mDet = helios1.GetNumberOfDetectorsInSamePos();
+		printf("========== energy resol.: %f MeV\n", eSigma);
+		printf("=========== pos-Z resol.: %f mm \n", zSigma); 
+	}else{
+		helios1.SetMagneticField(BField);
+		helios2.SetMagneticField(BField);
+		printf("======== B-field : %5.2f T", BField);
+	}
+	
+	//==== Target scattering, only energy loss
    if(isTargetScattering) printf("############################################## Target Scattering\n");
    TargetScattering msA;
    TargetScattering msB;
@@ -116,13 +116,12 @@ void knockout(){
       msb.LoadStoppingPower(stoppingPowerForb);
       msB.LoadStoppingPower(stoppingPowerForB);
    }
-   */
    
    //======= Decay of particle-B
    Decay decay;
-   decay.SetMotherDaugther(AB, zB, AB-1,zB); //neutron decay
-
-   
+   decay.SetMotherDaugther(AB, ZB, AB-1,ZB); //neutron decay
+	
+	
    //======= loading excitation energy
    printf("############################################## excitation energies\n");
    vector<double> SpList;
@@ -181,16 +180,9 @@ void knockout(){
    
    double mB,mb;
 
-/*   
-   int hit; // the output of Helios.CalHit
-   double e, z, x, t, TbLoss;
-   int loop, detID;
-   double dphi, rho;
-
-   double rhoHit, rhoBHit; // rhoHit = radius of particle-b hit on z-pos of recoil detector
-   double decayTheta; // the change of thetaB due to decay 
-   double xHit, yHit;
-*/   
+   // the output of Helios.CalHit
+   double e1, z1, t1, rho1;
+   double e2, z2, t2, rho2;
 
    tree->Branch("theta1", &theta1, "theta1/D");
    tree->Branch("phi1", &phi1, "phi1/D");
@@ -219,36 +211,26 @@ void knockout(){
    tree->Branch("mb", &mb, "mb/D");
    
    TClonesArray * arr = new TClonesArray("TLorentzVector");
-   tree->Branch("fourVect", arr, 256000);
+   tree->Branch("fV", arr, 256000);
    arr->BypassStreamer();
    
    TClonesArray * arrN = new TClonesArray("TLorentzVector");
-   tree->Branch("fourVectN", arrN, 256000);
+   tree->Branch("fVN", arrN, 256000);
    arrN->BypassStreamer();
    
    TLorentzVector* fourVector = NULL;
-  
 
-/*
-   tree->Branch("hit", &hit, "hit/I");
-   tree->Branch("e", &e, "e/D");
-   tree->Branch("x", &x, "x/D");
-   tree->Branch("z", &z, "z/D");
-   tree->Branch("t", &t, "t/D");
-   tree->Branch("TbLoss", &TbLoss, "TbLoss/D");
-   tree->Branch("detID", &detID, "detID/I");
-   tree->Branch("loop", &loop, "loop/I");
-   tree->Branch("dphi", &dphi, "dphi/D");
-   tree->Branch("rho", &rho, "rho/D");
-   tree->Branch("ExA", &ExA, "ExA/D");
-
-   tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
-   tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
-   tree->Branch("decayTheta", &decayTheta, "decayTheta/D");
+	// tree branch from helios1, helios2
+   tree->Branch("e1", &e1, "e1/D");
+   tree->Branch("z1", &z1, "z1/D");
+   tree->Branch("t1", &t1, "t1/D");
+   tree->Branch("rho1", &rho1, "rho1/D");
    
-   tree->Branch("xHit", &xHit, "xHit/D");
-   tree->Branch("yHit", &yHit, "yHit/D");
-*/   
+   tree->Branch("e2", &e2, "e2/D");
+   tree->Branch("z2", &z2, "z2/D");
+   tree->Branch("t2", &t2, "t2/D");
+   tree->Branch("rho2", &rho2, "rho2/D");
+   
    //========timer
    TBenchmark clock;
    bool shown ;   
@@ -351,7 +333,7 @@ void knockout(){
             }
          }
          */
-         
+                  
          //################################### tree branches
          //===== reaction
          theta1 = P1.Theta() * TMath::RadToDeg();
@@ -367,7 +349,6 @@ void knockout(){
          
          mB = PB.M();
          mb = Pb.M();
-         
          
          TVector3 bA = PA.BoostVector();
             
@@ -396,33 +377,32 @@ void knockout(){
             fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
             
          }
-         /*
-         //==== Helios
-         hit = helios.CalHit(Pb, zb, PB, zB);
          
-         e = helios.GetEnergy() + gRandom->Gaus(0, eSigma);
-         z = helios.GetZ() ; 
-         x = helios.GetX() + gRandom->Gaus(0, zSigma);
-         t = helios.GetTime();
-         loop = helios.GetLoop();
-         detID = helios.GetDetID();
-         dphi = helios.GetdPhi();
-         rho = helios.GetRho();
-         rhoHit = helios.GetRhoHit();
-         rhoBHit = helios.GetRecoilRhoHit();
-         xHit = helios.GetXPos(z);
-         yHit = helios.GetYPos(z);
-         z += gRandom->Gaus(0, zSigma);
+         
+         //==== Helios
+         int hit1 = helios1.CalHit(P1, Z1, PB, ZB);
+         int hit2 = helios2.CalHit(P2, Z2, PB, ZB);
+         
+         e1 = helios1.GetEnergy() + gRandom->Gaus(0, eSigma);
+         z1 = helios1.GetZ() ; 
+         t1 = helios1.GetTime();
+         rho1 = helios1.GetRho();
+         
+         e2 = helios2.GetEnergy() + gRandom->Gaus(0, eSigma);
+         z2 = helios2.GetZ() ; 
+         rho2 = helios2.GetRho();
+         
+         //printf("%f, %f | %f, %f \n", e1, z1, e2, z2);
          
          //change thetaNN into deg
          thetaNN = thetaNN * TMath::RadToDeg();
          
-         if( hit == 1) {
+         if( hit1 == 1) {
             count ++;
          }
          
          if( isReDo ){
-            if( hit == 1) {
+            if( hit1 == 1) {
                redoFlag = false;
             }else{
                redoFlag = true;
@@ -431,7 +411,7 @@ void knockout(){
          }else{
             redoFlag = false;
          }
-         */
+         
          
       }while( redoFlag );
       tree->Fill();
