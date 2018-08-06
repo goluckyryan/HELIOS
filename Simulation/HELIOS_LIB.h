@@ -1000,6 +1000,7 @@ public:
    double GetMass_a(){return ma;}
    double GetMass_b(){return mb;}
    double GetMass_B(){return mB;}
+   double GetMass_Bgs(){return mB0;}
    double GetMass_1(){return m1;}
    double GetMass_2(){return m2;}
    

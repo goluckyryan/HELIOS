@@ -16,7 +16,7 @@ void readTrace(){
    TFile * f1 = new TFile ("trace.root", "read");
    TTree * tree = (TTree *) f1->Get("tree");
    
-	int totnumEntry = tree->GetEntries();
+   int totnumEntry = tree->GetEntries();
    printf( "========== total Entry : %d \n", totnumEntry);
    
    TCanvas * cRead = new TCanvas("cRead", "Read Trace", 0, 0, 800, 300);

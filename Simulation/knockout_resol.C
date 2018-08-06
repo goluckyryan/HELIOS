@@ -1,6 +1,7 @@
 #include "HELIOS_LIB.h"
 #include "TBenchmark.h"
 #include "TLorentzVector.h"
+#include "TVector3.h"
 #include "TMath.h"
 #include "TFile.h"
 #include "TF1.h"
@@ -14,7 +15,7 @@
 // $root sim.C+ | tee output.txt
 // this will same the massage to output.txt
 
-void knockout(){
+void knockout_resol(){
 
    //================================================= User Setting
    //---- reaction
@@ -32,13 +33,15 @@ void knockout(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000000;
+   int numEvent = 1000000;
    
+   /*
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "";//"detectorGeo_upstream.txt";
    double BField = 4.0; // if not detector, must set B-field, else, this value is not used.
    double eSigma = 0.0001 ; // detector energy sigma MeV
    double zSigma = 0.1 ; // detector position sigma mm
+   */
    
    //---- excitation of Beam 
    int nExA = 1;
@@ -50,7 +53,7 @@ void knockout(){
    string separationFile = "separation_energies.txt";
    
    //---- save root file name
-   TString saveFileName = "knockout.root";
+   TString saveFileName = "knockout_resol.root";
    
    //---- Auxiliary setting
    bool isTargetScattering = false;
@@ -83,7 +86,7 @@ void knockout(){
    printf("======== theta: %9.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
    printf("===================================================\n");
 
-   
+   /*
    //======== Set HELIOS
    printf("############################################## HELIOS configuration\n");   
    HELIOS helios1; // for particle-1
@@ -116,7 +119,7 @@ void knockout(){
       msb.LoadStoppingPower(stoppingPowerForb);
       msB.LoadStoppingPower(stoppingPowerForB);
    }
-   
+   */
    //======= Decay of particle-B
    Decay decay;
    decay.SetMotherDaugther(AB, ZB, AB-1,ZB); //neutron decay
@@ -180,10 +183,6 @@ void knockout(){
    
    double mB,mb;
 
-   // the output of Helios.CalHit
-   double e1, z1, t1, rho1;
-   double e2, z2, t2, rho2;
-
    tree->Branch("theta1", &theta1, "theta1/D");
    tree->Branch("phi1", &phi1, "phi1/D");
    tree->Branch("T1", &T1, "T1/D");
@@ -220,7 +219,11 @@ void knockout(){
    
    TLorentzVector* fourVector = NULL;
 
+   /*
 	// tree branch from helios1, helios2
+   double e1, z1, t1, rho1;
+   double e2, z2, t2, rho2;
+
    tree->Branch("e1", &e1, "e1/D");
    tree->Branch("z1", &z1, "z1/D");
    tree->Branch("t1", &t1, "t1/D");
@@ -230,6 +233,30 @@ void knockout(){
    tree->Branch("z2", &z2, "z2/D");
    tree->Branch("t2", &t2, "t2/D");
    tree->Branch("rho2", &rho2, "rho2/D");
+   */
+   
+   //resolution
+   double eResol, angResol, SpResol, SpM;
+   double e1new, ang1Change;
+   double e2new, ang2Change;
+   double Spnew;
+   
+   tree->Branch(  "eResol",   &eResol,   "eResol/D");
+   tree->Branch("angResol", &angResol, "angResol/D");
+   tree->Branch( "SpResol",  &SpResol,  "SpResol/D");
+   tree->Branch(     "SpM",      &SpM,      "SpM/D");
+   
+   tree->Branch(     "e1new",   &e1new,   "e1new/D");
+   tree->Branch("ang1Change",   &ang1Change,   "ang1Change/D");
+   
+   tree->Branch(     "e2new",   &e2new,   "e2new/D");
+   tree->Branch("ang2Change",   &ang2Change,   "ang2Change/D");
+   
+   tree->Branch( "Spnew", &Spnew, "Spnew/D");
+
+   TClonesArray * arrR = new TClonesArray("TLorentzVector");
+   tree->Branch("fVR", arrR, 256000);
+   arrR->BypassStreamer();
    
    //========timer
    TBenchmark clock;
@@ -378,7 +405,7 @@ void knockout(){
             
          }
          
-         
+         /*
          //==== Helios
          int hit1 = helios1.CalHit(P1, Z1, PB, ZB);
          int hit2 = helios2.CalHit(P2, Z2, PB, ZB);
@@ -391,11 +418,66 @@ void knockout(){
          e2 = helios2.GetEnergy() + gRandom->Gaus(0, eSigma);
          z2 = helios2.GetZ() ; 
          rho2 = helios2.GetRho();
+         */
          
-         //printf("%f, %f | %f, %f \n", e1, z1, e2, z2);
+         
+         //===== resolution
+         eResol   = 1000. * gRandom->Rndm(); // keV;
+         angResol = 50 * gRandom->Rndm(); // mrad; 
+         
+         double energy1 = P1.E() + gRandom->Gaus(0, eResol/1000.);
+         TVector3 k1 = P1.Vect();
+         TVector3 n1 = k1.Orthogonal();
+         
+         k1.Rotate( gRandom->Gaus(0, angResol/1000.) , n1);
+         k1.Rotate( gRandom->Rndm() * TMath::TwoPi() , P1.Vect());
+         
+         TLorentzVector P1new;
+         P1new.SetVect(k1);
+         P1new.SetE(energy1);
+         
+         e1new = P1new.E() - P1.M();
+         ang1Change = k1.Angle(P1.Vect());
+         
+         double energy2 = P2.E() + gRandom->Gaus(0, eResol/1000.);
+         TVector3 k2 = P2.Vect();
+         TVector3 n2 = k2.Orthogonal();
+         
+         k2.Rotate( gRandom->Gaus(0, angResol/1000.) , n2);
+         k2.Rotate( gRandom->Rndm() * TMath::TwoPi() , P2.Vect());
+         
+         TLorentzVector P2new;
+         P2new.SetVect(k2);
+         P2new.SetE(energy2);
+         
+         e2new = P2new.E() - P2.M();
+         ang2Change = k2.Angle(P2.Vect());
+         
+         
+         //SpResol
+         TLorentzVector PBnew = PA + Pa - P1new - P2new;
+         Spnew = PBnew.M() - reaction.GetMass_A() + reaction.GetMass_2();
+         
+         SpResol = Spnew - Sp; 
+         
+         double xyzt[4];
+         
+         P1new.GetXYZT(xyzt);         
+         fourVector = (TLorentzVector*) arr->ConstructedAt(0);
+         fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
+
+         P2new.GetXYZT(xyzt);         
+         fourVector = (TLorentzVector*) arr->ConstructedAt(1);
+         fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
+      
+         PBnew.GetXYZT(xyzt);         
+         fourVector = (TLorentzVector*) arr->ConstructedAt(2);
+         fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
          
          //change thetaNN into deg
          thetaNN = thetaNN * TMath::RadToDeg();
+         
+         int hit1 = 1; // for no helios;
          
          if( hit1 == 1) {
             count ++;
