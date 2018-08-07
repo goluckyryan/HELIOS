@@ -453,26 +453,34 @@ void knockout_resol(){
          e2new = P2new.E() - P2.M();
          ang2Change = k2.Angle(P2.Vect());
          
-         
          //SpResol
          TLorentzVector PBnew = PA + Pa - P1new - P2new;
          Spnew = PBnew.M() - reaction.GetMass_A() + reaction.GetMass_2();
          
          SpResol = Spnew - Sp; 
          
+         TLorentzVector Pbnew = PA - PBnew;
+         TVector3 boostA = PA.BoostVector();
+         Pbnew.Boost(-boostA);
+         
          double xyzt[4];
          
          P1new.GetXYZT(xyzt);         
-         fourVector = (TLorentzVector*) arr->ConstructedAt(0);
+         fourVector = (TLorentzVector*) arrR->ConstructedAt(0);
          fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
 
          P2new.GetXYZT(xyzt);         
-         fourVector = (TLorentzVector*) arr->ConstructedAt(1);
+         fourVector = (TLorentzVector*) arrR->ConstructedAt(1);
          fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
       
          PBnew.GetXYZT(xyzt);         
-         fourVector = (TLorentzVector*) arr->ConstructedAt(2);
+         fourVector = (TLorentzVector*) arrR->ConstructedAt(2);
          fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
+         
+         Pbnew.GetXYZT(xyzt);         
+         fourVector = (TLorentzVector*) arrR->ConstructedAt(3);
+         fourVector->SetXYZT(xyzt[0], xyzt[1], xyzt[2], xyzt[3]);
+         
          
          //change thetaNN into deg
          thetaNN = thetaNN * TMath::RadToDeg();
