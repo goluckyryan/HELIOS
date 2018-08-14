@@ -149,6 +149,7 @@ void AutoCalibration(){
       chain->Process("../AutoCali/Cali_e.C+");
    }
 
+   gROOT->ProcessLine(".q");
    
 }
 

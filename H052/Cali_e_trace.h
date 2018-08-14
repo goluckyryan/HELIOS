@@ -5,8 +5,8 @@
 // found on file: gen_run11.root
 //////////////////////////////////////////////////////////
 
-#ifndef Cali_e_h
-#define Cali_e_h
+#ifndef Cali_e_trace_h
+#define Cali_e_trace_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -21,7 +21,7 @@
 // Headers needed by this particular selector
 
 
-class Cali_e : public TSelector {
+class Cali_e_trace : public TSelector {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
@@ -36,8 +36,17 @@ public :
    ULong64_t       rdt_t[100];
    Float_t         tac[100];
    ULong64_t       tac_t[100];
-   Float_t         elum[32];
-   ULong64_t       elum_t[32];
+   
+   //Trace
+   Float_t         te[24];
+   Float_t         te_r[24];
+   Float_t         te_t[24];
+   Float_t         ttac[6];
+   Float_t         ttac_t[6];
+   Float_t         ttac_r[6];
+   Float_t         trdt[8];
+   Float_t         trdt_t[8];
+   Float_t         trdt_r[8];
 
    // List of branches
    TBranch        *b_Energy;   //!
@@ -50,11 +59,21 @@ public :
    TBranch        *b_RDTTimestamp;   //!
    TBranch        *b_TAC;   //!
    TBranch        *b_TACTimestamp;   //!
-   TBranch        *b_ELUM;   //!
-   TBranch        *b_ELUMTimestamp;   //!
+   
+   TBranch        *b_Energy_Trace;  //!
+   TBranch        *b_Energy_TraceTime;  //!
+   TBranch        *b_Energy_TraceRiseTime;  //!
+   
+   TBranch        *b_TAC_Trace;  //!
+   TBranch        *b_TAC_TraceTime;  //!
+   TBranch        *b_TAC_TraceRiseTime;  //!
+   
+   TBranch        *b_RDT_Trace;  //!
+   TBranch        *b_RDT_TraceTime;  //!
+   TBranch        *b_RDT_TraceRiseTime;  //!
 
-   Cali_e(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~Cali_e() { }
+   Cali_e_trace(TTree * /*tree*/ =0) : fChain(0) { }
+   virtual ~Cali_e_trace() { }
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -69,7 +88,7 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-   ClassDef(Cali_e,0);
+   ClassDef(Cali_e_trace,0);
    
    //=============================== 
    TFile * saveFile;
@@ -96,15 +115,20 @@ public :
    ULong64_t rdtC_t[8];
    ULong64_t coin_t; // when zMultiHit == 1 and rdtC_t(max(rdtC))
    
-   //Float_t ddt, ddt_t; // downstream detector for deuteron, for H060_208Pb 
-   //Float_t tacS; //tac for H060
-
+   Float_t tcoin_t;
+   Float_t teS;      //for selected time 
+   Float_t te_tS;
+   Float_t te_rS;
+   Float_t trdtS;
+   Float_t trdt_tS;
+   Float_t trdt_rS;
+   
    //clock   
    TBenchmark clock;
    Bool_t shown;
    Int_t count;
    
-   //correction parameters
+   //========correction parameters
    int numDet;
    int iDet; // number of detector at different position
    int jDet; // number of detector at same position
@@ -130,8 +154,8 @@ public :
 
 #endif
 
-#ifdef Cali_e_cxx
-void Cali_e::Init(TTree *tree)
+#ifdef Cali_e_trace_cxx
+void Cali_e_trace::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the reader is initialized.
@@ -158,8 +182,18 @@ void Cali_e::Init(TTree *tree)
 
    fChain->SetBranchAddress("tac", tac, &b_TAC);
    fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
-   fChain->SetBranchAddress("elum", elum, &b_ELUM);
-   fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
+
+   fChain->SetBranchAddress("te",   te,   &b_Energy_Trace);
+   fChain->SetBranchAddress("te_t", te_t, &b_Energy_TraceTime);
+   fChain->SetBranchAddress("te_r", te_r, &b_Energy_TraceRiseTime);
+
+   fChain->SetBranchAddress("ttac",   ttac,   &b_TAC_Trace);
+   fChain->SetBranchAddress("ttac_t", ttac_t, &b_TAC_TraceTime);
+   fChain->SetBranchAddress("ttac_r", ttac_r, &b_TAC_TraceRiseTime);
+
+   fChain->SetBranchAddress("trdt",   trdt,   &b_RDT_Trace);
+   fChain->SetBranchAddress("trdt_t", trdt_t, &b_RDT_TraceTime);
+   fChain->SetBranchAddress("trdt_r", trdt_r, &b_RDT_TraceRiseTime);
    
    //======================================
    totnumEntry = tree->GetEntries();
@@ -201,16 +235,21 @@ void Cali_e::Init(TTree *tree)
    
    newTree->Branch("coin_t", &coin_t, "coin_t/l");
    
+   newTree->Branch("tcoin_t", &tcoin_t, "tcoin_t/F");
+    
+   newTree->Branch("te",     &teS,     "teS/F");
+   newTree->Branch("te_t",   &te_tS,   "te_tS/F");
+   newTree->Branch("te_r",   &te_rS,   "te_rS/F");
+   newTree->Branch("trdt",   &trdtS,   "trdtS/F");
+   newTree->Branch("trdt_t", &trdt_tS, "trdt_tS/F");
+   newTree->Branch("trdt_r", &trdt_rS, "trdt_rS/F");
+   
+   
    /*
    newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
    newTree->Branch("tac", tacC, "tacC[6]/F");
    newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F"); 
    */
-   
-   //H060
-   //newTree->Branch("tac", &tacS, "tacS/F");
-   //newTree->Branch("ddt", &ddt, "ddt/F");
-   //newTree->Branch("ddt_t", &ddt_t, "ddt_t/F");
    
    clock.Reset();
    clock.Start("timer");
@@ -376,7 +415,7 @@ void Cali_e::Init(TTree *tree)
 
 }
 
-Bool_t Cali_e::Notify()
+Bool_t Cali_e_trace::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -388,4 +427,4 @@ Bool_t Cali_e::Notify()
 }
 
 
-#endif // #ifdef Cali_e_cxx
+#endif // #ifdef Cali_e_trace_cxx

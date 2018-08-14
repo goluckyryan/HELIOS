@@ -1,6 +1,7 @@
 #define GeneralSortTrace_cxx
 
 #include "GeneralSortTrace.h"
+#include "TROOT.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TF1.h>
@@ -59,13 +60,14 @@ Bool_t shown = 0;
 TFile *saveFile; //!
 TTree *newTree; //!
 
-ULong64_t MaxProcessedEntries=1000000;
+ULong64_t MaxProcessedEntries=1000;
 int EffEntries;
 ULong64_t NumEntries = 0;
 ULong64_t ProcessedEntries = 0;
 
 bool isTraceON = true;
-bool isSaveTrace = false;
+bool isSaveTrace = true;
+bool isFitTrace = true;
 int traceMethod = 1; //0 = no process, 1, fit, 2, constant fraction 
 int traceLength = 200;
 
@@ -132,7 +134,7 @@ void GeneralSortTrace::Begin(TTree * tree)
    printf( "  EZero  : %s \n", isEZero ?  "On" : "Off");
    printf( "  Trace  : %s , Method: %d, Save: %s \n", isTraceON ?  "On" : "Off", traceMethod, isSaveTrace? "Yes": "No:");
 
-   saveFile = new TFile("trace.root","RECREATE");
+   saveFile = new TFile("trace_S.root","RECREATE");
    newTree = new TTree("tree","PSD Tree w/ trace");
 
    newTree->Branch("eventID", &psd.eventID, "eventID/I");
@@ -417,8 +419,12 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
             if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
 
-            gTrace->Fit("gFit", "qR0");
-         
+            if( isFitTrace ) {
+               gTrace->Fit("gFit", "qR");
+            }else{
+               gTrace->Fit("gFit", "qR0");
+            }
+            
             double rise, time;
             if( 30 > idDet && idDet >= 0 && idKind == 0 ) {
                te[idDet]   = gFit->GetParameter(0);
@@ -492,5 +498,7 @@ void GeneralSortTrace::Terminate()
    Double_t time = gClock.GetRealTime("timer");
    printf("----- Total run time : %6.0f sec \n", time);
    printf("----- Rate for sort: %6.3f k/sec\n",EffEntries/time/1000.0);
-   printf("----- saved as %s. valid event: %d ", "trace.root", validCount); 
+   printf("----- saved as %s. valid event: %d\n", "trace.root", validCount); 
+   
+   gROOT->ProcessLine(".q");
 }

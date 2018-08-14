@@ -1,5 +1,5 @@
-#define Cali_e_cxx
-// The class definition in Cali_e.h has been generated automatically
+#define Cali_e_trace_cxx
+// The class definition in Cali_e_trace.h has been generated automatically
 // by the ROOT utility TTree::MakeSelector(). This class is derived
 // from the ROOT class TSelector. For more information on the TSelector
 // framework see $ROOTSYS/README/README.SELECTOR or the ROOT User Manual.
@@ -19,17 +19,17 @@
 //
 // To use this file, try the following session on your Tree T:
 //
-// root> T->Process("Cali_e.C")
-// root> T->Process("Cali_e.C","some options")
-// root> T->Process("Cali_e.C+")
+// root> T->Process("Cali_e_trace.C")
+// root> T->Process("Cali_e_trace.C","some options")
+// root> T->Process("Cali_e_trace.C+")
 //
 
 
-#include "Cali_e.h"
+#include "Cali_e_trace.h"
 #include <TH2.h>
 #include <TStyle.h>
 
-void Cali_e::Begin(TTree * /*tree*/)
+void Cali_e_trace::Begin(TTree * /*tree*/)
 {
    // The Begin() function is called at the start of the query.
    // When running with PROOF Begin() is only called on the client.
@@ -39,7 +39,7 @@ void Cali_e::Begin(TTree * /*tree*/)
    
 }
 
-void Cali_e::SlaveBegin(TTree * /*tree*/)
+void Cali_e_trace::SlaveBegin(TTree * /*tree*/)
 {
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
@@ -49,7 +49,7 @@ void Cali_e::SlaveBegin(TTree * /*tree*/)
 
 }
 
-Bool_t Cali_e::Process(Long64_t entry)
+Bool_t Cali_e_trace::Process(Long64_t entry)
 {
    // The Process() function is called for each entry in the tree (or possibly
    // keyed object in the case of PROOF) to be processed. The entry argument
@@ -88,11 +88,16 @@ Bool_t Cali_e::Process(Long64_t entry)
       rdtC_t[i] = 0;
    }
    coin_t = 0;
-   
-   //ddt = TMath::QuietNaN(); // H060
-   //ddt_t = TMath::QuietNaN(); // H060
-   //tacS = TMath::QuietNaN(); // H060
 
+   tcoin_t = TMath::QuietNaN();
+   
+   teS = TMath::QuietNaN();
+   te_tS = TMath::QuietNaN();
+   te_rS = TMath::QuietNaN();
+   trdtS = TMath::QuietNaN();
+   trdt_tS = TMath::QuietNaN();
+   trdt_rS = TMath::QuietNaN();
+   
    //#################################################################### processing
    eventID += 1;
    if( entry == 1 ) run += 1;
@@ -108,6 +113,18 @@ Bool_t Cali_e::Process(Long64_t entry)
    //b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
    b_TAC->GetEntry(entry,0);
    
+   b_Energy_Trace->GetEntry(entry,0);
+   b_Energy_TraceTime->GetEntry(entry,0);
+   b_Energy_TraceRiseTime->GetEntry(entry,0);
+   
+   //b_TAC_Trace->GetEntry(entry,0);
+   //b_TAC_TraceTime->GetEntry(entry,0);
+   //b_TAC_TraceRiseTime->GetEntry(entry,0);
+   
+   b_RDT_Trace->GetEntry(entry,0);
+   b_RDT_TraceTime->GetEntry(entry,0);
+   b_RDT_TraceRiseTime->GetEntry(entry,0);
+
    //=========== gate
    bool rdt_energy = false;
    for( int rID = 0; rID < 8; rID ++){
@@ -122,6 +139,7 @@ Bool_t Cali_e::Process(Long64_t entry)
    }
 
    ULong64_t eTime = 0; //this will be the time for Ex valid
+   Float_t teTime = 0.; //time from trace
    for(int idet = 0 ; idet < numDet; idet++){
       
       if( e[idet] > 0 ){
@@ -174,6 +192,10 @@ Bool_t Cali_e::Process(Long64_t entry)
          }else{
          
             eTime = eC_t[idet];
+            teTime = te_t[idet];
+            teS    = te[idet];
+            te_tS    = te_t[idet];
+            te_rS    = te_r[idet];
          
             double y = eC[idet] + mass;
             Z = alpha * gamma * beta * z[idet];
@@ -227,25 +249,26 @@ Bool_t Cali_e::Process(Long64_t entry)
       }//end of x is valid
    }//end of idet-loop
    
-   //for H060
-   //if( elum[0] != 0){
-   //   ddt   = elum[0];
-   //   ddt_t = elum_t[0]/1e8; //sec
-   //   tacS  = tac[0];
-   //}
-   
    //for coincident time bewteen array and rdt
    if( zMultiHit == 1 ) {
       ULong64_t rdtTime = 0;
       Float_t rdtQ = 0;
+      Float_t trdtTime = 0.;
       for(int i = 0; i < 8 ; i++){
          if( rdt[i] > rdtQ ) {
             rdtQ = rdt[i];
             rdtTime = rdt_t[i];
+            trdtTime = trdt_t[i];
+            
+            trdtS = trdt[i];
+            trdt_tS = trdt_t[i];
+            trdt_rS = trdt_r[i];
+            
          }
       }
       
       coin_t = eTime - rdtTime;
+      tcoin_t = teTime - trdtTime;
       
    }
    
@@ -277,7 +300,7 @@ Bool_t Cali_e::Process(Long64_t entry)
    return kTRUE;
 }
 
-void Cali_e::SlaveTerminate()
+void Cali_e_trace::SlaveTerminate()
 {
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
@@ -285,7 +308,7 @@ void Cali_e::SlaveTerminate()
 
 }
 
-void Cali_e::Terminate()
+void Cali_e_trace::Terminate()
 {
    // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present

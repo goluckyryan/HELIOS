@@ -1,4 +1,5 @@
 #include "HELIOS_LIB.h"
+#include "TROOT.h"
 #include "TBenchmark.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
@@ -437,6 +438,8 @@ void knockout(){
    saveFile->Close();
    
    printf("=============== done. saved as %s. count(hit==1) : %d\n", saveFileName.Data(), count);
+   
+   gROOT->ProcessLine(".q");
    
    /**/
 

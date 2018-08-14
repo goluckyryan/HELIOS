@@ -13,7 +13,7 @@
 void readTrace(){
    
 /**///==============================================================   
-   TFile * f1 = new TFile ("trace.root", "read");
+   TFile * f1 = new TFile ("trace_S.root", "read");
    TTree * tree = (TTree *) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();
@@ -81,7 +81,7 @@ void readTrace(){
             int kind = gFit->GetLineColor();
             int det  = gFit->GetLineStyle();
             
-            if( det < 100 ) continue;
+            //if( det < 100 ) continue;
             
             TString gTitle;
             gTitle.Form("(%d,%d), base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
