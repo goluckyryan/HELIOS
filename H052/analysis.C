@@ -1,6 +1,6 @@
 {
 
-   TFile * f1 = new TFile("A_trace.root", "READ");
+   TFile * f1 = new TFile("trace_S.root", "READ");
    TTree * tree = (TTree*) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();
@@ -17,11 +17,13 @@
    }
    
    
-   TH2F ** hTX = new TH2F*[24];
+   TH2F ** hTX = new TH2F * [24];
    
    TProfile ** hp = new TProfile * [24];
    
-   TH2F ** hTXc = new TH2F*[24];
+   TH2F ** hTXc = new TH2F * [24];
+   
+   TGraph ** gr = new TGraph * [24];
    
    for( int i = 0 ; i < 24; i++){
       TString name;
@@ -45,13 +47,17 @@
       cAna->cd(i+1);
       tree->Draw(expression, gate, "colz");
       
-      /*
+      
       name.Form("hTXp%d", i);
       hp[i] = new TProfile(name, name, 400, -1.5,1.5);
       
       hTX[i]->ProfileX(name);
       
-      hp[i]->Draw("same");
+      //hp[i]->Draw("same");
+      
+      gr[i] = new TGraph(hp[i]);
+      
+      
       
       /*
       TF1 * fit = new TF1("fit", "[0]+[1]*TMath::Power(x,2) +[2]*TMath::Power(x,4)", -2, 2);

@@ -57,6 +57,7 @@ Int_t idKindMap[160] = { 2,  2,  1,  1,  1,  1,  1,  1, -1, -1,//4
 TBenchmark gClock;
 Bool_t shown = 0;
 
+TString saveFileName = "trace.root";
 TFile *saveFile; //!
 TTree *newTree; //!
 
@@ -134,7 +135,7 @@ void GeneralSortTrace::Begin(TTree * tree)
    printf( "  EZero  : %s \n", isEZero ?  "On" : "Off");
    printf( "  Trace  : %s , Method: %d, Save: %s \n", isTraceON ?  "On" : "Off", traceMethod, isSaveTrace? "Yes": "No:");
 
-   saveFile = new TFile("trace_S.root","RECREATE");
+   saveFile = new TFile(saveFileName,"RECREATE");
    newTree = new TTree("tree","PSD Tree w/ trace");
 
    newTree->Branch("eventID", &psd.eventID, "eventID/I");
@@ -498,7 +499,7 @@ void GeneralSortTrace::Terminate()
    Double_t time = gClock.GetRealTime("timer");
    printf("----- Total run time : %6.0f sec \n", time);
    printf("----- Rate for sort: %6.3f k/sec\n",EffEntries/time/1000.0);
-   printf("----- saved as %s. valid event: %d\n", "trace.root", validCount); 
+   printf("----- saved as %s. valid event: %d\n", saveFileName.Data() , validCount); 
    
    gROOT->ProcessLine(".q");
 }
