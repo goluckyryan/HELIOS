@@ -23,7 +23,7 @@
    
    TH2F ** hTXc = new TH2F * [24];
    
-   TGraph ** gr = new TGraph * [24];
+   //TGraph ** gr = new TGraph * [24];
    
    for( int i = 0 ; i < 24; i++){
       TString name;
@@ -55,7 +55,7 @@
       
       //hp[i]->Draw("same");
       
-      gr[i] = new TGraph(hp[i]);
+      //gr[i] = new TGraph(hp[i]);
       
       
       
