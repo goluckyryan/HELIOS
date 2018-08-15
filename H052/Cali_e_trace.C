@@ -130,7 +130,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    for( int rID = 0; rID < 8; rID ++){
       if( rdt[rID] > 5000 ) rdt_energy = true; 
    }
-   if( !rdt_energy ) return kTRUE;
+   //if( !rdt_energy ) return kTRUE;
    
    
    for(int i = 0 ; i < 8 ; i++){
@@ -272,7 +272,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       
    }
    
-   if( zMultiHit == 0 ) return kTRUE;
+   //if( zMultiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file
