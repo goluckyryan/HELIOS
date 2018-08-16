@@ -10,9 +10,7 @@
 #include <TSpectrum.h>
 #include <TMath.h>
 
-void GetCoinTimeCorrectionCutG(){
-
-   //int detID = 1;
+void GetCoinTimeCorrectionCutG(int detID){
 
    TFile * f1 = new TFile("A_trace.root", "READ");
    TTree * tree = (TTree*) f1->Get("tree");
@@ -39,7 +37,7 @@ void GetCoinTimeCorrectionCutG(){
    TH2F * hTX   = new TH2F("hTX",   "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
    TH2F * hTXg  = new TH2F("hTXg",  "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
    TH2F * hTXc2 = new TH2F("hTXc2", "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
-   TH1F * hT = new TH1F("hT", "", 100, 0, 20);
+   TH1F * hT = new TH1F("hT", "", 100, -5, 10);
    TSpectrum * spec = new TSpectrum(5);
    
    TCutG * cut = NULL;
@@ -47,9 +45,16 @@ void GetCoinTimeCorrectionCutG(){
    FILE * paraOut;
    TString filename;
    filename.Form("correction_coinTime.dat");
-   paraOut = fopen (filename.Data(), "w+");
+   paraOut = fopen (filename.Data(), "a+");
+   
+   //int detID = 4+6;
 
-   for( int detID = 0; detID < 24; detID ++ ){   
+   //for( int detID = 0; detID < 24; detID ++ ){   
+      
+      //hTX->Clear();
+      //hTXg->Clear();
+      //hTXc2->Clear();
+      //hT->Clear();
       
       printf("============ detID: %d\n", detID);
    
@@ -58,6 +63,7 @@ void GetCoinTimeCorrectionCutG(){
       name.Form("time vs X (detID-%d); x; coinTime [ch]", detID);
       hTX->SetTitle(name);
       tree->Draw(expression, gate, "colz");
+      cAna->Update();
       
       //==== create cut and draw
       cAna->WaitPrimitive("CUTG", "TCutG");
@@ -94,20 +100,20 @@ void GetCoinTimeCorrectionCutG(){
       q[7] = fit7->GetParameter(7);
     
       gate.Form("Iteration$==%d", detID);  
-      expression.Form("coinTime - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) :x>>hTXc2", q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
+      expression.Form("coinTime - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) :x>>hTXc2", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
       tree->Draw(expression, gate, "colz");
       
       cAna->WaitPrimitive();
       
       //==== 1-D plot
-      expression.Form("coinTime - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) >>hT", q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
+      expression.Form("coinTime - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) >>hT", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
       tree->Draw(expression, gate, "colz");
       
       int nPeak = spec->Search(hT);
       printf("find %d peaks\n", nPeak);
       
-      float * xpos =  spec->GetPositionX();
-      float * ypos =  spec->GetPositionY();
+      Double_t * xpos =  spec->GetPositionX();
+      Double_t * ypos =  spec->GetPositionY();
       
       TF1* fit2g = new TF1("fit2g", "gaus(0) + gaus(3)");
       fit2g->SetParameter(0, ypos[0]);
@@ -119,8 +125,8 @@ void GetCoinTimeCorrectionCutG(){
       
       hT->Fit("fit2g");
       
-      double time[2], eTime[2];
-      double resol[2], eResol[2];
+      Double_t time[2], eTime[2];
+      Double_t resol[2], eResol[2];
       
       printf("================================= in nano-sec\n");
       
@@ -137,18 +143,16 @@ void GetCoinTimeCorrectionCutG(){
                         (time[1] - time[0]), 
                         TMath::Sqrt( eTime[0]*eTime[0] + eTime[1]*eTime[1]));
       
-      
-      cAna->WaitPrimitive();
-      
+      //cAna->WaitPrimitive();
 
       printf("=========== save parameters to %s \n", filename.Data());
       fprintf(paraOut, "%d\t", detID);
-      for( int i = 0; i < 7; i++){
+      for( int i = 0; i < 8; i++){
          fprintf(paraOut, "%11.6f\t", q[i]);
       }
-      fprintf(paraOut, "%11.6f\n", q[7]);
+      fprintf(paraOut, "%11.6f\n", time[0]);
       
-   }
+   //}
    
    fflush(paraOut);
    fclose(paraOut);
