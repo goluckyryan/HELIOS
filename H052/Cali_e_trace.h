@@ -113,8 +113,8 @@ public :
    
    Float_t rdtC[8];
    ULong64_t rdtC_t[8];
-   ULong64_t coin_t; // when zMultiHit == 1 and rdtC_t(max(rdtC))
    
+   Int_t   coin_t;
    Float_t tcoin_t;
    Float_t coinTime; 
    
@@ -235,7 +235,7 @@ void Cali_e_trace::Init(TTree *tree)
    newTree->Branch("rdt", rdtC, "rdtC[8]/F");
    newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/l");
    
-   newTree->Branch("coin_t", &coin_t, "coin_t/l");
+   newTree->Branch("coin_t", &coin_t, "coin_t/I");
    newTree->Branch("tcoin_t", &tcoin_t, "tcoin_t/F");
    newTree->Branch("coinTime", &coinTime, "coinTime/F");
     

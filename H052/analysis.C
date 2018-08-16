@@ -1,6 +1,6 @@
 {
 
-   TFile * f1 = new TFile("trace_S.root", "READ");
+   TFile * f1 = new TFile("A_trace.root", "READ");
    TTree * tree = (TTree*) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();
@@ -40,8 +40,8 @@
       //expression.Form("te_r:te_t>>hTX%d", i);
       
       hTX[i] = new TH2F(name, "coincident vs X; x; rise time", 400, -1.5, 1.5, 400, -10, 50);
+      //expression.Form("coin_t+te_t-trdt_t:x>>hTX%d", i);
       expression.Form("coin_t+te_t-trdt_t:x>>hTX%d", i);
-      
       gate.Form("Iteration$==%d", i);
       
       cAna->cd(i+1);

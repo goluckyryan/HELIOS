@@ -87,7 +87,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       rdtC[i] = TMath::QuietNaN();
       rdtC_t[i] = 0;
    }
-   coin_t = 0;
+   coin_t = -2000;
 
    tcoin_t = TMath::QuietNaN();
    coinTime = TMath::QuietNaN();
@@ -140,7 +140,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    }
 
    //#################################################################### processing
-   ULong64_t eTime = 0; //this will be the time for Ex valid
+   ULong64_t eTime = -2000; //this will be the time for Ex valid
    Float_t teTime = 0.; //time from trace
    for(int idet = 0 ; idet < numDet; idet++){
       
@@ -148,7 +148,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          eC[idet]   = e[idet]/eCorr[idet][0] + eCorr[idet][1];  
          eC_t[idet] = e_t[idet]; // ch
       }
-      
+            
       double xfC = 0, xnC = 0;
       if( xf[idet] > 0) xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       if( xn[idet] > 0) xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
@@ -184,6 +184,12 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          det = idet;
          //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[idet], pos[detID], z[idet]);
       
+         eTime  = eC_t[idet];
+         teTime = te_t[idet];
+         
+         teS    = te[idet];
+         te_tS  = te_t[idet];
+         te_rS  = te_r[idet];
       
          //========== Calculate Ex and thetaCM
          if( TMath::IsNaN(eC[idet]) || isReaction == false ){
@@ -192,12 +198,6 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
             thetaLab = TMath::QuietNaN();
             
          }else{
-         
-            eTime = eC_t[idet];
-            teTime = te_t[idet];
-            teS    = te[idet];
-            te_tS    = te_t[idet];
-            te_rS    = te_r[idet];
          
             double y = eC[idet] + mass;
             Z = alpha * gamma * beta * z[idet];
@@ -258,18 +258,19 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       Float_t trdtTime = 0.;
       for(int i = 0; i < 8 ; i++){
          if( rdt[i] > rdtQ ) {
-            rdtQ = rdt[i];
+            rdtQ    = rdt[i];
             rdtTime = rdt_t[i];
+            
             trdtTime = trdt_t[i];
             
-            trdtS = trdt[i];
-            trdt_tS = trdt_t[i];
-            trdt_rS = trdt_r[i];
+            trdtS    = trdt[i];
+            trdt_tS  = trdt_t[i];
+            trdt_rS  = trdt_r[i];
             
          }
       }
-      
-      coin_t = eTime - rdtTime;
+     
+      coin_t = (int)eTime - rdtTime;
       tcoin_t = teTime - trdtTime;
       
       coinTime = coin_t + tcoin_t;

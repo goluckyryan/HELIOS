@@ -12,6 +12,10 @@
 
 void GetCoinTimeCorrectionCutG(int detID){
 
+   int numGauss = 1;
+   if( detID%6 == 4) numGauss = 2;
+   if( detID%6 == 5) numGauss = 3;
+
    TFile * f1 = new TFile("A_trace.root", "READ");
    TTree * tree = (TTree*) f1->Get("tree");
    
@@ -20,7 +24,7 @@ void GetCoinTimeCorrectionCutG(int detID){
 
    int Div[2] = {1,1};
    int size[2] = {600,600}; //x,y
-   TCanvas * cAna = new TCanvas("cAna", "cAna", 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   TCanvas * cAna = new TCanvas("cAna", "cAna", 500, 0, size[0]*Div[0], size[1]*Div[1]);
    if( cAna->GetShowEditor() )  cAna->ToggleEditor();
    if( cAna->GetShowToolBar() ) cAna->ToggleToolBar();
    cAna->Divide(Div[0],Div[1]);
@@ -38,6 +42,7 @@ void GetCoinTimeCorrectionCutG(int detID){
    TH2F * hTXg  = new TH2F("hTXg",  "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
    TH2F * hTXc2 = new TH2F("hTXc2", "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
    TH1F * hT = new TH1F("hT", "", 100, -5, 10);
+   TProfile * hp = new TProfile("hp", "time Profile", 400, -1.5,1.5);
    TSpectrum * spec = new TSpectrum(5);
    
    TCutG * cut = NULL;
@@ -63,9 +68,34 @@ void GetCoinTimeCorrectionCutG(int detID){
       name.Form("time vs X (detID-%d); x; coinTime [ch]", detID);
       hTX->SetTitle(name);
       tree->Draw(expression, gate, "colz");
+      int entries = hTX->Integral();
+      printf("entries : %d \n", entries);
+      if( entries < 100 ){
+         printf("set bin = 30\n");
+         hTX->SetBins(30, -1.5, 1.5, 50, -10, 40);
+         hTXg->SetBins(30, -1.5, 1.5, 50, -10, 40);
+         hTXc2->SetBins(30, -1.5, 1.5, 50, -10, 40);
+         hp->SetBins(30, -1.5, 1.5); 
+         tree->Draw(expression, gate, "colz");
+      }else if( 100 <= entries && entries < 500 ){
+         printf("set bin = 100\n");
+         hTX->SetBins(100, -1.5, 1.5, 100, -10, 40);
+         hTXg->SetBins(100, -1.5, 1.5, 100, -10, 40);
+         hTXc2->SetBins(100, -1.5, 1.5, 100, -10, 40);
+         hp->SetBins(100, -1.5, 1.5);
+         tree->Draw(expression, gate, "colz");
+      }else if ( 500 <= entries ){
+         printf("set bin = 400\n");
+         hTX->SetBins(400, -1.5, 1.5, 400, -10, 40);
+         hTXg->SetBins(400, -1.5, 1.5, 400, -10, 40);
+         hTXc2->SetBins(400, -1.5, 1.5, 400, -10, 40);
+         hp->SetBins(400, -1.5, 1.5);
+         tree->Draw(expression, gate, "colz");
+      }      
       cAna->Update();
       
       //==== create cut and draw
+      printf("---------- create TCutG\n");
       cAna->WaitPrimitive("CUTG", "TCutG");
       cut = (TCutG*) gROOT->FindObjectAny("CUTG");
       cut->SetName("cut1");
@@ -78,14 +108,13 @@ void GetCoinTimeCorrectionCutG(int detID){
       cut->Draw("same");
       
       //==== create profile and fit
-      name.Form("hTXp%d", detID);
-      TProfile * hp = new TProfile(name, name, 400, -1.5,1.5);
-      hTXg->ProfileX(name);
+      hTXg->ProfileX("hp");
       hp->Draw("same");
       
       TF1 * fit7 = new TF1("fit7", "pol7", -2, 2);
-      hp->Fit("fit7", "");
+      hp->Fit("fit7", "q");
       
+      printf("---------- double click for flatten.\n");
       cAna->WaitPrimitive();
       
       //==== create substract
@@ -103,6 +132,7 @@ void GetCoinTimeCorrectionCutG(int detID){
       expression.Form("coinTime - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) :x>>hTXc2", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
       tree->Draw(expression, gate, "colz");
       
+      printf("---------- double click for 1D plot.\n");
       cAna->WaitPrimitive();
       
       //==== 1-D plot
@@ -112,25 +142,40 @@ void GetCoinTimeCorrectionCutG(int detID){
       int nPeak = spec->Search(hT);
       printf("find %d peaks\n", nPeak);
       
-      Double_t * xpos =  spec->GetPositionX();
-      Double_t * ypos =  spec->GetPositionY();
+      Float_t * xpos =  spec->GetPositionX();
+      Float_t * ypos =  spec->GetPositionY();
+
+      //Double_t * xpos =  spec->GetPositionX();
+      //Double_t * ypos =  spec->GetPositionY();
       
-      TF1* fit2g = new TF1("fit2g", "gaus(0) + gaus(3)");
+      TF1* fit2g = NULL;
+      
+      if( numGauss == 1) fit2g = new TF1("fit2g", "gaus(0)");      
+      if( numGauss == 2) fit2g = new TF1("fit2g", "gaus(0) + gaus(3)");      
+      if( numGauss == 3) fit2g = new TF1("fit2g", "gaus(0) + gaus(3) + gaus(6)");
+      
       fit2g->SetParameter(0, ypos[0]);
       fit2g->SetParameter(1, xpos[0]);
       fit2g->SetParameter(2, 0.5);
-      fit2g->SetParameter(3, ypos[1]);
-      fit2g->SetParameter(4, xpos[1]);
-      fit2g->SetParameter(5, 0.5);
+      if( numGauss >= 2){
+         fit2g->SetParameter(3, ypos[1]);
+         fit2g->SetParameter(4, xpos[1]);
+         fit2g->SetParameter(5, 0.5);
+      }
+      if( numGauss >= 3){
+         fit2g->SetParameter(6, ypos[2]);
+         fit2g->SetParameter(7, xpos[2]);
+         fit2g->SetParameter(8, 0.5);
+      }
       
-      hT->Fit("fit2g");
+      hT->Fit("fit2g", "q");
       
-      Double_t time[2], eTime[2];
-      Double_t resol[2], eResol[2];
+      Double_t time[numGauss], eTime[numGauss];
+      Double_t resol[numGauss], eResol[numGauss];
       
       printf("================================= in nano-sec\n");
       
-      for(int i = 0; i < 2; i ++){
+      for(int i = 0; i < numGauss; i ++){
          time[i]   = fit2g->GetParameter(3*i+1) * 10.;
          eTime[i]  = fit2g->GetParError(3*i+1) * 10.;
          resol[i]  = fit2g->GetParameter(3*i+2) * 10.;
@@ -156,4 +201,10 @@ void GetCoinTimeCorrectionCutG(int detID){
    
    fflush(paraOut);
    fclose(paraOut);
+   
+   printf("========= double click to exit.\n");
+   cAna->WaitPrimitive();
+   
+   
+   gROOT->ProcessLine(".q");
 }
