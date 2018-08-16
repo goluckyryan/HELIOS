@@ -63,7 +63,7 @@ void GetCoinTimeCorrectionCutG(int detID){
       
       printf("============ detID: %d\n", detID);
    
-      expression.Form("coinTime:x>>hTX");   
+      expression.Form("coinTimeUC:x>>hTX");   
       gate.Form("Iteration$==%d", detID);
       name.Form("time vs X (detID-%d); x; coinTime [ch]", detID);
       hTX->SetTitle(name);
@@ -100,10 +100,10 @@ void GetCoinTimeCorrectionCutG(int detID){
       cut = (TCutG*) gROOT->FindObjectAny("CUTG");
       cut->SetName("cut1");
       cut->SetVarX("x");
-      cut->SetVarY("coinTime");
+      cut->SetVarY("coinTimeUC");
       gate.Form("cut1 && Iteration$==%d", detID);
       
-      expression.Form("coinTime:x>>hTXg");   
+      expression.Form("coinTimeUC:x>>hTXg");   
       tree->Draw(expression, gate, "colz");
       cut->Draw("same");
       
@@ -112,7 +112,7 @@ void GetCoinTimeCorrectionCutG(int detID){
       hp->Draw("same");
       
       TF1 * fit7 = new TF1("fit7", "pol7", -2, 2);
-      hp->Fit("fit7", "q");
+      hp->Fit("fit7", "");
       
       printf("---------- double click for flatten.\n");
       cAna->WaitPrimitive();
@@ -129,24 +129,24 @@ void GetCoinTimeCorrectionCutG(int detID){
       q[7] = fit7->GetParameter(7);
     
       gate.Form("Iteration$==%d", detID);  
-      expression.Form("coinTime - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) :x>>hTXc2", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
+      expression.Form("coinTimeUC - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) :x>>hTXc2", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
       tree->Draw(expression, gate, "colz");
       
       printf("---------- double click for 1D plot.\n");
       cAna->WaitPrimitive();
       
       //==== 1-D plot
-      expression.Form("coinTime - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) >>hT", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
+      expression.Form("coinTimeUC - %f - %f*x - %f*TMath::Power(x,2) - %f*TMath::Power(x,3)- %f*TMath::Power(x,4)- %f*TMath::Power(x,5)- %f*TMath::Power(x,6)- %f*TMath::Power(x,7) >>hT", q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
       tree->Draw(expression, gate, "colz");
       
       int nPeak = spec->Search(hT);
       printf("find %d peaks\n", nPeak);
       
-      Float_t * xpos =  spec->GetPositionX();
-      Float_t * ypos =  spec->GetPositionY();
+      //Float_t * xpos =  spec->GetPositionX();
+      //Float_t * ypos =  spec->GetPositionY();
 
-      //Double_t * xpos =  spec->GetPositionX();
-      //Double_t * ypos =  spec->GetPositionY();
+      Double_t * xpos =  spec->GetPositionX();
+      Double_t * ypos =  spec->GetPositionY();
       
       TF1* fit2g = NULL;
       
@@ -195,7 +195,7 @@ void GetCoinTimeCorrectionCutG(int detID){
       for( int i = 0; i < 8; i++){
          fprintf(paraOut, "%11.6f\t", q[i]);
       }
-      fprintf(paraOut, "%11.6f\n", time[0]);
+      fprintf(paraOut, "%11.6f\n", time[0]/10.);
       
    //}
    

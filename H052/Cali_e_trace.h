@@ -17,6 +17,8 @@
 #include <TF1.h>
 #include <string>
 #include <fstream>
+#include <TObjArray.h>
+#include "TClonesArray.h"
 
 // Headers needed by this particular selector
 
@@ -116,7 +118,8 @@ public :
    
    Int_t   coin_t;
    Float_t tcoin_t;
-   Float_t coinTime; 
+   Float_t coinTimeUC; 
+   Float_t coinTime;
    
    Float_t teS;      //for selected time 
    Float_t te_tS;
@@ -124,6 +127,8 @@ public :
    Float_t trdtS;
    Float_t trdt_tS;
    Float_t trdt_rS;
+   
+   TObjArray * fList; //!
    
    //clock   
    TBenchmark clock;
@@ -143,6 +148,9 @@ public :
    double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
    
    double eCorr[24][2]; // e-correction
+   
+   double cTCorr[24][9]; // coinTime correction
+   TF1 ** f7 ; //!
    
    bool isReaction;
    double G, Z, H; // for excitation calcualtion
@@ -237,6 +245,7 @@ void Cali_e_trace::Init(TTree *tree)
    
    newTree->Branch("coin_t", &coin_t, "coin_t/I");
    newTree->Branch("tcoin_t", &tcoin_t, "tcoin_t/F");
+   newTree->Branch("coinTimeUC", &coinTimeUC, "coinTimeUC/F");
    newTree->Branch("coinTime", &coinTime, "coinTime/F");
     
    newTree->Branch("te",     &teS,     "teS/F");
@@ -245,13 +254,6 @@ void Cali_e_trace::Init(TTree *tree)
    newTree->Branch("trdt",   &trdtS,   "trdtS/F");
    newTree->Branch("trdt_t", &trdt_tS, "trdt_tS/F");
    newTree->Branch("trdt_r", &trdt_rS, "trdt_rS/F");
-   
-   
-   /*
-   newTree->Branch("rdt_m", &rdt_m, "rdt_m/I");
-   newTree->Branch("tac", tacC, "tacC[6]/F");
-   newTree->Branch("tac_t", tacC_t, "tacC_t[6]/F"); 
-   */
    
    clock.Reset();
    clock.Start("timer");
@@ -370,6 +372,56 @@ void Cali_e_trace::Init(TTree *tree)
       }
       //return;
    }
+   file.close();
+   
+   //========================================= coinTime correction
+   printf("----- loading coin-Time correction parameters.");
+   file.open("correction_coinTime.dat");
+   
+   f7 = new TF1*[numDet];
+   fList = new TObjArray();
+   
+   if( file.is_open() ){
+      double d, a0, a1, a2, a3, a4, a5, a6, a7, a8;
+      int i = 0;
+      while( file >> d >> a0 >> a1 >> a2 >> a3 >> a4 >> a5 >> a6 >> a7 >> a8){
+         if( i >= numDet) break;
+         cTCorr[i][0] = a0;
+         cTCorr[i][1] = a1;
+         cTCorr[i][2] = a2;
+         cTCorr[i][3] = a3;
+         cTCorr[i][4] = a4;
+         cTCorr[i][5] = a5;
+         cTCorr[i][6] = a6;
+         cTCorr[i][7] = a7;
+         cTCorr[i][8] = a8;
+         printf("\n%2d, a0: %f, a1: %f .... a7: %f", i, cTCorr[i][0], cTCorr[i][1], cTCorr[i][7]);
+         i = i + 1;
+      }
+      printf("... done.\n");
+      
+      TString name;
+      for(int i = 0; i < numDet; i++){
+         name.Form("f%d", i);
+         f7[i] = new TF1(name, "pol7", -2, 2);
+         
+         for(int j = 0 ; j < 8; j++){
+            f7[i]->SetParameter(j, cTCorr[i][j]);
+         }
+         fList->Add(f7[i]);
+      }
+      
+      fList->Write("fList", TObject::kSingleKey);
+      
+   }else{
+      printf("... fail.\n");
+      for( int i = 0; i < numDet; i++){
+         for( int j = 0 ; j < 9; j++){
+            cTCorr[i][j] = 0.;
+         } 
+      }
+   }
+   
    file.close();
    
    //========================================= reaction parameters

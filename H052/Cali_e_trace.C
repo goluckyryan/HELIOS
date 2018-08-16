@@ -90,6 +90,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    coin_t = -2000;
 
    tcoin_t = TMath::QuietNaN();
+   coinTimeUC = TMath::QuietNaN(); //uncorrected
    coinTime = TMath::QuietNaN();
    
    teS = TMath::QuietNaN();
@@ -182,7 +183,6 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          zMultiHit ++;
          count ++;
          det = idet;
-         //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[idet], pos[detID], z[idet]);
       
          eTime  = eC_t[idet];
          teTime = te_t[idet];
@@ -190,6 +190,8 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          teS    = te[idet];
          te_tS  = te_t[idet];
          te_rS  = te_r[idet];
+
+         //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[idet], pos[detID], z[idet]);
       
          //========== Calculate Ex and thetaCM
          if( TMath::IsNaN(eC[idet]) || isReaction == false ){
@@ -273,8 +275,13 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       coin_t = (int)eTime - rdtTime;
       tcoin_t = teTime - trdtTime;
       
-      coinTime = coin_t + tcoin_t;
+      coinTimeUC = coin_t + tcoin_t;
       
+      double f7corr = f7[det]->Eval(x[det]) + cTCorr[det][8];
+      
+      coinTime = (coinTimeUC - f7corr)*10.;
+      
+      //if(det == 22) printf("%d | %f -  %f (%f)  =  %f \n", det, coinTimeUC, f7corr, x[det], coinTime);
    }
    
    if( zMultiHit == 0 ) return kTRUE;
