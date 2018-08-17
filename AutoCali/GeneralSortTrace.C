@@ -57,18 +57,18 @@ Int_t idKindMap[160] = { 2,  2,  1,  1,  1,  1,  1,  1, -1, -1,//4
 TBenchmark gClock;
 Bool_t shown = 0;
 
-TString saveFileName = "trace.root";
+TString saveFileName = "trace.root"; //TODO add suffix to original file
 TFile *saveFile; //!
 TTree *newTree; //!
 
-ULong64_t MaxProcessedEntries=1000;
+ULong64_t MaxProcessedEntries=10000000;
 int EffEntries;
 ULong64_t NumEntries = 0;
 ULong64_t ProcessedEntries = 0;
 
 bool isTraceON = true;
 bool isSaveTrace = true;
-bool isFitTrace = true;
+bool isSaveFitTrace = true;
 int traceMethod = 1; //0 = no process, 1, fit, 2, constant fraction 
 int traceLength = 200;
 
@@ -126,7 +126,8 @@ void GeneralSortTrace::Begin(TTree * tree)
    NumEntries = tree->GetEntries();
    EffEntries = TMath::Min(MaxProcessedEntries, NumEntries);
    printf( "=====================================================\n");
-   printf( "==========  General Sort w/ Trace  ==================\n");
+   printf( "===============  GeneralSortTrace.C ================= \n");
+   printf( "============  General Sort w/ Trace  ================\n");
    printf( "=====================================================\n");
    printf( "========== Make a new tree with trace, total Entry : %d, use : %d [%4.1f%]\n", NumEntries, EffEntries, EffEntries*100./NumEntries);
    printf( "  TAC/RF : %s \n", isTACRF ?  "On" : "Off");
@@ -177,15 +178,12 @@ void GeneralSortTrace::Begin(TTree * tree)
       
       if( traceMethod > 0 ){
 	      gFit = new TF1("gFit", "[0]/(1+TMath::Exp(-(x-[1])/[2]))+[3]", 0, 140);
-         newTree->Branch("te",             te,  "te[24]/F");
-         newTree->Branch("te_r",         te_r,  "te_r[24]/F");
-         newTree->Branch("te_t",         te_t,  "te_t[24]/F");
-         newTree->Branch("ttac",         ttac,  "ttac[6]/F");
-         newTree->Branch("ttac_t",     ttac_t,  "ttac_t[6]/F");
-         newTree->Branch("ttac_r",     ttac_r,  "ttac_r[6]/F");
-         newTree->Branch("trdt",         trdt,  "trdt[8]/F");
-         newTree->Branch("trdt_t",     trdt_t,  "trdt_t[8]/F");
-         newTree->Branch("trdt_r",     trdt_r,  "trdt_r[8]/F");
+         newTree->Branch("te",             te,  "Trace_Energy[24]/F");
+         newTree->Branch("te_r",         te_r,  "Trace_Energy_RiseTime[24]/F");
+         newTree->Branch("te_t",         te_t,  "Trace_Energy_Time[24]/F");
+         newTree->Branch("trdt",         trdt,  "Trace_RDT[8]/F");
+         newTree->Branch("trdt_t",     trdt_t,  "Trace_RDT_Time[8]/F");
+         newTree->Branch("trdt_r",     trdt_r,  "Trace_RDT_RiseTime[8]/F");
       }
    }
    
@@ -244,12 +242,6 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             trdt[i]   = TMath::QuietNaN();
             trdt_t[i] = TMath::QuietNaN();
             trdt_r[i] = TMath::QuietNaN();
-         }
-         
-         if( i < 6 ) {
-            ttac[i]   = TMath::QuietNaN();
-            ttac_t[i] = TMath::QuietNaN();
-            ttac_r[i] = TMath::QuietNaN();
          }
       }
       
@@ -370,16 +362,10 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
          idDet  = idDetMap[idTemp];
          idKind = idKindMap[idTemp];
          
-         
          bool isPSDe = (30 > idDet && idDet >= 0 && idKind == 0);
-         bool isTAC4 = (idDet == 304 );
          bool isRDT  = (130 > idDet && idDet >= 100 );
-         if( !isPSDe && !isTAC4 && !isRDT ) continue;
-         
-         //trace when energy or tac
-         //if( idKind != 0 && idKind != 4 ) continue;
-         //if( idKind == -1 || idKind == 1 || idKind == 2 && idKind > 30 ) continue;
-         
+         if( !isPSDe && !isRDT ) continue;
+                  
          gTrace = (TGraph*) arr->ConstructedAt(countTrace);
          gTrace->Clear();
          countTrace ++;
@@ -420,7 +406,7 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
             if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
             if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
 
-            if( isFitTrace ) {
+            if( isSaveFitTrace ) {
                gTrace->Fit("gFit", "qR");
             }else{
                gTrace->Fit("gFit", "qR0");
@@ -434,12 +420,6 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
 
                te_t[idDet] = time;
                te_r[idDet] = gFit->GetParameter(2);
-            }
-            
-            if( idDet >= 300 && idKind >= 0 ){
-               ttac[idKind]   = gFit->GetParameter(0);
-               ttac_t[idKind] = gFit->GetParameter(1);
-               ttac_r[idKind] = gFit->GetParameter(2);
             }
             
             if( 200 > idDet && idDet >= 100 ) {

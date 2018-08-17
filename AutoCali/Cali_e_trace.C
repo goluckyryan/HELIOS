@@ -87,18 +87,21 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       rdtC[i] = TMath::QuietNaN();
       rdtC_t[i] = 0;
    }
+   
    coin_t = -2000;
 
-   tcoin_t = TMath::QuietNaN();
-   coinTimeUC = TMath::QuietNaN(); //uncorrected
-   coinTime = TMath::QuietNaN();
-   
-   teS = TMath::QuietNaN();
-   te_tS = TMath::QuietNaN();
-   te_rS = TMath::QuietNaN();
-   trdtS = TMath::QuietNaN();
-   trdt_tS = TMath::QuietNaN();
-   trdt_rS = TMath::QuietNaN();
+   if( isTraceDataExist ){
+      tcoin_t = TMath::QuietNaN();
+      coinTimeUC = TMath::QuietNaN(); //uncorrected
+      coinTime = TMath::QuietNaN();
+      
+      teS = TMath::QuietNaN();
+      te_tS = TMath::QuietNaN();
+      te_rS = TMath::QuietNaN();
+      trdtS = TMath::QuietNaN();
+      trdt_tS = TMath::QuietNaN();
+      trdt_rS = TMath::QuietNaN();
+   }
    
    //#################################################################### processing
    eventID += 1;
@@ -111,22 +114,18 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    b_EnergyTimestamp->GetEntry(entry,0);
    b_RDTTimestamp->GetEntry(entry,0);
    
-   //b_ELUM->GetEntry(entry, 0); // for H060_208Pb
-   //b_ELUMTimestamp->GetEntry(entry, 0); // for H060_208Pb
    b_TAC->GetEntry(entry,0);
    
-   b_Energy_Trace->GetEntry(entry,0);
-   b_Energy_TraceTime->GetEntry(entry,0);
-   b_Energy_TraceRiseTime->GetEntry(entry,0);
-   
-   //b_TAC_Trace->GetEntry(entry,0);
-   //b_TAC_TraceTime->GetEntry(entry,0);
-   //b_TAC_TraceRiseTime->GetEntry(entry,0);
-   
-   b_RDT_Trace->GetEntry(entry,0);
-   b_RDT_TraceTime->GetEntry(entry,0);
-   b_RDT_TraceRiseTime->GetEntry(entry,0);
+   if ( isTraceDataExist ){
+      b_Trace_Energy_->GetEntry(entry,0);
+      b_Trace_Energy_Time->GetEntry(entry,0);
+      b_Trace_Energy_RiseTime->GetEntry(entry,0);
 
+      b_Trace_RDT->GetEntry(entry,0);
+      b_Trace_RDT_Time->GetEntry(entry,0);
+      b_Trace_RDT_RiseTime->GetEntry(entry,0);
+   }
+   
    //=========== gate
    bool rdt_energy = false;
    for( int rID = 0; rID < 8; rID ++){
@@ -185,12 +184,13 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          det = idet;
       
          eTime  = eC_t[idet];
-         teTime = te_t[idet];
          
-         teS    = te[idet];
-         te_tS  = te_t[idet];
-         te_rS  = te_r[idet];
-
+         if ( isTraceDataExist ){
+            teTime = te_t[idet];
+            teS    = te[idet];
+            te_tS  = te_t[idet];
+            te_rS  = te_r[idet];
+         }
          //printf(" det: %d, detID: %d, x: %f, pos:%f, z: %f \n", det, detID, x[idet], pos[detID], z[idet]);
       
          //========== Calculate Ex and thetaCM
@@ -263,25 +263,23 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
             rdtQ    = rdt[i];
             rdtTime = rdt_t[i];
             
-            trdtTime = trdt_t[i];
-            
-            trdtS    = trdt[i];
-            trdt_tS  = trdt_t[i];
-            trdt_rS  = trdt_r[i];
-            
+            if ( isTraceDataExist ){
+               trdtTime = trdt_t[i];
+               trdtS    = trdt[i];
+               trdt_tS  = trdt_t[i];
+               trdt_rS  = trdt_r[i];
+            }
          }
       }
      
       coin_t = (int)eTime - rdtTime;
-      tcoin_t = teTime - trdtTime;
       
-      coinTimeUC = coin_t + tcoin_t;
-      
-      double f7corr = f7[det]->Eval(x[det]) + cTCorr[det][8];
-      
-      coinTime = (coinTimeUC - f7corr)*10.;
-      
-      //if(det == 22) printf("%d | %f -  %f (%f)  =  %f \n", det, coinTimeUC, f7corr, x[det], coinTime);
+      if ( isTraceDataExist ){
+         tcoin_t = teTime - trdtTime;
+         coinTimeUC = coin_t + tcoin_t;
+         double f7corr = f7[det]->Eval(x[det]) + cTCorr[det][8];
+         coinTime = (coinTimeUC - f7corr)*10.;
+      }
    }
    
    if( zMultiHit == 0 ) return kTRUE;
@@ -331,5 +329,7 @@ void Cali_e_trace::Terminate()
    saveFile->Close();
 
    printf("-------------- done. %s, z-valid count: %d\n", saveFileName.Data(), count);
+   
+   gROOT->ProcessLine(".q");
 
 }

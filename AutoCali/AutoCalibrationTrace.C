@@ -13,28 +13,29 @@
 #include <fstream>
 #include <TProof.h>
 #include "../Simulation/transfer.C"
-#include "../AutoCali/Cali_littleTree.h"
+#include "../AutoCali/Cali_littleTree_trace.h"
 #include "../AutoCali/Check_e_x.C"
 #include "../AutoCali/Cali_compareF.C"
 #include "../AutoCali/Cali_xf_xn.C"
 #include "../AutoCali/Cali_xf_xn_to_e.C"
-#include "../AutoCali/Cali_e.h"
+#include "../AutoCali/Cali_e_trace.h"
 
 //==========================================
 //         This file show the steps for calibration 
-//
+//         //TODO detect branch te_t and trdt_t exist or not, if exist, calibrate with coinTime
 //==========================================
 
 double eThreshold = 400;
 
-void AutoCalibration(){
+void AutoCalibrationTrace(){
    
    int option;
-   printf(" ========= Auto Calibration ======================= \n");
+   printf(" ========= Auto Calibration w/ Trace ============== \n");
    printf(" ================================================== \n");
    printf(" 0 = alpha source calibration for xf - xn.\n");
+   printf(" --------- GeneralSortTrace.C --> sorted.root------  \n");
    printf(" 1 = xf+xn to e calibration. \n");
-   printf(" 2 = Generate root file with e, x, z, detID, multi.\n");
+   printf(" 2 = Generate root file with e, x, z, detID, coinTime\n");
    printf(" --------- transfer.root reqaure below ------------\n");
    printf(" 3 = e calibration by compare with simulation.\n");
    printf(" 4 = Generate new root with calibrated data. \n");
@@ -47,12 +48,11 @@ void AutoCalibration(){
    //======== alpha data
    TString rootfileAlpha="../H060/data/gen_run09.root";
    
-   //======== experimental data
+   //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
 
-   chain->Add("../H052/data/gen_run107.root"); 
+   chain->Add("../H052/data/trace.root"); 
 
-   
 /*   chain->Add("../H060/data/gen_run11.root");  //01
    chain->Add("../H060/data/gen_run12.root");  //02
    chain->Add("../H060/data/gen_run13.root");  //03
@@ -83,7 +83,6 @@ void AutoCalibration(){
    TFile *fa = new TFile (rootfileAlpha, "read"); 
    TTree * atree = (TTree*)fa->Get("gen_tree");
 
-   
 /**///=========================================== Calibration
    if( option == 0 ) Cali_xf_xn(atree);
    if( option == 1 ) Cali_xf_xn_to_e(chain);
@@ -92,7 +91,7 @@ void AutoCalibration(){
       
    if( option == 2 ) {
       printf("=============== creating smaller tree.\n");
-      chain->Process("../AutoCali/Cali_littleTree.C+");
+      chain->Process("../AutoCali/Cali_littleTree_trace.C+");
       Check_e_x("temp.root", eThreshold);
       gROOT->ProcessLine(".q");
    }
@@ -115,7 +114,7 @@ void AutoCalibration(){
          Cali_compareF(caliTree, fs, eCdet, eThreshold);
          
          if( eCdet == -1) {
-            chain->Process("../AutoCali/Cali_e.C+");
+            chain->Process("../AutoCali/Cali_e_trace.C+");
             gROOT->ProcessLine(".q");
          }
       }else{
@@ -125,7 +124,7 @@ void AutoCalibration(){
    }
    
    if( option == 4 ) {
-      chain->Process("../AutoCali/Cali_e.C+");
+      chain->Process("../AutoCali/Cali_e_trace.C+");
       gROOT->ProcessLine(".q");
    }
    
@@ -134,7 +133,7 @@ void AutoCalibration(){
       Cali_xf_xn_to_e(chain);
     
       printf("=============== creating smaller tree.\n");
-      chain->Process("../AutoCali/Cali_littleTree.C+");
+      chain->Process("../AutoCali/Cali_littleTree_trace.C+");
       
       TFile *caliFile = new TFile ("temp.root", "read"); 
       if( !caliFile->IsOpen() ){
@@ -152,7 +151,9 @@ void AutoCalibration(){
          return;
       }   
       
-      chain->Process("../AutoCali/Cali_e.C+");
+      chain->Process("../AutoCali/Cali_e_trace.C+");
+   
+      printf("---- run AutoCali/Check_e_z.C for summary.\n");
    
       gROOT->ProcessLine(".q");
    

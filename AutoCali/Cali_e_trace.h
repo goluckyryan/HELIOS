@@ -43,9 +43,6 @@ public :
    Float_t         te[24];
    Float_t         te_r[24];
    Float_t         te_t[24];
-   Float_t         ttac[6];
-   Float_t         ttac_t[6];
-   Float_t         ttac_r[6];
    Float_t         trdt[8];
    Float_t         trdt_t[8];
    Float_t         trdt_r[8];
@@ -62,17 +59,15 @@ public :
    TBranch        *b_TAC;   //!
    TBranch        *b_TACTimestamp;   //!
    
-   TBranch        *b_Energy_Trace;  //!
-   TBranch        *b_Energy_TraceTime;  //!
-   TBranch        *b_Energy_TraceRiseTime;  //!
+   TBranch        *b_Trace_Energy;  //!
+   TBranch        *b_Trace_Energy_Time;  //!
+   TBranch        *b_Trace_Energy_RiseTime;  //!
    
-   TBranch        *b_TAC_Trace;  //!
-   TBranch        *b_TAC_TraceTime;  //!
-   TBranch        *b_TAC_TraceRiseTime;  //!
+   TBranch        *b_Trace_RDT;  //!
+   TBranch        *b_Trace_RDT_Time;  //!
+   TBranch        *b_Trace_RDT_RiseTime;  //!
    
-   TBranch        *b_RDT_Trace;  //!
-   TBranch        *b_RDT_TraceTime;  //!
-   TBranch        *b_RDT_TraceRiseTime;  //!
+   bool isTraceDataExist; // if b_Trace_** exist
 
    Cali_e_trace(TTree * /*tree*/ =0) : fChain(0) { }
    virtual ~Cali_e_trace() { }
@@ -193,22 +188,29 @@ void Cali_e_trace::Init(TTree *tree)
    fChain->SetBranchAddress("tac", tac, &b_TAC);
    fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
 
-   fChain->SetBranchAddress("te",   te,   &b_Energy_Trace);
-   fChain->SetBranchAddress("te_t", te_t, &b_Energy_TraceTime);
-   fChain->SetBranchAddress("te_r", te_r, &b_Energy_TraceRiseTime);
-
-   fChain->SetBranchAddress("ttac",   ttac,   &b_TAC_Trace);
-   fChain->SetBranchAddress("ttac_t", ttac_t, &b_TAC_TraceTime);
-   fChain->SetBranchAddress("ttac_r", ttac_r, &b_TAC_TraceRiseTime);
-
-   fChain->SetBranchAddress("trdt",   trdt,   &b_RDT_Trace);
-   fChain->SetBranchAddress("trdt_t", trdt_t, &b_RDT_TraceTime);
-   fChain->SetBranchAddress("trdt_r", trdt_r, &b_RDT_TraceRiseTime);
+   isTraceDataExist = false;
    
-   //======================================
+   TBranch * br = (TBranch *) fChain->GetListOfBranches()->FindObject("te_t");
+   if( br == NULL ){
+      printf(" WARNING! cannot find trace data -> proceed without trace. \n");
+   }else{
+      isTraceDataExist = true;
+      fChain->SetBranchAddress("te",   te,   &b_Trace_Energy);
+      fChain->SetBranchAddress("te_t", te_t, &b_Trace_Energy_Time);
+      fChain->SetBranchAddress("te_r", te_r, &b_Trace_Energy_RiseTime);
+
+      fChain->SetBranchAddress("trdt",   trdt,   &b_Trace_RDT);
+      fChain->SetBranchAddress("trdt_t", trdt_t, &b_Trace_RDT_Time);
+      fChain->SetBranchAddress("trdt_r", trdt_r, &b_Trace_RDT_RiseTime);
+   }
+   
+   //======================================   
    totnumEntry = tree->GetEntries();
-   printf( "========== Make a new tree with calibration, total Entry : %d \n", totnumEntry);
-   
+   printf( "=========================================================================== \n");
+   printf( "========================== Cali_e_trace.h ================================= \n");
+   printf( "====== Make a new tree with all calibrations, total Entry : %d \n", totnumEntry);
+   printf( "=========================================================================== \n");
+
    saveFileName = fChain->GetDirectory()->GetName();
    //remove any folder path to get the name;
    int found;
@@ -244,17 +246,21 @@ void Cali_e_trace::Init(TTree *tree)
    newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/l");
    
    newTree->Branch("coin_t", &coin_t, "coin_t/I");
-   newTree->Branch("tcoin_t", &tcoin_t, "tcoin_t/F");
-   newTree->Branch("coinTimeUC", &coinTimeUC, "coinTimeUC/F");
-   newTree->Branch("coinTime", &coinTime, "coinTime/F");
-    
-   newTree->Branch("te",     &teS,     "teS/F");
-   newTree->Branch("te_t",   &te_tS,   "te_tS/F");
-   newTree->Branch("te_r",   &te_rS,   "te_rS/F");
-   newTree->Branch("trdt",   &trdtS,   "trdtS/F");
-   newTree->Branch("trdt_t", &trdt_tS, "trdt_tS/F");
-   newTree->Branch("trdt_r", &trdt_rS, "trdt_rS/F");
    
+   if( isTraceDataExist ){
+      newTree->Branch("tcoin_t", &tcoin_t, "tcoin_t/F");
+      newTree->Branch("coinTimeUC", &coinTimeUC, "coinTimeUC/F");
+      newTree->Branch("coinTime", &coinTime, "coinTime/F");
+       
+      newTree->Branch("te",     &teS,     "teS/F");
+      newTree->Branch("te_t",   &te_tS,   "te_tS/F");
+      newTree->Branch("te_r",   &te_rS,   "te_rS/F");
+      newTree->Branch("trdt",   &trdtS,   "trdtS/F");
+      newTree->Branch("trdt_t", &trdt_tS, "trdt_tS/F");
+      newTree->Branch("trdt_r", &trdt_rS, "trdt_rS/F");
+   }
+   
+   //=== clock
    clock.Reset();
    clock.Start("timer");
    shown = 0;
@@ -375,54 +381,56 @@ void Cali_e_trace::Init(TTree *tree)
    file.close();
    
    //========================================= coinTime correction
-   printf("----- loading coin-Time correction parameters.");
-   file.open("correction_coinTime.dat");
-   
-   f7 = new TF1*[numDet];
-   fList = new TObjArray();
-   
-   if( file.is_open() ){
-      double d, a0, a1, a2, a3, a4, a5, a6, a7, a8;
-      int i = 0;
-      while( file >> d >> a0 >> a1 >> a2 >> a3 >> a4 >> a5 >> a6 >> a7 >> a8){
-         if( i >= numDet) break;
-         cTCorr[i][0] = a0;
-         cTCorr[i][1] = a1;
-         cTCorr[i][2] = a2;
-         cTCorr[i][3] = a3;
-         cTCorr[i][4] = a4;
-         cTCorr[i][5] = a5;
-         cTCorr[i][6] = a6;
-         cTCorr[i][7] = a7;
-         cTCorr[i][8] = a8;
-         printf("\n%2d, a0: %f, a1: %f .... a7: %f", i, cTCorr[i][0], cTCorr[i][1], cTCorr[i][7]);
-         i = i + 1;
-      }
-      printf("... done.\n");
+   if( isTraceDataExist ){
+      printf("----- loading coin-Time correction parameters.");
+      file.open("correction_coinTime.dat");
       
-      TString name;
-      for(int i = 0; i < numDet; i++){
-         name.Form("f%d", i);
-         f7[i] = new TF1(name, "pol7", -2, 2);
-         
-         for(int j = 0 ; j < 8; j++){
-            f7[i]->SetParameter(j, cTCorr[i][j]);
+      f7 = new TF1*[numDet];
+      fList = new TObjArray();
+      
+      if( file.is_open() ){
+         double d, a0, a1, a2, a3, a4, a5, a6, a7, a8;
+         int i = 0;
+         while( file >> d >> a0 >> a1 >> a2 >> a3 >> a4 >> a5 >> a6 >> a7 >> a8){
+            if( i >= numDet) break;
+            cTCorr[i][0] = a0;
+            cTCorr[i][1] = a1;
+            cTCorr[i][2] = a2;
+            cTCorr[i][3] = a3;
+            cTCorr[i][4] = a4;
+            cTCorr[i][5] = a5;
+            cTCorr[i][6] = a6;
+            cTCorr[i][7] = a7;
+            cTCorr[i][8] = a8;
+            printf("\n%2d, a0: %f, a1: %f .... a7: %f", i, cTCorr[i][0], cTCorr[i][1], cTCorr[i][7]);
+            i = i + 1;
          }
-         fList->Add(f7[i]);
+         printf("... done.\n");
+         
+         TString name;
+         for(int i = 0; i < numDet; i++){
+            name.Form("f%d", i);
+            f7[i] = new TF1(name, "pol7", -2, 2);
+            
+            for(int j = 0 ; j < 8; j++){
+               f7[i]->SetParameter(j, cTCorr[i][j]);
+            }
+            fList->Add(f7[i]);
+         }
+         
+         fList->Write("fList", TObject::kSingleKey);
+         
+      }else{
+         printf("... fail.\n");
+         for( int i = 0; i < numDet; i++){
+            for( int j = 0 ; j < 9; j++){
+               cTCorr[i][j] = 0.;
+            } 
+         }
       }
       
-      fList->Write("fList", TObject::kSingleKey);
-      
-   }else{
-      printf("... fail.\n");
-      for( int i = 0; i < numDet; i++){
-         for( int j = 0 ; j < 9; j++){
-            cTCorr[i][j] = 0.;
-         } 
-      }
+      file.close();
    }
-   
-   file.close();
    
    //========================================= reaction parameters
    printf("----- loading reaction parameter.");

@@ -1,5 +1,5 @@
-#define Cali_littleTree_cxx
-// The class definition in Cali_littleTree.h has been generated automatically
+#define Cali_littleTree_trace_cxx
+// The class definition in Cali_littleTree_trace.h has been generated automatically
 // by the ROOT utility TTree::MakeSelector(). This class is derived
 // from the ROOT class TSelector. For more information on the TSelector
 // framework see $ROOTSYS/README/README.SELECTOR or the ROOT User Manual.
@@ -19,17 +19,22 @@
 //
 // To use this file, try the following session on your Tree T:
 //
-// root> T->Process("Cali_littleTree.C")
-// root> T->Process("Cali_littleTree.C","some options")
-// root> T->Process("Cali_littleTree.C+")
+// root> T->Process("Cali_littleTree_trace.C")
+// root> T->Process("Cali_littleTree_trace.C","some options")
+// root> T->Process("Cali_littleTree_trace.C+")
 //
 
+//#######################################################//
+//   this processor is for gating before AutoCalibration
+//#######################################################//
 
-#include "Cali_littleTree.h"
+#include "Cali_littleTree_trace.h"
 #include <TH2.h>
 #include <TStyle.h>
 
-void Cali_littleTree::Begin(TTree * /*tree*/)
+double rdtGate = 5000;
+
+void Cali_littleTree_trace::Begin(TTree * /*tree*/)
 {
    // The Begin() function is called at the start of the query.
    // When running with PROOF Begin() is only called on the client.
@@ -39,7 +44,7 @@ void Cali_littleTree::Begin(TTree * /*tree*/)
    
 }
 
-void Cali_littleTree::SlaveBegin(TTree * /*tree*/)
+void Cali_littleTree_trace::SlaveBegin(TTree * /*tree*/)
 {
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
@@ -49,71 +54,61 @@ void Cali_littleTree::SlaveBegin(TTree * /*tree*/)
 
 }
 
-Bool_t Cali_littleTree::Process(Long64_t entry)
+Bool_t Cali_littleTree_trace::Process(Long64_t entry)
 {
-   // The Process() function is called for each entry in the tree (or possibly
-   // keyed object in the case of PROOF) to be processed. The entry argument
-   // specifies which entry in the currently loaded tree is to be processed.
-   // When processing keyed objects with PROOF, the object is already loaded
-   // and is available via the fObject pointer.
-   //
-   // This function should contain the \"body\" of the analysis. It can contain
-   // simple or elaborate selection criteria, run algorithms on the data
-   // of the event and typically fill histograms.
-   //
-   // The processing can be stopped by calling Abort().
-   //
-   // Use fStatus to set the return value of TTree::Process().
-   //
-   // The return value is currently not used.
    
    //#################################################################### initialization
-
    eTemp    = TMath::QuietNaN();
    xTemp    = TMath::QuietNaN();
    zTemp    = TMath::QuietNaN();
    
-   detIDTemp = -4;
+   det = -4;
    hitID = -4;
    zMultiHit = 0;
    
+   coinTimeUC = TMath::QuietNaN(); //uncorrected
+   coinTime = TMath::QuietNaN();
+   
    //#################################################################### Get Tree
    eventID += 1;
-   if( entry == 1 ) run += 1;
    
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);
    b_RDT->GetEntry(entry,0);
+   b_EnergyTimestamp->GetEntry(entry,0);
+   b_RDTTimestamp->GetEntry(entry,0);
    
-   //========== gate
+   if( isTraceDataExist ){
+      b_Trace_Energy_Time->GetEntry(entry,0);
+      b_Trace_RDT_Time->GetEntry(entry,0);
+   }
+   
+   //=========== gate
    bool rdt_energy = false;
-   bool coincident_t = false;
    for( int rID = 0; rID < 8; rID ++){
-      if( rdt[rID] > 5000 ) rdt_energy = true;
-      for( int i = 0; i < numDet; i++){
-         int dt = (int) e_t[i] - rdt_t[rID];
-         if( e[i] > 0 &&  TMath::Abs(dt) < 5) coincident_t = true;
-      }   
+      if( rdt[rID] > rdtGate ) rdt_energy = true; 
    }
    if( !rdt_energy ) return kTRUE;
-   if( !coincident_t ) return kTRUE;
+
+   //#################################################################### processing
+   ULong64_t eTime = -2000; //this will be the time for Ex valid
+   Float_t teTime = TMath::QuietNaN(); //time from trace
    
-   //#################################################################### Get Tree
    for(int idet = 0 ; idet < numDet; idet++){
       
-      if( e[idet] == 0 ) continue;
-      if( xf[idet] == 0 && xn[idet] == 0 ) continue;
+      if( TMath::IsNaN(e[idet]) ) continue;
+      if( TMath::IsNaN(xf[idet]) && TMath::IsNaN(xn[idet])  ) continue;
       
-      detIDTemp = idet;
+      det = idet;
       eTemp = e[idet];
-      
+            
       double xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       double xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
-      
+   
       //========= calculate x
-      if( xf[idet] > 0 && xn[idet] > 0 ){
-         xTemp = (xfC - xnC)/(xfC+xnC);
+      if(xf[idet] > 0  && xn[idet] > 0 ) {
+         xTemp = (xfC-xnC)/(xfC+xnC);
          zMultiHit++;
          hitID = 0;
       }else if(xf[idet] == 0 && xn[idet] > 0 ){
@@ -128,15 +123,45 @@ Bool_t Cali_littleTree::Process(Long64_t entry)
          xTemp = TMath::QuietNaN();
       }
       
-      //========= calculate z
+      //if( idet >= 17 && e[idet] > 0) printf("%d, %d , %f, %f \n", eventID, idet, eC[idet], e[idet]);
+      
+      //========= calculate z, det
+      
       int detID = idet%iDet;
       if( pos[detID] < 0 ){
          zTemp = pos[detID] - (-xTemp + 1.)*length/2 ; 
       }else{
          zTemp = pos[detID] + (xTemp + 1.)*length/2 ; 
       }
-      
+   
+      if( isTraceDataExist ) {
+         eTime  = e_t[idet];
+         teTime = te_t[idet];         
+      }
    }//end of idet-loop
+   
+   //for coincident time bewteen array and rdt
+   if( zMultiHit == 1 && isTraceDataExist ) {
+      ULong64_t rdtTime = 0;
+      Float_t rdtQ = 0;
+      Float_t trdtTime = 0.;
+      for(int i = 0; i < 8 ; i++){
+         if( rdt[i] > rdtQ ) {
+            rdtQ    = rdt[i];
+            
+            rdtTime = rdt_t[i];
+            trdtTime = trdt_t[i];
+         }
+      }
+     
+      int coin_t = (int) eTime - rdtTime;
+      float tcoin_t = teTime - trdtTime;
+      
+      coinTimeUC = coin_t + tcoin_t;
+      
+      double f7corr = f7[det]->Eval(xTemp) + cTCorr[det][8];
+      coinTime = (coinTimeUC - f7corr)*10.;
+   }
    
    if( zMultiHit == 0 ) return kTRUE;
    
@@ -155,7 +180,7 @@ Bool_t Cali_littleTree::Process(Long64_t entry)
                TMath::Nint((eventID+1)*100./totnumEntry),
                TMath::Floor(time/60.), time - TMath::Floor(time/60.)*60.,
                totnumEntry*time/(eventID+1.)/60.);
-         shown = 1;
+               shown = 1;
       }
    }else{
       if (fmod(time, 10) > 9 ){
@@ -166,7 +191,7 @@ Bool_t Cali_littleTree::Process(Long64_t entry)
    return kTRUE;
 }
 
-void Cali_littleTree::SlaveTerminate()
+void Cali_littleTree_trace::SlaveTerminate()
 {
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
@@ -174,7 +199,7 @@ void Cali_littleTree::SlaveTerminate()
 
 }
 
-void Cali_littleTree::Terminate()
+void Cali_littleTree_trace::Terminate()
 {
    // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present
@@ -182,10 +207,8 @@ void Cali_littleTree::Terminate()
    
    saveFile->cd(); //set focus on this file
    newTree->Write(); 
-
-   int totalEventNum = newTree->GetEntries();
-   printf("-------------- done. %s, event: %d\n", saveFileName.Data(), totalEventNum);
-
    saveFile->Close();
+
+   printf("-------------- done. %s, z-valid count: %d\n", saveFileName.Data(), count);
 
 }
