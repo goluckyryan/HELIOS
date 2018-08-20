@@ -52,9 +52,10 @@ void AutoCalibrationTrace(){
    TString rootfileAlpha="../H060/data/gen_run09.root";
    
    //======== experimental sorted data
-   TChain * chain = new TChain("tree");
+   TChain * chain = new TChain("gen_tree");
 
-   chain->Add("../H052/data/sortedTrace107.root"); 
+   chain->Add("../H052/data/gen_run107.root"); 
+   //chain->Add("../H052/data/sortedTrace107.root"); 
 
 /*   chain->Add("../H060/data/gen_run11.root");  //01
    chain->Add("../H060/data/gen_run12.root");  //02
@@ -100,7 +101,7 @@ void AutoCalibrationTrace(){
    
    if( option == 3 ) {
       int det = -1; 
-      printf(" Choose detID (-1 for all & make new root): ");
+      printf(" Choose detID (-1 for all): ");
       temp = scanf("%d", &det);
       if( det > -1 ){
          GetCoinTimeCorrectionCutG("temp.root", det);

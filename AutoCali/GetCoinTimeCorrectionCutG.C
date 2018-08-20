@@ -28,6 +28,13 @@ void GetCoinTimeCorrectionCutG(TString fileName, int detID){
    int totnumEntry = tree->GetEntries();
    printf( "========== total Entry : %d \n", totnumEntry);
 
+   TBranch * br = (TBranch *) tree->GetListOfBranches()->FindObject("coinTimeUC");
+   if( br == NULL ){
+      printf(" Branch <coinTimeUC> not exist!!!!! exit. \n");
+      return;
+   }
+
+
    int Div[2] = {1,1};
    int size[2] = {600,600}; //x,y
    TCanvas * cAna = new TCanvas("cAna", "cAna", 500, 0, size[0]*Div[0], size[1]*Div[1]);
@@ -54,14 +61,13 @@ void GetCoinTimeCorrectionCutG(TString fileName, int detID){
    TCutG * cut = NULL;
    
    bool isBranchDetIDExist = false;
-   TBranch * br = (TBranch *) tree->GetListOfBranches()->FindObject("detID");
+   br = (TBranch *) tree->GetListOfBranches()->FindObject("detID");
    if( br == NULL ){
       printf(" detected as sorted.root file. \n");
    }else{
       printf(" detected as little.root file. \n");
       isBranchDetIDExist = true;
    }
-   
    
    //====================================================== open savefile
    FILE * paraOut;

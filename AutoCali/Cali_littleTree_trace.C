@@ -62,7 +62,7 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
    xTemp    = TMath::QuietNaN();
    zTemp    = TMath::QuietNaN();
    
-   det = -4;
+   detIDTemp = -4;
    hitID = -4;
    zMultiHit = 0;
    
@@ -100,7 +100,10 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
       if( TMath::IsNaN(e[idet]) ) continue;
       if( TMath::IsNaN(xf[idet]) && TMath::IsNaN(xn[idet])  ) continue;
       
-      det = idet;
+      if( e[idet] == 0 ) continue;
+      if( xf[idet] == 0 && xn[idet] == 0 ) continue;
+      
+      detIDTemp = idet;
       eTemp = e[idet];
             
       double xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
@@ -124,8 +127,10 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
       }
       
       //if( idet >= 17 && e[idet] > 0) printf("%d, %d , %f, %f \n", eventID, idet, eC[idet], e[idet]);
+      //printf("%d, %d , %f \n", eventID, idet, e[idet]);
       
-      //========= calculate z, det
+      
+      //========= calculate z
       
       int detID = idet%iDet;
       if( pos[detID] < 0 ){
@@ -139,6 +144,8 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
          teTime = te_t[idet];         
       }
    }//end of idet-loop
+   
+   if( zMultiHit == 0 ) return kTRUE;
    
    //for coincident time bewteen array and rdt
    if( zMultiHit == 1 && isTraceDataExist ) {
@@ -159,11 +166,9 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
       
       coinTimeUC = coin_t + tcoin_t;
       
-      double f7corr = f7[det]->Eval(xTemp) + cTCorr[det][8];
+      double f7corr = f7[detIDTemp]->Eval(xTemp) + cTCorr[detIDTemp][8];
       coinTime = (coinTimeUC - f7corr)*10.;
    }
-   
-   if( zMultiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file

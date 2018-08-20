@@ -87,7 +87,7 @@ public :
    double eTemp;
    double xTemp; // unadjusted position, range (-1,1)
    double zTemp; 
-   int det;
+   int detIDTemp;
    int hitID; // is e, xf, xn are all fired.
    int zMultiHit; // multipicity of z
    
@@ -293,14 +293,14 @@ void Cali_littleTree_trace::Init(TTree *tree)
    saveFile = new TFile( saveFileName,"recreate");
    newTree =  new TTree("tree","tree");
    
-   eventID = 0;
+   eventID = -1;
    
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    
    newTree->Branch("e" ,  &eTemp, "eTemp/D");
    newTree->Branch("x" ,  &xTemp, "xTemp/D");
    newTree->Branch("z" ,  &zTemp, "zTemp/D");
-   newTree->Branch("detID", &det, "det/I");
+   newTree->Branch("detID", &detIDTemp, "detIDTemp/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
    newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
       

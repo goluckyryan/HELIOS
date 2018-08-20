@@ -94,7 +94,6 @@ void AutoCalibration(){
       printf("=============== creating smaller tree.\n");
       chain->Process("../AutoCali/Cali_littleTree.C+");
       Check_e_x("temp.root", eThreshold);
-      gROOT->ProcessLine(".q");
    }
    
    if( option == 3 ) {
