@@ -7,6 +7,7 @@
 #include "TCanvas.h"
 #include "TCutG.h"
 #include "TF1.h"
+#include "TLatex.h"
 #include <fstream>
 
 void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
@@ -155,7 +156,14 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    
    TLine * line2 = new TLine(zRange[1], eThreshold, zRange[2], eThreshold);
    line2->SetLineColor(2);
-   line2->Draw("same");  
+   line2->Draw("same");
+   
+   TLatex latex;
+   latex.SetTextSize(0.04);
+   latex.SetTextAlign(11);  //align bottom
+   latex.SetTextColor(2);
+   latex.DrawLatex(zRange[1]+30,eThreshold,"e-Threshold");
+   
    cCheck2->Update();
    
    printf("=========== you may want to make a TCutG and rename it as cutEZ, and save into cut.root.\n");
@@ -169,7 +177,7 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    if(!cCheck3->GetShowToolBar() )cCheck3->ToggleToolBar(); // force show tool bar
    cCheck3->SetLogy();
    TH1F * hMulti = new TH1F("hMulti", "Multi", 20, 0, 20);
-   tree->Draw("multi >> hMulti", "" );
+   tree->Draw("zMultiHit >> hMulti", "" );
    cCheck3->Update();   
    
    

@@ -57,7 +57,7 @@ Int_t idKindMap[160] = { 2,  2,  1,  1,  1,  1,  1,  1, -1, -1,//4
 TBenchmark gClock;
 Bool_t shown = 0;
 
-TString saveFileName = "trace.root"; //TODO add suffix to original file
+TString saveFileName = "sortedTrace.root"; //TODO add suffix to original file
 TFile *saveFile; //!
 TTree *newTree; //!
 

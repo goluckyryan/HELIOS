@@ -194,6 +194,7 @@ void Cali_e_trace::Init(TTree *tree)
    if( br == NULL ){
       printf(" WARNING! cannot find trace data -> proceed without trace. \n");
    }else{
+      printf(" =========== find trace data -> proceed trace. \n");
       isTraceDataExist = true;
       fChain->SetBranchAddress("te",   te,   &b_Trace_Energy);
       fChain->SetBranchAddress("te_t", te_t, &b_Trace_Energy_Time);

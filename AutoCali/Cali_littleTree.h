@@ -141,7 +141,7 @@ void Cali_littleTree::Init(TTree *tree)
    newTree->Branch("z" ,   &zTemp, "zTemp/D");
    newTree->Branch("detID", &detIDTemp, "detIDTemp/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
-   newTree->Branch("multi", &zMultiHit, "zMultiHit/I");
+   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
    
    clock.Reset();
    clock.Start("timer");

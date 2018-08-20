@@ -42,7 +42,7 @@ public :
    ULong64_t       rdt_t[100];
    
    //Trace
-   Float_t         te_r[24];
+   Float_t         te_t[24];
    Float_t         trdt_t[8];
 
    // List of branches

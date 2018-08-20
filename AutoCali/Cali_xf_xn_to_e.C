@@ -15,6 +15,9 @@
 void Cali_xf_xn_to_e(TTree *tree){
    gStyle->SetOptStat(11111111);
    
+   printf("===== calibration for PSD detectors. \n");
+   printf(" making xf + xn = e \n");
+   printf("------------------------------------------------- \n");
    printf("=========== Total #Entry: %10lld \n", tree->GetEntries());
 
 /**///======================================================== Browser or Canvas

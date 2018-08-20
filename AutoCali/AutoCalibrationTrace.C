@@ -19,6 +19,7 @@
 #include "../AutoCali/Cali_xf_xn.C"
 #include "../AutoCali/Cali_xf_xn_to_e.C"
 #include "../AutoCali/Cali_e_trace.h"
+#include "../AutoCali/GetCoinTimeCorrectionCutG.C"
 
 //==========================================
 //         This file show the steps for calibration 
@@ -32,15 +33,17 @@ void AutoCalibrationTrace(){
    int option;
    printf(" ========= Auto Calibration w/ Trace ============== \n");
    printf(" ================================================== \n");
-   printf(" 0 = alpha source calibration for xf - xn.\n");
    printf(" --------- GeneralSortTrace.C --> sorted.root------  \n");
-   printf(" 1 = xf+xn to e calibration. \n");
-   printf(" 2 = Generate root file with e, x, z, detID, coinTime\n");
-   printf(" --------- transfer.root reqaure below ------------\n");
-   printf(" 3 = e calibration by compare with simulation.\n");
-   printf(" 4 = Generate new root with calibrated data. \n");
    printf(" ================================================== \n");
-   printf(" Choose action (-1 for all): ");
+   printf(" 0 = alpha source calibration for xf - xn.\n");
+   printf(" 1 = xf+xn to e calibration. \n");
+   printf(" 2 = Generate smaller root file with e, x, z, detID, coinTimeUC\n");
+   printf(" 3 = coinTimeUC calibration. (MANUAL) \n");
+   printf(" --------- transfer.root require below ------------\n");
+   printf(" 4 = e calibration by compare with simulation.\n");
+   printf(" 5 = Generate new root with calibrated data. \n");
+   printf(" ================================================== \n");
+   printf(" Choose action : ");
    int temp = scanf("%d", &option);
    
 //==================================================== data files
@@ -49,9 +52,9 @@ void AutoCalibrationTrace(){
    TString rootfileAlpha="../H060/data/gen_run09.root";
    
    //======== experimental sorted data
-   TChain * chain = new TChain("gen_tree");
+   TChain * chain = new TChain("tree");
 
-   chain->Add("../H052/data/trace.root"); 
+   chain->Add("../H052/data/sortedTrace107.root"); 
 
 /*   chain->Add("../H060/data/gen_run11.root");  //01
    chain->Add("../H060/data/gen_run12.root");  //02
@@ -93,10 +96,23 @@ void AutoCalibrationTrace(){
       printf("=============== creating smaller tree.\n");
       chain->Process("../AutoCali/Cali_littleTree_trace.C+");
       Check_e_x("temp.root", eThreshold);
-      gROOT->ProcessLine(".q");
    }
    
    if( option == 3 ) {
+      int det = -1; 
+      printf(" Choose detID (-1 for all & make new root): ");
+      temp = scanf("%d", &det);
+      if( det > -1 ){
+         GetCoinTimeCorrectionCutG("temp.root", det);
+      }else{
+         for(int iDet = 0; iDet < 24; iDet ++){
+            GetCoinTimeCorrectionCutG("temp.root", iDet);
+         }
+      }
+      gROOT->ProcessLine(".q");
+   }
+   
+   if( option == 4 ) {
       TFile *caliFile = new TFile ("temp.root", "read");
       if( !caliFile->IsOpen() ){
 			printf("!!!!!!!!!!! no temp.root, please run step 2.!!!!!!!\n");
@@ -123,42 +139,10 @@ void AutoCalibrationTrace(){
       }
    }
    
-   if( option == 4 ) {
+   if( option == 5 ) {
       chain->Process("../AutoCali/Cali_e_trace.C+");
       gROOT->ProcessLine(".q");
    }
-   
-   if( option == -1){
-      Cali_xf_xn(atree);
-      Cali_xf_xn_to_e(chain);
-    
-      printf("=============== creating smaller tree.\n");
-      chain->Process("../AutoCali/Cali_littleTree_trace.C+");
-      
-      TFile *caliFile = new TFile ("temp.root", "read"); 
-      if( !caliFile->IsOpen() ){
-			printf("!!!!!!!!!!! no temp.root, please run step 2.!!!!!!!\n");
-			return;
-		}
-      TTree * caliTree = (TTree*) caliFile->Get("tree");
-      
-      TFile *fs = new TFile (rootfileSim, "read"); 
-      
-      if(fs->IsOpen()){
-         Cali_compareF(caliTree, fs, -1, eThreshold);
-      }else{
-         printf("!!!!! cannot open transfer.root !!!!! \n");
-         return;
-      }   
-      
-      chain->Process("../AutoCali/Cali_e_trace.C+");
-   
-      printf("---- run AutoCali/Check_e_z.C for summary.\n");
-   
-      gROOT->ProcessLine(".q");
-   
-   }
-
    
 }
 
