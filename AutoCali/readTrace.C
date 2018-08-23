@@ -13,7 +13,7 @@
 void readTrace(){
    
 /**///==============================================================   
-   TFile * f1 = new TFile ("trace_S.root", "read");
+   TFile * f1 = new TFile ("sortedTrace.root", "read");
    TTree * tree = (TTree *) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();
@@ -77,15 +77,15 @@ void readTrace(){
             time     = gFit->GetParameter(1);
             riseTime = gFit->GetParameter(2);
             base     = gFit->GetParameter(3);
-            chSq     = gFit->GetChisquare()/gFit->GetNDF();
+            chiSq     = gFit->GetChisquare()/gFit->GetNDF();
             int kind = gFit->GetLineColor();
             int det  = gFit->GetLineStyle();
             
-            //if( det < 100 ) continue;
+            if( det < 100 ) continue;
             
             TString gTitle;
             gTitle.Form("(%d,%d), base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
-                     det, kind, base, time, riseTime, energy, chSq, TMath::Sqrt(chSq)/energy);
+                     det, kind, base, riseTime, time, energy, chiSq, TMath::Sqrt(chiSq)/energy);
             
             printf("%s", gTitle.Data());
             g->SetTitle(gTitle);
