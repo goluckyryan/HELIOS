@@ -343,11 +343,10 @@ void GeneralSortTraceProof::SlaveTerminate()
 {
    printf("========================= Slave Terminate.\n");
    
+   // i don't know why it works...
    saveFile->cd();
    newTree->Write();
-   
    fOutput->Add(proofFile);
-  
    saveFile->Close();
    
 }
@@ -357,12 +356,12 @@ void GeneralSortTraceProof::Terminate()
 
    printf("========================= Terminate.\n");
    
+   // i don't know why it works...
    proofFile = dynamic_cast<TProofOutputFile*>(fOutput->FindObject(saveFileName));
-
    saveFile = TFile::Open(saveFileName);
    
+   //get entries
    TTree * tree = (TTree*) saveFile->FindObjectAny("tree");
-   
    int validCount = tree->GetEntries();
    
    printf("=======================================================\n");
