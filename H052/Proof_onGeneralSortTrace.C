@@ -8,10 +8,13 @@ void Proof_onGeneralSortTrace(){
    TChain * chain = new TChain("tree");
    chain->Add("data/trace_run107.root"); 
    
-   TProof * p = TProof::Open("", "workers=8");
+   TProof * p = TProof::Open("", "workers=4");
    
    chain->SetProof();
    chain->Process("GeneralSortTraceProof.C+");
-   chain->SetProof(0);
+   //chain->SetProof(0);
+   
+   
+   delete chain;
    
 }

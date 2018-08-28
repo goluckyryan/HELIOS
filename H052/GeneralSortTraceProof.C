@@ -23,7 +23,7 @@ bool isElum = false;
 bool isEZero = false;
 
 
-void GeneralSortTraceProof::Begin(TTree * tree)
+void GeneralSortTraceProof::Begin(TTree * /*tree*/)
 {
 
    TString option = GetOption();
