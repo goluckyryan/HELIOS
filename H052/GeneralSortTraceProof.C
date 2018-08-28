@@ -47,7 +47,12 @@ void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
    TString option = GetOption();
 
    //create tree in slave
+   proofFile = new TProofOutputFile(saveFileName);
+   saveFile = proofFile->OpenFile("RECREATE");
+   
    newTree = new TTree("tree","PSD Tree w/ trace");
+   newTree->SetDirectory(saveFile);
+   newTree->AutoSave();
 
    newTree->Branch("eventID", &psd.eventID, "eventID/I");
 
@@ -97,8 +102,7 @@ void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
       }
    }
   
-   fOutput->Add(newTree);
-  
+
 }
 
 Bool_t GeneralSortTraceProof::Process(Long64_t entry)
@@ -338,19 +342,29 @@ Bool_t GeneralSortTraceProof::Process(Long64_t entry)
 void GeneralSortTraceProof::SlaveTerminate()
 {
    printf("========================= Slave Terminate.\n");
+   
+   saveFile->cd();
+   newTree->Write();
+   
+   fOutput->Add(proofFile);
+  
+   saveFile->Close();
+   
 }
 
 void GeneralSortTraceProof::Terminate()
 {
 
    printf("========================= Terminate.\n");
+   
+   proofFile = dynamic_cast<TProofOutputFile*>(fOutput->FindObject(saveFileName));
 
-   TFile * clientFile = new TFile(saveFileName,"RECREATE");
-   TTree * clientTree = dynamic_cast<TTree*>(fOutput->FindObject("tree"));   
-   clientTree->Write();
-   int validCount = clientTree->GetEntries();
-   clientFile->Close();
-
+   saveFile = TFile::Open(saveFileName);
+   
+   TTree * tree = (TTree*) saveFile->FindObjectAny("tree");
+   
+   int validCount = tree->GetEntries();
+   
    printf("=======================================================\n");
    printf("----- saved as %s. valid event: %d\n", saveFileName.Data() , validCount); 
    

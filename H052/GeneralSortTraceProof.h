@@ -13,12 +13,11 @@
 #include <TCutG.h>
 #include <TFile.h>
 #include <TSelector.h>
-#include <TStopwatch.h>
 #include <TF1.h>
 #include <TGraph.h>
 #include <TClonesArray.h>
 #include <TMath.h>
-#include <TBenchmark.h>
+#include <TProofOutputFile.h>
 
 class GeneralSortTraceProof : public TSelector {
 public :
@@ -105,9 +104,10 @@ public :
    TBranch        *b_baseline;   //!
    TBranch        *b_trace_length;   //!
    TBranch        *b_trace;   //!
-
    
    //======================= new tree, new file
+   TFile *saveFile; //!
+   TProofOutputFile * proofFile; //!
    TTree *newTree; //!
 
    //trace
@@ -153,7 +153,7 @@ public :
    PSD psd; 
    
    //need to put NULL on pointer
-   GeneralSortTraceProof(TTree * /*tree*/ =0) : fChain(0), newTree(0), arr(0), gTrace(0), gFit(0) { }
+   GeneralSortTraceProof(TTree * /*tree*/ =0) : fChain(0), saveFile(0), proofFile(0), newTree(0), arr(0), gTrace(0), gFit(0) { }
    virtual ~GeneralSortTraceProof() { }
    
    virtual Int_t   Version() const { return 2; }
