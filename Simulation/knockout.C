@@ -232,6 +232,15 @@ void knockout(){
    tree->Branch("t2", &t2, "t2/D");
    tree->Branch("rho2", &rho2, "rho2/D");
    
+   //different coordinate
+   double a0, a1, a2; // in k1-k2 coordinate
+   tree->Branch("a0", &a0, "a0/D");
+   tree->Branch("a1", &a1, "a1/D");
+   tree->Branch("a2", &a2, "a2/D");
+   
+   double b; // in THREEDEE coordinate
+   tree->Branch("b", &b, "b/D");
+   
    //========timer
    TBenchmark clock;
    bool shown ;   
@@ -347,6 +356,19 @@ void knockout(){
          
          phi1 = P1.Phi() * TMath::RadToDeg();
          phi2 = P2.Phi() * TMath::RadToDeg();
+         
+         b = TMath::ASin( TMath::Sin(P2.Theta()) * TMath::Sin(P1.Phi() - P2.Phi() )) * TMath::RadToDeg();
+         
+         TVector3 kA = (PA.Vect()).Unit();
+         TVector3 k1 = (P1.Vect()).Unit();
+         TVector3 k2 = (P2.Vect()).Unit();
+         TVector3 n = (k1.Cross(k2)).Unit();
+         TVector3 j = (kA - (kA.Dot(n))*n).Unit();
+         
+         a0 = TMath::ASin(n.Dot(kA));
+         a1 = TMath::ACos(k1.Dot(j));
+         a2 = TMath::ACos(k2.Dot(j));
+         
          
          mB = PB.M();
          mb = Pb.M();
