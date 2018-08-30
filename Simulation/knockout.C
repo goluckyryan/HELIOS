@@ -33,7 +33,7 @@ void knockout(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000000;
+   int numEvent = 1000000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "";//"detectorGeo_upstream.txt";
@@ -98,7 +98,7 @@ void knockout(){
 	}else{
 		helios1.SetMagneticField(BField);
 		helios2.SetMagneticField(BField);
-		printf("======== B-field : %5.2f T", BField);
+		printf("======== B-field : %5.2f T\n", BField);
 	}
 	
 	//==== Target scattering, only energy loss
@@ -357,6 +357,7 @@ void knockout(){
          phi1 = P1.Phi() * TMath::RadToDeg();
          phi2 = P2.Phi() * TMath::RadToDeg();
          
+         //--------- diff coordinate
          b = TMath::ASin( TMath::Sin(P2.Theta()) * TMath::Sin(P1.Phi() - P2.Phi() )) * TMath::RadToDeg();
          
          TVector3 kA = (PA.Vect()).Unit();
@@ -365,11 +366,11 @@ void knockout(){
          TVector3 n = (k1.Cross(k2)).Unit();
          TVector3 j = (kA - (kA.Dot(n))*n).Unit();
          
-         a0 = TMath::ASin(n.Dot(kA));
-         a1 = TMath::ACos(k1.Dot(j));
-         a2 = TMath::ACos(k2.Dot(j));
+         a0 = TMath::ASin(n.Dot(kA)) * TMath::RadToDeg();
+         a1 = TMath::ACos(k1.Dot(j)) * TMath::RadToDeg();
+         a2 = TMath::ACos(k2.Dot(j)) * TMath::RadToDeg();
          
-         
+         //----------- mass
          mB = PB.M();
          mb = Pb.M();
          
