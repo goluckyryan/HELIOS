@@ -28,7 +28,10 @@ void knockout(){
    double maxkb = 200.;
    
    //---- beam
-   double KEAmean = 100; // MeV/u 
+   double KEAmean = 100; // MeV/u
+   const int nKEA = 4; 
+   double KEAList[nKEA] = {50, 100, 200, 300}; 
+   
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
@@ -181,10 +184,6 @@ void knockout(){
    
    double mB,mb;
 
-   // the output of Helios.CalHit
-   double e1, z1, t1, rho1;
-   double e2, z2, t2, rho2;
-
    tree->Branch("theta1", &theta1, "theta1/D");
    tree->Branch("phi1", &phi1, "phi1/D");
    tree->Branch("T1", &T1, "T1/D");
@@ -221,15 +220,23 @@ void knockout(){
    
    TLorentzVector* fourVector = NULL;
 
-	// tree branch from helios1, helios2
-   tree->Branch("e1", &e1, "e1/D");
+   // the output of Helios.CalHit
+   double e1, z1, t1, rho1, x1h, y1h, r1h;
+   double e2, z2, t2, rho2, x2h, y2h, r2h;
+	tree->Branch("e1", &e1, "e1/D");
    tree->Branch("z1", &z1, "z1/D");
    tree->Branch("t1", &t1, "t1/D");
+   tree->Branch("x1h", &x1h, "x1h/D"); //at 200 mm downstream
+   tree->Branch("y1h", &y1h, "y1h/D");
+   tree->Branch("r1h", &r1h, "r1h/D");
    tree->Branch("rho1", &rho1, "rho1/D");
    
    tree->Branch("e2", &e2, "e2/D");
    tree->Branch("z2", &z2, "z2/D");
    tree->Branch("t2", &t2, "t2/D");
+   tree->Branch("x2h", &x2h, "x2h/D"); //at 200 mm downstream
+   tree->Branch("y2h", &y2h, "y2h/D");
+   tree->Branch("r2h", &r2h, "r2h/D");
    tree->Branch("rho2", &rho2, "rho2/D");
    
    //different coordinate
@@ -277,7 +284,9 @@ void knockout(){
             theta = gRandom->Gaus(thetaMean, thetaSigma);
          }
          
-         KEA = 50.*gRandom->Integer(10);
+         int rKEA = gRandom->Integer(nKEA);
+         
+         KEA = KEAList[rKEA];
          
          reaction.SetIncidentEnergyAngle(KEA, theta, 0.);
 
@@ -411,10 +420,17 @@ void knockout(){
          z1 = helios1.GetZ() ; 
          t1 = helios1.GetTime();
          rho1 = helios1.GetRho();
+         x1h = helios1.GetXPos(200);
+         y1h = helios1.GetYPos(200);
+         r1h = helios1.GetR(200);
          
          e2 = helios2.GetEnergy() + gRandom->Gaus(0, eSigma);
          z2 = helios2.GetZ() ; 
+         t2 = helios2.GetTime();
          rho2 = helios2.GetRho();
+         x2h = helios2.GetXPos(200);
+         y2h = helios2.GetYPos(200);
+         r2h = helios2.GetR(200);
          
          //printf("%f, %f | %f, %f \n", e1, z1, e2, z2);
          
