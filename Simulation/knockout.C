@@ -28,7 +28,7 @@ void knockout(){
    double maxkb = 200.;
    
    //---- beam
-   double KEAmean = 300; // MeV/u 
+   double KEAmean = 100; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
