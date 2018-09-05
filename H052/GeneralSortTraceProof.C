@@ -102,8 +102,9 @@ void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
          newTree->Branch("trdt_r",     trdt_r,  "Trace_RDT_RiseTime[8]/F");
       }
    }
+   
+   runNum = 0;
   
-
 }
 
 Bool_t GeneralSortTraceProof::Process(Long64_t entry)
@@ -111,23 +112,28 @@ Bool_t GeneralSortTraceProof::Process(Long64_t entry)
    psd.eventID = entry;
 
    if( entry == 1){
-     TString fileName = fChain->GetDirectory()->GetName();
-     printf("------------- file Name : %s\n", fileName.Data());
+     runNum ++;
+     TString fileNameTemp = fChain->GetDirectory()->GetName();
      //remove any folder path to get the name;
      int found;
      do{
-       found = fileName.First("/");
-       fileName.Remove(0,found+1);
+       found = fileNameTemp.First("/");
+       fileNameTemp.Remove(0,found+1);
      }while( found >= 0 );
    
-     found = fileName.First(".");
-     fileName.Remove(found);
-     //the fileName should be something like "xxx_run4563" now
-     found = fileName.First("run");
-     fileName.Remove(0, found+3); // remove the "xxx_run"
-   
-     psd.runID = atoi(fileName.Data());
+     found = fileNameTemp.First(".");
+     fileNameTemp.Remove(found);
+     //the fileNameTemp should be something like "xxx_run4563" now
+     if( runNum == 1 )  fileName = fileNameTemp;
+     
+     while( !fileNameTemp.IsDigit() ){
+        fileNameTemp.Remove(0,1);
+     }
+     
+     psd.runID = fileNameTemp.Atoi();
      printf("---------------- runID : %d \n", psd.runID);
+     
+     runIDLast = psd.runID;
    }
 
    b_NumHits->GetEntry(entry);
@@ -319,9 +325,9 @@ Bool_t GeneralSortTraceProof::Process(Long64_t entry)
             gFit->SetRange(0, traceLength);
 
             base = gTrace->Eval(1);
-            double temp = gTrace->Eval(80) - base;
+            double fileNameTemp = gTrace->Eval(80) - base;
 
-            gFit->SetParameter(0, temp); //energy
+            gFit->SetParameter(0, fileNameTemp); //energy
             gFit->SetParameter(1, 50); // time
             gFit->SetParameter(2, 1); //riseTime
             gFit->SetParameter(3, base);
@@ -385,9 +391,21 @@ void GeneralSortTraceProof::Terminate()
    TTree * tree = (TTree*) saveFile->FindObjectAny("tree");
    int validCount = tree->GetEntries();
    
-   //TODO rename saveFile
+   saveFile.Close();
+   
+   //rename saveFile
+   printf("---- file Name : %s \n", fileName.Data());
+   printf("---- Last run  : %d \n", runIDLast);
+   
+   TString newFileName;
+   newFileName.Form("Cali_%s_%d.root", fileName.Data(), runIDLast);
+   
+   TString bashCommand;
+   bashCommand.Form("mv %s %s", saveFileName.Data(), newFileName.Data());
+   
+   gROOT->ProcessLine(bashCommand);
    
    printf("=======================================================\n");
-   printf("----- saved as %s. valid event: %d\n", saveFileName.Data() , validCount); 
+   printf("----- saved as %s. valid event: %d\n", newFileName.Data() , validCount); 
    
 }

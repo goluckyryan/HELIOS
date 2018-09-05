@@ -126,6 +126,8 @@ public :
    float trdt_r[8];
 
    int runNum;
+   int runIDLast;
+   TString fileName;
    
    //PSD struct
    typedef struct {
@@ -249,21 +251,6 @@ Bool_t GeneralSortTraceProof::Notify()
    int NumEntries = fChain->GetEntries();
    printf( "========== total Entry : %d\n", NumEntries);
    
-   TString fileName = fChain->GetDirectory()->GetName();
-   //remove any folder path to get the name;
-   int found;
-   do{
-      found = fileName.First("/");
-      fileName.Remove(0,found+1);
-   }while( found >= 0 );
-   
-   found = fileName.First(".");
-   fileName.Remove(found);
-   //the fileName should be something like "xxx_run4563" now
-   found = fileName.First("run");
-   fileName.Remove(0, found+3); // remove the "xxx_run"
-   
-   psd.runID = atoi(fileName.Data());
 
    return kTRUE;
 }
