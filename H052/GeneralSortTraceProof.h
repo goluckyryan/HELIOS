@@ -5,25 +5,21 @@
 // found on file: run5113.root
 //////////////////////////////////////////////////////////
 
-#ifndef GeneralSortTrace_h
-#define GeneralSortTrace_h
+#ifndef GeneralSortTraceProof_h
+#define GeneralSortTraceProof_h
 
 #include <TROOT.h>
-#include <TCanvas.h>
 #include <TChain.h>
 #include <TCutG.h>
 #include <TFile.h>
 #include <TSelector.h>
-#include <TH1.h>
-#include <TH2.h>
-#include <TStopwatch.h>
-#include <TStyle.h>
+#include <TF1.h>
+#include <TGraph.h>
+#include <TClonesArray.h>
+#include <TMath.h>
+#include <TProofOutputFile.h>
 
-// Header file for the classes stored in the TTree if any.
-
-// Fixed size dimensions of array or collections stored in the TTree if any.
-
-class GeneralSortTrace : public TSelector {
+class GeneralSortTraceProof : public TSelector {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
@@ -108,9 +104,59 @@ public :
    TBranch        *b_baseline;   //!
    TBranch        *b_trace_length;   //!
    TBranch        *b_trace;   //!
+   
+   //======================= new tree, new file
+   TFile *saveFile; //!
+   TProofOutputFile * proofFile; //!
+   TTree *newTree; //!
 
-   GeneralSortTrace(TTree * /*tree*/ =0) : fChain(0) { }
-   virtual ~GeneralSortTrace() { }
+   //trace
+   TClonesArray * arr ;//!
+   TGraph * gTrace; //!
+   TF1 * gFit; //!
+
+   float te[24];    // energy from trace
+   float te_r[24];  // rising time from frace
+   float te_t[24];  // time
+   float ttac[6];
+   float ttac_t[6];
+   float ttac_r[6];
+   float trdt[8];
+   float trdt_t[8];
+   float trdt_r[8];
+   
+   //PSD struct
+   typedef struct {
+      Int_t   eventID;
+      Int_t   runID;
+      Float_t Energy[24];
+      Float_t XF[24];
+      Float_t XN[24];
+      Float_t Ring[24];
+      Float_t RDT[24];
+      Float_t TAC[24];
+      Float_t ELUM[32];
+      Float_t EZERO[4];
+
+      ULong64_t EnergyTimestamp[24];
+      ULong64_t XFTimestamp[24];
+      ULong64_t XNTimestamp[24];
+      ULong64_t RingTimestamp[24];
+      ULong64_t RDTTimestamp[24];
+      ULong64_t TACTimestamp[24];
+      ULong64_t ELUMTimestamp[32];
+      ULong64_t EZEROTimestamp[4];
+      
+      Float_t x[24];
+      
+   } PSD;
+
+   PSD psd; 
+   
+   //need to put NULL on pointer
+   GeneralSortTraceProof(TTree * /*tree*/ =0) : fChain(0), saveFile(0), proofFile(0), newTree(0), arr(0), gTrace(0), gFit(0) { }
+   virtual ~GeneralSortTraceProof() { }
+   
    virtual Int_t   Version() const { return 2; }
    virtual void    Begin(TTree *tree);
    virtual void    SlaveBegin(TTree *tree);
@@ -125,13 +171,15 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-   ClassDef(GeneralSortTrace,0);
+   ClassDef(GeneralSortTraceProof,0);
+
+    
 };
 
 #endif
 
-#ifdef GeneralSortTrace_cxx
-void GeneralSortTrace::Init(TTree *tree)
+#ifdef GeneralSortTraceProof_cxx
+void GeneralSortTraceProof::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -140,7 +188,7 @@ void GeneralSortTrace::Init(TTree *tree)
    // code, but the routine can be extended by the user if needed.
    // Init() will be called many times when running on PROOF
    // (once per file to be processed).
-
+   
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -185,17 +233,37 @@ void GeneralSortTrace::Init(TTree *tree)
    fChain->SetBranchAddress("baseline", baseline, &b_baseline);
    fChain->SetBranchAddress("trace_length", trace_length, &b_trace_length);
    fChain->SetBranchAddress("trace", trace, &b_trace);
+   
 }
 
-Bool_t GeneralSortTrace::Notify()
+Bool_t GeneralSortTraceProof::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
    // is started when using PROOF. It is normally not necessary to make changes
    // to the generated code, but the routine can be extended by the
    // user if needed. The return value is currently not used.
+   
+   int NumEntries = fChain->GetEntries();
+   printf( "========== total Entry : %d\n", NumEntries);
+   
+   TString fileName = fChain->GetDirectory()->GetName();
+   //remove any folder path to get the name;
+   int found;
+   do{
+      found = fileName.First("/");
+      fileName.Remove(0,found+1);
+   }while( found >= 0 );
+   
+   found = fileName.First(".");
+   fileName.Remove(found);
+   //the fileName should be something like "xxx_run4563" now
+   found = fileName.First("run");
+   fileName.Remove(0, found+3); // remove the "xxx_run"
+   
+   psd.runID = atoi(fileName.Data());
 
    return kTRUE;
 }
 
-#endif // #ifdef GeneralSortTrace_cxx
+#endif // #ifdef GeneralSortTraceProof_cxx

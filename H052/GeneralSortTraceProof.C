@@ -1,14 +1,6 @@
-#define GeneralSortTrace_cxx
+#define GeneralSortTraceProof_cxx
 
-#include "GeneralSortTrace.h"
-#include "TROOT.h"
-#include <TH2.h>
-#include <TStyle.h>
-#include <TF1.h>
-#include <TGraph.h>
-#include <TClonesArray.h>
-#include <TMath.h>
-#include <TBenchmark.h>
+#include "GeneralSortTraceProof.h"
 
 #define NUMPRINT 20 //>0
 #define MAXNUMHITS 20 //Highest multiplicity
@@ -16,17 +8,8 @@
 
 #include "GeneralSortMapping.h"
 
-TBenchmark gClock;
-Bool_t shown = 0;
-
+//===================== setting
 TString saveFileName = "sortedTrace.root"; //TODO add suffix to original file
-TFile *saveFile; //!
-TTree *newTree; //!
-
-ULong64_t MaxProcessedEntries=100000000000;
-int EffEntries;
-ULong64_t NumEntries = 0;
-ULong64_t ProcessedEntries = 0;
 
 bool isTraceON = true;
 bool isSaveTrace = true;
@@ -39,69 +22,40 @@ bool isRecoil = true;
 bool isElum = false;
 bool isEZero = false;
 
-//trace
-TClonesArray * arr ;//!
-TGraph * gTrace; //!
-TF1 * gFit; //!
 
-float te[24];    // energy from trace
-float te_r[24];  // rising time from frace
-float te_t[24];  // time
-float ttac[6];
-float ttac_t[6];
-float ttac_r[6];
-float trdt[8];
-float trdt_t[8];
-float trdt_r[8];
-
-//PSD struct
-typedef struct {
-   Int_t   eventID;
-   Float_t Energy[24];
-   Float_t XF[24];
-   Float_t XN[24];
-   Float_t Ring[24];
-   Float_t RDT[24];
-   Float_t TAC[24];
-   Float_t ELUM[32];
-   Float_t EZERO[4];
-
-   ULong64_t EnergyTimestamp[24];
-   ULong64_t XFTimestamp[24];
-   ULong64_t XNTimestamp[24];
-   ULong64_t RingTimestamp[24];
-   ULong64_t RDTTimestamp[24];
-   ULong64_t TACTimestamp[24];
-   ULong64_t ELUMTimestamp[32];
-   ULong64_t EZEROTimestamp[4];
-   
-   Float_t x[24];
-   
-} PSD;
-
-PSD psd; 
-
-void GeneralSortTrace::Begin(TTree * tree)
+void GeneralSortTraceProof::Begin(TTree * /*tree*/)
 {
-   
+
    TString option = GetOption();
-   NumEntries = tree->GetEntries();
-   EffEntries = TMath::Min(MaxProcessedEntries, NumEntries);
+
    printf( "=====================================================\n");
-   printf( "===============  GeneralSortTrace.C ================= \n");
+   printf( "==========  GeneralSortTraceProof.C ================= \n");
    printf( "============  General Sort w/ Trace  ================\n");
    printf( "=====================================================\n");
-   printf( "========== Make a new tree with trace, total Entry : %d, use : %d [%4.1f%]\n", NumEntries, EffEntries, EffEntries*100./NumEntries);
    printf( "  TAC/RF : %s \n", isTACRF ?  "On" : "Off");
    printf( "  Recoil : %s \n", isRecoil ? "On" : "Off");
    printf( "  Elum   : %s \n", isElum ?   "On" : "Off");
    printf( "  EZero  : %s \n", isEZero ?  "On" : "Off");
    printf( "  Trace  : %s , Method: %d, Save: %s \n", isTraceON ?  "On" : "Off", traceMethod, isSaveTrace? "Yes": "No:");
+   
+   printf("====================== Begin. \n");
+}
 
-   saveFile = new TFile(saveFileName,"RECREATE");
+void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
+{
+   printf("========================= Slave Begin.\n");   
+   TString option = GetOption();
+
+   //create tree in slave
+   proofFile = new TProofOutputFile(saveFileName);
+   saveFile = proofFile->OpenFile("RECREATE");
+   
    newTree = new TTree("tree","PSD Tree w/ trace");
+   newTree->SetDirectory(saveFile);
+   newTree->AutoSave();
 
    newTree->Branch("eventID", &psd.eventID, "eventID/I");
+   newTree->Branch("runID", &psd.runID, "runID/I");
 
    newTree->Branch("e",    psd.Energy,          "Energy[24]/F");
    newTree->Branch("e_t",  psd.EnergyTimestamp, "EnergyTimestamp[24]/l");
@@ -148,25 +102,13 @@ void GeneralSortTrace::Begin(TTree * tree)
          newTree->Branch("trdt_r",     trdt_r,  "Trace_RDT_RiseTime[8]/F");
       }
    }
-   
-   gClock.Reset();
-   gClock.Start("timer");
-   
-   printf("====================== started \n");
+  
+
 }
 
-void GeneralSortTrace::SlaveBegin(TTree * /*tree*/)
-{
-  
-  TString option = GetOption();
-  
-}
-
-Bool_t GeneralSortTrace::Process(Long64_t entry)
+Bool_t GeneralSortTraceProof::Process(Long64_t entry)
 { 
    psd.eventID = entry;
-   ProcessedEntries++;
-   if(ProcessedEntries >= MaxProcessedEntries) return kTRUE;
    
    b_NumHits->GetEntry(entry);
    if( NumHits < 4 ) return kTRUE; // e, xn, xf, tac
@@ -251,7 +193,6 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
       //TAC & RF TIMING
       /***********************************************************************/
       if( isTACRF && id[i] > 1160 && id[i] < 1171) { //RF TIMING SWITCH
-         //if (ProcessedEntries < NUMPRINT) printf("RF id %i, idDet %i\n",id[i],idDet);
          switch(id[i]){
             case 1163: //
                psd.TAC[0] = ((float)(post_rise_energy[i])-(float)(pre_rise_energy[i]))/M;
@@ -392,53 +333,41 @@ Bool_t GeneralSortTrace::Process(Long64_t entry)
       } // End NumHits Loop
    }// end of trace
 
-   //Clock
+   //Fill
    /************************************************************************/
-   saveFile->cd(); //set focus on this file
    newTree->Fill();  
-   
-   gClock.Stop("timer");
-   Double_t time = gClock.GetRealTime("timer");
-   gClock.Start("timer");
-
-   if ( !shown ) {
-      if (fmod(time, 10) < 1 ){
-         printf( "%10lld[%2d%%]|%3.0f min %5.2f sec | expect:%5.2f min\n", 
-               entry, 
-               TMath::Nint((entry+1)*100./EffEntries),
-               TMath::Floor(time/60.), 
-               time - TMath::Floor(time/60.)*60.,
-               EffEntries*time/(entry+1.)/60.);
-         shown = 1;
-         newTree->Write();
-      }
-   }else{
-      if (fmod(time, 10) > 9 ){
-         shown = 0;
-      }
-   }
    
    return kTRUE;
 }
 
-void GeneralSortTrace::SlaveTerminate()
+void GeneralSortTraceProof::SlaveTerminate()
 {
-
+   printf("========================= Slave Terminate.\n");
+   
+   // i don't know why it works...
+   saveFile->cd();
+   newTree->Write();
+   fOutput->Add(proofFile);
+   saveFile->Close();
+   
 }
 
-void GeneralSortTrace::Terminate()
+void GeneralSortTraceProof::Terminate()
 {
-   newTree->Write();
-   int validCount = newTree->GetEntries();
-   saveFile->Close();
 
+   printf("========================= Terminate.\n");
+   
+   // i don't know why it works...
+   proofFile = dynamic_cast<TProofOutputFile*>(fOutput->FindObject(saveFileName));
+   saveFile = TFile::Open(saveFileName);
+   
+   //get entries
+   TTree * tree = (TTree*) saveFile->FindObjectAny("tree");
+   int validCount = tree->GetEntries();
+   
+   //TODO rename saveFile
+   
    printf("=======================================================\n");
-   printf("----- Total processed entries : %3.1f k\n",EffEntries/1000.0);
-   gClock.Stop("timer");
-   Double_t time = gClock.GetRealTime("timer");
-   printf("----- Total run time : %6.0f sec \n", time);
-   printf("----- Rate for sort: %6.3f k/sec\n",EffEntries/time/1000.0);
    printf("----- saved as %s. valid event: %d\n", saveFileName.Data() , validCount); 
    
-   gROOT->ProcessLine(".q");
 }
