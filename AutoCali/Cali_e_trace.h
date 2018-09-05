@@ -270,7 +270,7 @@ void Cali_e_trace::Init(TTree *tree)
    //===================================================== loading parameter
    
    //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file;
    file.open(detGeoFileName.c_str());
@@ -310,7 +310,17 @@ void Cali_e_trace::Init(TTree *tree)
       
    }else{
        printf("... fail\n");
-       return;
+       firstPos =  0;
+       a = 9;
+       length = 50.5;
+       jDet = 4;
+       iDet = 6;
+       pos[0] = 0;
+       pos[1] = 58.6;
+       pos[2] = 117.9;
+       pos[3] = 176.8;
+       pos[4] = 235.8;
+       pos[5] = 294.8;
    }
    
    numDet = iDet * jDet;
@@ -331,7 +341,10 @@ void Cali_e_trace::Init(TTree *tree)
       printf("... done.\n");
    }else{
       printf("... fail.\n");
-      return;
+      
+      for(int i = 0; i < numDet; i++){
+	xnCorr[i] = 1;
+      }
    }
    file.close();
    
@@ -351,7 +364,10 @@ void Cali_e_trace::Init(TTree *tree)
       printf("... done.\n");
    }else{
       printf("... fail.\n");
-      return;
+      for(int i = 0; i < numDet; i++){
+	xfxneCorr[i][0] = 0;
+	xfxneCorr[i][1] = 1;
+      }
    }
    file.close();
 
@@ -408,19 +424,6 @@ void Cali_e_trace::Init(TTree *tree)
          }
          printf("... done.\n");
          
-         TString name;
-         for(int i = 0; i < numDet; i++){
-            name.Form("f%d", i);
-            f7[i] = new TF1(name, "pol7", -2, 2);
-            
-            for(int j = 0 ; j < 8; j++){
-               f7[i]->SetParameter(j, cTCorr[i][j]);
-            }
-            fList->Add(f7[i]);
-         }
-         
-         fList->Write("fList", TObject::kSingleKey);
-         
       }else{
          printf("... fail.\n");
          for( int i = 0; i < numDet; i++){
@@ -429,6 +432,23 @@ void Cali_e_trace::Init(TTree *tree)
             } 
          }
       }
+
+      TString name;
+      for(int i = 0; i < numDet; i++){
+         name.Form("f%d", i);
+         f7[i] = new TF1(name, "pol7", -2, 2);
+            
+         for(int j = 0 ; j < 8; j++){
+            f7[i]->SetParameter(j, cTCorr[i][j]);
+         }
+
+	 if(file.is_open()) fList->Add(f7[i]);
+      }
+
+      if( file.is_open()){
+	 fList->Write("fList", TObject::kSingleKey);
+      }
+
       
       file.close();
    }
