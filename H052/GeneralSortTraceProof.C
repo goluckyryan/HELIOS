@@ -9,7 +9,7 @@
 #include "GeneralSortMapping.h"
 
 //===================== setting
-TString saveFileName = "sortedTrace.root"; //TODO add suffix to original file
+TString saveFileName = "sortedTrace_test.root"; //TODO add suffix to original file
 
 bool isTraceON = true;
 bool isSaveTrace = true;
@@ -109,7 +109,27 @@ void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
 Bool_t GeneralSortTraceProof::Process(Long64_t entry)
 { 
    psd.eventID = entry;
+
+   if( entry == 1){
+     TString fileName = fChain->GetDirectory()->GetName();
+     printf("------------- file Name : %s\n", fileName.Data());
+     //remove any folder path to get the name;
+     int found;
+     do{
+       found = fileName.First("/");
+       fileName.Remove(0,found+1);
+     }while( found >= 0 );
    
+     found = fileName.First(".");
+     fileName.Remove(found);
+     //the fileName should be something like "xxx_run4563" now
+     found = fileName.First("run");
+     fileName.Remove(0, found+3); // remove the "xxx_run"
+   
+     psd.runID = atoi(fileName.Data());
+     printf("---------------- runID : %d \n", psd.runID);
+   }
+
    b_NumHits->GetEntry(entry);
    if( NumHits < 4 ) return kTRUE; // e, xn, xf, tac
 

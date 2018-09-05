@@ -11,14 +11,14 @@ void Proof_onGeneralSortTrace(){
    //chain->Add("/lcrc/project/HELIOS/h057_he6/root_data/run200.root"); 
    chain->Add("data/trace_run107.root"); 
    
-   TProof * p = TProof::Open("", "workers=16");
+   //TProof * p = TProof::Open("", "workers=1");
    
-   chain->SetProof();
+   //chain->SetProof();
    chain->Process("GeneralSortTraceProof.C+");
    //chain->SetProof(0);
    
    delete chain;
-   delete p;
+   //delete p;
    
    
    /* some thing wrong....

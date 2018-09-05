@@ -124,6 +124,8 @@ public :
    float trdt[8];
    float trdt_t[8];
    float trdt_r[8];
+
+   int runNum;
    
    //PSD struct
    typedef struct {
