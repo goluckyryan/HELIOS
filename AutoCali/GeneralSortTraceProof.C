@@ -55,6 +55,7 @@ void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
    newTree->AutoSave();
 
    newTree->Branch("eventID", &psd.eventID, "eventID/I");
+   newTree->Branch("runID", &psd.runID, "runID/I");
 
    newTree->Branch("e",    psd.Energy,          "Energy[24]/F");
    newTree->Branch("e_t",  psd.EnergyTimestamp, "EnergyTimestamp[24]/l");
@@ -363,6 +364,8 @@ void GeneralSortTraceProof::Terminate()
    //get entries
    TTree * tree = (TTree*) saveFile->FindObjectAny("tree");
    int validCount = tree->GetEntries();
+   
+   //TODO rename saveFile
    
    printf("=======================================================\n");
    printf("----- saved as %s. valid event: %d\n", saveFileName.Data() , validCount); 
