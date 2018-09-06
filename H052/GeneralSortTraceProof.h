@@ -125,9 +125,8 @@ public :
    float trdt_t[8];
    float trdt_r[8];
 
-   int runNum;
    int runIDLast;
-   TString fileName;
+   TString fileNameTemp;
    
    //PSD struct
    typedef struct {
@@ -192,6 +191,8 @@ void GeneralSortTraceProof::Init(TTree *tree)
    // code, but the routine can be extended by the user if needed.
    // Init() will be called many times when running on PROOF
    // (once per file to be processed).
+
+   // this will be called when a new file is loaded in a new tree? possibly
    
    // Set branch addresses and branch pointers
    if (!tree) return;
@@ -237,6 +238,27 @@ void GeneralSortTraceProof::Init(TTree *tree)
    fChain->SetBranchAddress("baseline", baseline, &b_baseline);
    fChain->SetBranchAddress("trace_length", trace_length, &b_trace_length);
    fChain->SetBranchAddress("trace", trace, &b_trace);
+
+   int NumEntries = fChain->GetEntries();
+   printf( "========== total Entry : %d\n", NumEntries);
+
+   fileNameTemp = fChain->GetDirectory()->GetName();
+   //remove any folder path to get the name;
+   int found;
+   do{
+     found = fileNameTemp.First("/");
+     fileNameTemp.Remove(0,found+1);
+   }while( found >= 0 );
+   
+   found = fileNameTemp.First(".");
+   fileNameTemp.Remove(found);
+   //the fileNameTemp should be something like "xxx_run4563" now
+   
+   while( !fileNameTemp.IsDigit() ){
+      fileNameTemp.Remove(0,1);
+   }
+   
+   runIDLast = fileNameTemp.Atoi();
    
 }
 
@@ -247,11 +269,7 @@ Bool_t GeneralSortTraceProof::Notify()
    // is started when using PROOF. It is normally not necessary to make changes
    // to the generated code, but the routine can be extended by the
    // user if needed. The return value is currently not used.
-   
-   int NumEntries = fChain->GetEntries();
-   printf( "========== total Entry : %d\n", NumEntries);
-   
-
+  
    return kTRUE;
 }
 
