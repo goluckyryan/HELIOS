@@ -310,6 +310,7 @@ void Cali_e_trace::Init(TTree *tree)
       
    }else{
        printf("... fail\n");
+       Bfield = 2.5;
        firstPos =  0;
        a = 9;
        length = 50.5;
