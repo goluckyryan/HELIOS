@@ -239,6 +239,9 @@ void knockout(){
    tree->Branch("r2h", &r2h, "r2h/D");
    tree->Branch("rho2", &rho2, "rho2/D");
    
+   double Sp2;
+   tree->Branch("Sp2", &Sp2, "Sp2/D");
+   
    //different coordinate
    double a0, a1, a2; // in k1-k2 coordinate
    tree->Branch("a0", &a0, "a0/D");
@@ -431,6 +434,11 @@ void knockout(){
          x2h = helios2.GetXPos(200);
          y2h = helios2.GetYPos(200);
          r2h = helios2.GetR(200);
+         
+         double gammaA = PA.Gamma();
+         double betaA = PA.Beta();
+         
+         Sp2 = (1-gammaA)* 938.272 - gammaA*(e1+e2) + betaA*gammaA*(P1.Pz() + P2.Pz()) ;
          
          //printf("%f, %f | %f, %f \n", e1, z1, e2, z2);
          
