@@ -9,19 +9,18 @@
 #include "GeneralSortMapping.h"
 
 //===================== setting
-TString saveFileName = "sortedTrace_test.root"; //TODO add suffix to original file
+TString saveFileName = "sortedTrace.root"; //TODO add suffix to original file
 
 bool isTraceON = true;
 bool isSaveTrace = true;
 bool isSaveFitTrace = true;
-int traceMethod = 1; //0 = no process, 1, fit, 2, constant fraction 
+int traceMethod = 1; //0 = no process; 1 = fit;
 int traceLength = 200;
 
 bool isTACRF = true;
 bool isRecoil = true;
 bool isElum = false;
 bool isEZero = false;
-
 
 void GeneralSortTraceProof::Begin(TTree * /*tree*/)
 {
@@ -36,7 +35,12 @@ void GeneralSortTraceProof::Begin(TTree * /*tree*/)
    printf( "  Recoil : %s \n", isRecoil ? "On" : "Off");
    printf( "  Elum   : %s \n", isElum ?   "On" : "Off");
    printf( "  EZero  : %s \n", isEZero ?  "On" : "Off");
-   printf( "  Trace  : %s , Method: %d, Save: %s \n", isTraceON ?  "On" : "Off", traceMethod, isSaveTrace? "Yes": "No:");
+   TString traceMethodName;
+   switch(traceMethod){
+   case 0: traceMethodName = "simply copy"; break;
+   case 1: traceMethodName = "fit"; break;
+   }
+   printf( "  Trace  : %s , Method: %s, Save: %s \n", isTraceON ?  "On" : "Off", traceMethodName.Data(), isSaveTrace? "Yes": "No:");
    
    printf("====================== Begin. \n");
 }
@@ -102,39 +106,13 @@ void GeneralSortTraceProof::SlaveBegin(TTree * /*tree*/)
          newTree->Branch("trdt_r",     trdt_r,  "Trace_RDT_RiseTime[8]/F");
       }
    }
-   
-   runNum = 0;
   
 }
 
 Bool_t GeneralSortTraceProof::Process(Long64_t entry)
 { 
    psd.eventID = entry;
-
-   if( entry == 1){
-     runNum ++;
-     TString fileNameTemp = fChain->GetDirectory()->GetName();
-     //remove any folder path to get the name;
-     int found;
-     do{
-       found = fileNameTemp.First("/");
-       fileNameTemp.Remove(0,found+1);
-     }while( found >= 0 );
-   
-     found = fileNameTemp.First(".");
-     fileNameTemp.Remove(found);
-     //the fileNameTemp should be something like "xxx_run4563" now
-     if( runNum == 1 )  fileName = fileNameTemp;
-     
-     while( !fileNameTemp.IsDigit() ){
-        fileNameTemp.Remove(0,1);
-     }
-     
-     psd.runID = fileNameTemp.Atoi();
-     printf("---------------- runID : %d \n", psd.runID);
-     
-     runIDLast = psd.runID;
-   }
+   psd.runID = runIDLast;
 
    b_NumHits->GetEntry(entry);
    if( NumHits < 4 ) return kTRUE; // e, xn, xf, tac
@@ -391,21 +369,9 @@ void GeneralSortTraceProof::Terminate()
    TTree * tree = (TTree*) saveFile->FindObjectAny("tree");
    int validCount = tree->GetEntries();
    
-   saveFile.Close();
-   
-   //rename saveFile
-   printf("---- file Name : %s \n", fileName.Data());
-   printf("---- Last run  : %d \n", runIDLast);
-   
-   TString newFileName;
-   newFileName.Form("Cali_%s_%d.root", fileName.Data(), runIDLast);
-   
-   TString bashCommand;
-   bashCommand.Form("mv %s %s", saveFileName.Data(), newFileName.Data());
-   
-   gROOT->ProcessLine(bashCommand);
+   saveFile->Close();
    
    printf("=======================================================\n");
-   printf("----- saved as %s. valid event: %d\n", newFileName.Data() , validCount); 
+   printf("----- saved as %s. valid event: %d\n", saveFileName.Data() , validCount); 
    
 }
