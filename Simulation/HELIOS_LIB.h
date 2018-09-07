@@ -295,7 +295,7 @@ public:
       return rhoB * (TMath::Cos(phiB) - TMath::Cos(TMath::Tan(thetaB) * ZPos / rhoB + phiB) );
    }
    double GetRecoilYPos(double ZPos){
-      return rhoB * (TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB) - TMath::Sin(phiB));
+      return rhoB * (TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB + phiB) - TMath::Sin(phiB));
    }   
    double GetRecoilR(double ZPos){
       return rhoB * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(thetaB) * ZPos / rhoB));

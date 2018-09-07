@@ -419,21 +419,23 @@ void knockout(){
          int hit1 = helios1.CalHit(P1, Z1, PB, ZB);
          int hit2 = helios2.CalHit(P2, Z2, PB, ZB);
          
+         double recoilZ = 1000;
+         
          e1 = helios1.GetEnergy() + gRandom->Gaus(0, eSigma);
          z1 = helios1.GetZ() ; 
          t1 = helios1.GetTime();
          rho1 = helios1.GetRho();
-         x1h = helios1.GetXPos(200);
-         y1h = helios1.GetYPos(200);
-         r1h = helios1.GetR(200);
+         x1h = helios1.GetXPos(recoilZ);
+         y1h = helios1.GetYPos(recoilZ);
+         r1h = helios1.GetR(recoilZ);
          
          e2 = helios2.GetEnergy() + gRandom->Gaus(0, eSigma);
          z2 = helios2.GetZ() ; 
          t2 = helios2.GetTime();
          rho2 = helios2.GetRho();
-         x2h = helios2.GetXPos(200);
-         y2h = helios2.GetYPos(200);
-         r2h = helios2.GetR(200);
+         x2h = helios2.GetXPos(recoilZ);
+         y2h = helios2.GetYPos(recoilZ);
+         r2h = helios2.GetR(recoilZ);
          
          double gammaA = PA.Gamma();
          double betaA = PA.Beta();
