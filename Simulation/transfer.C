@@ -243,6 +243,10 @@ void transfer(){
    tree->Branch("xHit", &xHit, "xHit/D");
    tree->Branch("yHit", &yHit, "yHit/D");
    
+   double xHit1, yHit1;
+   tree->Branch("xHit1", &xHit1, "xHit1/D");
+   tree->Branch("yHit1", &yHit1, "yHit1/D");
+   
    //======= function for e-z plot for ideal case
    printf("##################  generate functions and save to *root");
    TObjArray * gList = new TObjArray();
@@ -456,6 +460,8 @@ void transfer(){
          rhoBHit = helios.GetRecoilRhoHit();
          xHit = helios.GetXPos(z);
          yHit = helios.GetYPos(z);
+         xHit1 = helios.GetXPos(z/2);
+         yHit1 = helios.GetYPos(z/2);
          z += gRandom->Gaus(0, zSigma);
          recoilT = helios.GetRecoilTime();
          

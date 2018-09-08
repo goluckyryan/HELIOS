@@ -274,12 +274,14 @@ public:
    int GetLoop(){return loop;}
    double GetVt(){return vt0;}
    double GetVp(){return vp0;}
+   // anti-clockwise rotation for positive ion in B-field to z-axis
    double GetXPos(double ZPos){
-      return rho * (TMath::Cos(phi) - TMath::Cos(TMath::Tan(theta) * ZPos / rho + phi) );
-   }
-   double GetYPos(double ZPos){
       return rho * (TMath::Sin(TMath::Tan(theta) * ZPos / rho + phi) - TMath::Sin(phi)) ;
    }
+   double GetYPos(double ZPos){
+      return rho * (TMath::Cos(phi) - TMath::Cos(TMath::Tan(theta) * ZPos / rho + phi) );
+   }
+   
    double GetR(double ZPos){
       return rho * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(theta) * ZPos / rho));
    }
@@ -291,15 +293,19 @@ public:
    double GetRecoilRhoHit(){return rhoBHit;}
    double GetRecoilVt(){return vt0B;}
    double GetRecoilVp(){return vp0B;}
+   // anti-clockwise rotation for positive ion in B-field to z-axis
    double GetRecoilXPos(double ZPos){
+      return rhoB * (TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB + phiB) - TMath::Sin(phiB));
+   }   
+   double GetRecoilYPos(double ZPos){
       return rhoB * (TMath::Cos(phiB) - TMath::Cos(TMath::Tan(thetaB) * ZPos / rhoB + phiB) );
    }
-   double GetRecoilYPos(double ZPos){
-      return rhoB * (TMath::Sin(TMath::Tan(thetaB) * ZPos / rhoB) - TMath::Sin(phiB));
-   }   
    double GetRecoilR(double ZPos){
       return rhoB * TMath::Sqrt(2 - 2* TMath::Cos( TMath::Tan(thetaB) * ZPos / rhoB));
    }
+   
+   double GetRecoilXHit(){return rxHit;}
+   double GetRecoilYHit(){return ryHit;}
    
    double GetZ0(){return z0;}  // infinite detector
    double GetTime0(){return t0;}
@@ -356,6 +362,8 @@ HELIOS::HELIOS(){
    zB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
    rhoBHit = TMath::QuietNaN();
+   rxHit = TMath::QuietNaN();
+   ryHit = TMath::QuietNaN();
    tB = TMath::QuietNaN();
    isDetReady = false;
 
@@ -519,6 +527,8 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
       vt0B = PB.Beta() * TMath::Sin(thetaB) * c ; // mm / nano-second  
       vp0B = PB.Beta() * TMath::Cos(thetaB) * c ; // mm / nano-second  
       rhoBHit = GetRecoilR(posRecoil);
+      rxHit = GetRecoilXPos(posRecoil);
+      ryHit = GetRecoilYPos(posRecoil);
       if(isCoincidentWithRecoil && rhoBHit > rhoRecoil ) return -2; // when particle-B miss the recoil detector
 
       //================ Calulate z hit
