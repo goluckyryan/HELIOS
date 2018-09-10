@@ -84,6 +84,8 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
+   
+   gStyle->SetPalette(1,0);
 /**///========================================================= load correction
 
 //========================================= detector Geometry
@@ -441,7 +443,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          
          cScript->cd(2);
          dummy[idet]->Draw();
-         caliResult->cd(); dummy[idet]->Write(); caliResult->Write("dummy", TObject::kSingleKey);
+         //caliResult->cd(); dummy[idet]->Write(); caliResult->Write("dummy", TObject::kSingleKey);
          
          for( int i = 0; i < numFx; i++){
             fx[i]->Draw("same");
@@ -471,6 +473,10 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       }   
 
       cScript->cd(3);
+      double zMax = gDist->GetZmax();
+      double zMin = gDist->GetZmin();
+      gDist->SetMaximum(zMax);
+      gDist->SetMinimum(zMin);
       gDist->Draw("tri1");
       if( option == -1 ){
          caliResult->cd(); 

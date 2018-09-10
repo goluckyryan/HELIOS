@@ -11,10 +11,13 @@
 #include <TCanvas.h>
 #include <TGraph2D.h>
 #include <TGraph.h>
+#include <TStyle.h>
 
 void Check_caliResult(){
 
    TFile * caliResult = new TFile("caliResult.root", "read");
+   
+   gStyle->SetPalette(1,0);
 
    Int_t Div[2] = {6,4};
    Int_t size[2] = {230,230}; //x,y
@@ -33,8 +36,14 @@ void Check_caliResult(){
      TString name;
      name.Form("gDist%d", i);
      gDist = (TGraph2D*) caliResult->FindObjectAny(name);
-
-     gDist->Draw("tri1");
+     
+     double zMax = gDist->GetZmax();
+     double zMin = gDist->GetZmin();
+      
+     gDist->SetMaximum(zMax);
+     gDist->SetMinimum(zMin);
+   
+     gDist->Draw("tri2");
 
      cCheck1->cd(i+1)->SetTheta(90);
      cCheck1->cd(i+1)->SetPhi(0);
