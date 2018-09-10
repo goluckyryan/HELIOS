@@ -67,7 +67,7 @@ void Check_e_z(){
    gStyle->SetTitleFontSize(0.1);
 
 //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    int numDet;
    int rDet = 6; // number of detector at different position, row-Det
    int cDet = 4; // number of detector at same position, column-Det
@@ -201,11 +201,11 @@ void Check_e_z(){
    printf("============= Fit.....");
    printf(" found %d peaks \n", nPeaks);
    
-   float * xpos =  peak->GetPositionX();
-   float * ypos =  peak->GetPositionY();
+   //float * xpos =  peak->GetPositionX();
+   //float * ypos =  peak->GetPositionY();
 	// in root-6, 
-   //double * xpos = peak->GetPositionX();
-   //double * ypos = peak->GetPositionY();
+   double * xpos = peak->GetPositionX();
+   double * ypos = peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );

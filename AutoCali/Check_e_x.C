@@ -53,7 +53,7 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    }
 
 //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    int numDet;
    int rDet = 6; // number of detector at different position, row-Det
    int cDet = 4; // number of detector at same position, column-Det
@@ -148,6 +148,9 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    gStyle->SetLabelSize(0.035, "X");
    gStyle->SetLabelSize(0.035, "Y");
    gStyle->SetTitleFontSize(0.035);
+   
+   if( cCheck2->GetShowEditor() )cCheck2->ToggleEditor();
+   if(!cCheck2->GetShowToolBar())cCheck2->ToggleToolBar();
    
    TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1]-100, eRange[2]);
    

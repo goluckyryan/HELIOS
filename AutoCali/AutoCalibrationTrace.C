@@ -37,7 +37,7 @@ void AutoCalibrationTrace(){
    printf(" ================================================== \n");
    printf(" 0 = alpha source calibration for xf - xn.\n");
    printf(" 1 = xf+xn to e calibration. \n");
-   printf(" 2 = Generate smaller root file with e, x, z, detID, coinTimeUC\n");
+   printf(" 2 = Generate smaller root file with e, x, z, detID, coinTimeUC (aware of Gate)\n");
    printf(" 3 = coinTimeUC calibration. (MANUAL) \n");
    printf(" --------- transfer.root require below ------------\n");
    printf(" 4 = e calibration by compare with simulation.\n");
@@ -49,13 +49,12 @@ void AutoCalibrationTrace(){
 //==================================================== data files
    
    //======== alpha data
-   TString rootfileAlpha="../H060/data/gen_run09.root";
+   TString rootfileAlpha="../H052/data/gen_run107.root";
    
    //======== experimental sorted data
-   TChain * chain = new TChain("tree");
+   TChain * chain = new TChain("gen_tree");
 
-   //chain->Add("../H052/data/gen_run107.root"); 
-   chain->Add("../H052/data/trace_run107.root"); 
+   chain->Add("../H052/data/gen_run107.root");
 
 /*   chain->Add("../H060/data/gen_run11.root");  //01
    chain->Add("../H060/data/gen_run12.root");  //02
@@ -78,8 +77,6 @@ void AutoCalibrationTrace(){
 */
 //   chain->Add("../H052/data/H052_Mg25.root");
    
-   //TProof::Open("");
-   //chain->SetProof();        
    printf(" ================ files :  \n");
    chain->GetListOfFiles()->Print();
    printf(" ================================================== \n");

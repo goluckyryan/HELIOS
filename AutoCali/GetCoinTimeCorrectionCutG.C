@@ -169,11 +169,11 @@ void GetCoinTimeCorrectionCutG(TString fileName, int detID){
    int nPeak = spec->Search(hT);
    printf("find %d peaks\n", nPeak);
    
-   Float_t * xpos =  spec->GetPositionX();
-   Float_t * ypos =  spec->GetPositionY();
+   //Float_t * xpos =  spec->GetPositionX();
+   //Float_t * ypos =  spec->GetPositionY();
 
-   //Double_t * xpos =  spec->GetPositionX();
-   //Double_t * ypos =  spec->GetPositionY();
+   Double_t * xpos =  spec->GetPositionX();
+   Double_t * ypos =  spec->GetPositionY();
    
    TF1* fit2g = NULL;
    
