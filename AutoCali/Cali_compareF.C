@@ -1,4 +1,5 @@
 #include <TROOT.h>
+#include <TSystem.h>
 #include <TStyle.h>
 #include <TTree.h>
 #include <TFile.h>
@@ -77,8 +78,6 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    }
    if( cScript->GetShowEditor()) cScript->ToggleEditor();
    if( cScript->GetShowToolBar()) cScript->ToggleToolBar();
-   
-   cScript->
    
    gStyle->SetOptStat(0);
    gStyle->SetStatY(1.0);
@@ -286,8 +285,6 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
-         cScript->Modified();
-         cScript->Update();
          
          cScript->cd(2);
          dummy[idet]->Draw();
@@ -296,7 +293,8 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          }         
          cScript->Modified();
          cScript->Update();
-         cScript->Draw();
+         
+         gSystem->ProcessEvents();
          
       }
       /**///======================================================== Calculate minDist
@@ -378,7 +376,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             clock.Stop("timer");
             Double_t time = clock.GetRealTime("timer");
             clock.Start("timer");
-            printf("%4d | %7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
+            printf("%4d | %7.3f < %6.3f [%4d, %4d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
             printf( "|%5.0f sec| \n", time);
          }
                   
@@ -408,9 +406,9 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
                }
                cScript->cd(2);
                exPlotC[idet]->Draw("same");
-               cScript->Modified();
-               cScript->Update();  
-               cScript->Draw();    
+               cScript->Update();
+               
+               gSystem->ProcessEvents();
             }            
 
          }
@@ -439,8 +437,6 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
-         cScript->Modified();
-         cScript->Update();
          caliResult->cd(); exPlot[idet]->Write(); caliResult->Write("exPlot", TObject::kSingleKey);
          
          cScript->cd(2);
@@ -451,9 +447,9 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             fx[i]->Draw("same");
             caliResult->cd(); fx[i]->Write(); caliResult->Write("fx", TObject::kSingleKey);
          }  
-         cScript->Modified();
+         
          cScript->Update();
-         cScript->Draw();
+         gSystem->ProcessEvents();
          
       }
 
@@ -484,9 +480,10 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          
       cScript->cd(3)->SetTheta(90);
       cScript->cd(3)->SetPhi(0);
-      cScript->Modified();
       cScript->Update();
       cScript->Draw();
+      
+      gSystem->ProcessEvents();
    
    } // end of loop idet  
 /**///======================================================== save result
