@@ -282,7 +282,6 @@ void transfer(){
       gx[i]->SetParameter(5, -gS2*slope);
       gx[i]->SetNpx(1000);
       gList->Add(gx[i]);
-      //gx[i]->Write();
       printf("/");
    }
    gList->Write("gList", TObject::kSingleKey);
@@ -298,7 +297,6 @@ void transfer(){
       f[i]->SetParameter(1, slope);
       f[i]->SetNpx(1000);
       fList->Add(f[i]);
-      //f[i]->Write();
       printf(".");
    }
    fList->Write("fList", TObject::kSingleKey);
@@ -324,7 +322,6 @@ void transfer(){
       fx[j]->SetName(name);
       fx[j]->SetLineColor(4);
       fxList->Add(fx[j]);
-      //fx[j]->Write();
       printf(",");
    }
    fxList->Write("fxList", TObject::kSingleKey);

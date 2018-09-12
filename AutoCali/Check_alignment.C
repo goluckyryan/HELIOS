@@ -12,9 +12,9 @@
 #include <TLegend.h>
 #include <fstream>
 
-void Check_alignment(){ 
+void Check_alignment(TString rootfileAlpha){ 
 
-   const char* rootfileAlpha="A_gen_run107.root";
+   //const char* rootfileAlpha="A_gen_run107.root";
    const char* rootfileSim="transfer.root";
    
    double eRange[3] = {200, 0, 10};
@@ -47,7 +47,7 @@ void Check_alignment(){
    
 /**///========================================================== load parameter
    //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    int numDet;
    int rDet = 6; // number of detector at different position, row-Det
    int cDet = 4; // number of detector at same position, column-Det
