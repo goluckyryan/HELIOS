@@ -85,11 +85,11 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
    }
    
    //=========== gate
-   bool rdt_energy = false;
-   for( int rID = 0; rID < 8; rID ++){
-      if( rdt[rID] > rdtGate ) rdt_energy = true; 
-   }
-   if( !rdt_energy ) return kTRUE;
+   //bool rdt_energy = false;
+   //for( int rID = 0; rID < 8; rID ++){
+   //   if( rdt[rID] > rdtGate ) rdt_energy = true; 
+   //}
+   //if( !rdt_energy ) return kTRUE;
 
    //#################################################################### processing
    ULong64_t eTime = -2000; //this will be the time for Ex valid

@@ -10,6 +10,8 @@
 #include <TMath.h>
 #include <TGraph.h>
 #include <TLine.h>
+#include <TSpectrum.h>
+
 
 void Cali_xf_xn(TTree * tree){
 /**///======================================================== initial input
@@ -36,11 +38,14 @@ void Cali_xf_xn(TTree * tree){
       cAlpha->cd(i)->SetGrid();
    }
 
-   gStyle->SetOptStat(1111111);
+   gStyle->SetOptStat(0);
    gStyle->SetStatY(1.0);
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
+   
+   if(cAlpha->GetShowEditor()  )cAlpha->ToggleEditor();
+   if(cAlpha->GetShowToolBar() )cAlpha->ToggleToolBar();
    
 /**///========================================================= Analysis
 
@@ -55,86 +60,177 @@ void Cali_xf_xn(TTree * tree){
       q[i]->SetXTitle(name);
       
       TString expression;
-      expression.Form("e[%d]>> q%d" ,i ,i);
-      gate[i].Form("e[%d]!=0", i);
+      expression.Form("e[%d] >> q%d" ,i, i);
+      gate[i].Form("e[%d] > 0", i);
       
       cAlpha->cd(i+1);
       tree->Draw(expression, gate[i] , "");
+      cAlpha->Update();
+      gSystem->ProcessEvents();
    }
    
    //----------- 1, pause for save Canvas
    int dummy = 0;
+   int temp = 0;
    cAlpha->Update();
-   printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
-   int temp = scanf("%d", &dummy);
-   if( dummy == 0 ) {
-      return;
-   }else if(dummy == 1){
-      cAlpha->SaveAs("alpha_e.pdf");
-   }
+   gSystem->ProcessEvents();
+//   printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
+//   temp = scanf("%d", &dummy);
+//   if( dummy == 0 ) {
+//      return;
+//   }else if(dummy == 1){
+//      cAlpha->SaveAs("alpha_e.pdf");  //TODO save as root file
+//   }
+
+   //----------- 2, find the edge of the energy    
+   printf("============== method to find edge:\n");
+   printf("1) maximum peak edge.\n");
+   printf("2) TSpectrum fit.\n");
+   printf("====== choice : ");
+   int method = 0;
+   temp = scanf("%d", &method);
    
-   printf("----- finding the edge of the energy spectrum...\n");
-   //----------- 2, find the edge of the energy 
+   
    double xHalf[numDet];
-   double yMax[numDet];
-   for( int i = 0; i < numDet; i++){
-      yMax[i] = q[i]->GetMaximum();
-      int iMax = q[i]->GetMaximumBin();
-      //printf("=========== %d \n", i);
-      //printf(" yMax : %f, iMax : %d \n", yMax[i], iMax);
+   if( method == 1 ){
+      printf("----- finding the edge of maximum peak...\n");
       
-      // for the higher energy peak
-      //if( iMax < 100 ){
-      //   yMax[i] = q[i]->GetMaximum(yMax[i]/2.);
-         //printf(" ---> corrected yMax : %f \n", yMax[i]);
-      //}
-      int iHalf = q[i]->FindLastBinAbove(yMax[i]/2);
-      xHalf[i] = q[i]->GetBinCenter(iHalf);
-   
-      printf("%2d | iHalf : %3d, xHalf : %6f \n", i, iHalf, xHalf[i]);
+      double yMax[numDet];      
+      for( int i = 0; i < numDet; i++){
+         yMax[i] = q[i]->GetMaximum();
+         int iMax = q[i]->GetMaximumBin();
+         int iHalf = q[i]->FindLastBinAbove(yMax[i]/2);
+         xHalf[i] = q[i]->GetBinCenter(iHalf);
+      
+         printf("%2d | iHalf : %3d, xHalf : %6f \n", i, iHalf, xHalf[i]);
+      }
+      
+      
+      printf("----- adjusting the energy to det-0......\n");
+      //------------ 3, correction
+      TH1F ** p = new TH1F*[numDet];
+      for( int i = 0; i < numDet; i ++){
+         TString name;
+         name.Form("p%d", i);
+         p[i] = new TH1F(name, name, 200, 500, 1800);
+         p[i]->SetXTitle(name);
+         
+         TString expression;
+         expression.Form("e[%d]  * %f >> p%d", i,  xHalf[0]/xHalf[i], i);
+         gate[i].Form("e[%d] > 0", i);
+         cAlpha->cd(i+1);
+         tree->Draw(expression, gate[i] , "");
+      }
+      
    }
    
-   printf("----- adjusting the energy to det-0......\n");
-   //------------ 3, correction
-   TH1F ** p = new TH1F*[numDet];
-   for( int i = 0; i < numDet; i ++){
-      TString name;
-      name.Form("p%d", i);
-      p[i] = new TH1F(name, name, 200, 500, 1800);
-      p[i]->SetXTitle(name);
+   int nPeaks = 10;
+   vector<double> * energy = new vector<double> [numDet]; 
+   double a0[numDet];
+   double a1[numDet];
+   if( method == 2 ){
+      printf("---- finding edge using TSepctrum Class...\n");
+      for( int i = 0; i < numDet; i++){
+         
+         TSpectrum * spec = new TSpectrum(10);
+         nPeaks = spec->Search(q[i], 1, "", 0.2);
+         printf("%2d | found %d peaks | ", i,  nPeaks);
+
+         double * xpos = spec->GetPositionX();
+         
+         int * inX = new int[nPeaks];
+         TMath::Sort(nPeaks, xpos, inX, 0 );
+         for( int j = 0; j < nPeaks; j++){
+            energy[i].push_back(xpos[inX[j]]);
+         }
+         
+         for( int j = 0; j < nPeaks; j++){
+            printf("%7.2f, ", energy[i][j]);
+         }
+         printf("\n");
+         
+      }
       
-      TString expression;
-      expression.Form("e[%d] * %f >> p%d", i, xHalf[0]/xHalf[i], i);
-      gate[i].Form("e[%d]!=0", i);
-      cAlpha->cd(i+1);
-      tree->Draw(expression, gate[i] , "");
+      for( int i = 0; i < numDet; i++){
+         cAlpha->cd(i+1);
+         q[i]->Draw();
+         cAlpha->Update();
+         gSystem->ProcessEvents();
+      }
+      
+      //------------ 3, correction
+      printf("----- adjusting the energy to det-0......\n");
+      TH1F ** p = new TH1F*[numDet];
+      for( int i = 0; i < numDet; i ++){
+         
+         TGraph * graph = new TGraph(nPeaks, &energy[i][0], &energy[0][0] );
+         
+         TF1 * fit = new TF1("fit", "pol1" );
+         graph->Fit("fit", "q");
+         
+         a0[i] = fit->GetParameter(0);
+         a1[i] = fit->GetParameter(1);
+         
+         //det-11 is broken 
+         if( i == 11) {
+            a0[11] = 0.0;
+            a1[11] = 1.0;
+         }
+         
+         printf("%2d | a0: %6.3f, a1: %6.3f \n", i, a0[i], a1[i]);
+         
+         TString name;
+         name.Form("p%d", i);
+         p[i] = new TH1F(name, name, 200, 500, 1800);
+         p[i]->SetXTitle(name);
+         
+         TString expression;
+         expression.Form("e[%d] * %f + %f >> p%d", i, a1[i], a0[i], i);
+         gate[i].Form("e[%d] > 0", i);
+         cAlpha->cd(i+1);
+         tree->Draw(expression, gate[i] , "");
+         cAlpha->Update();
+         gSystem->ProcessEvents();
+      }
+      
    }
-   
    
    //----------- 4, pause for saving correction parameters
    cAlpha->Update();
-   printf("0 for stop, 1 for save e-correction & Canvas, 2 for xf - xn correction: ");
-   temp = scanf("%d", &dummy);
+   gSystem->ProcessEvents();
+   //printf("0 for stop, 1 for save e-correction & Canvas, 2 for xf - xn correction: ");
+   //temp = scanf("%d", &dummy);
+   dummy = 1;
    if( dummy == 0 ) return;
    if( dummy == 1 ){
       FILE * paraOut;
       TString filename;
-      filename.Form("correction_e.dat");
+      filename.Form("correction_e_alpha.dat");
       paraOut = fopen (filename.Data(), "w+");
       printf("=========== save e-correction parameters to %s \n", filename.Data());
       for( int i = 0; i < numDet; i++){
-         fprintf(paraOut, "%9.6f\n", xHalf[i]);
+         if( method == 1) fprintf(paraOut, "%9.6f\t%9.6f\n", xHalf[i], 0.);
+         if( method == 2) fprintf(paraOut, "%9.6f\t%9.6f\n", 1./a1[i], a0[i]);
       }
       fflush(paraOut);
       fclose(paraOut);
       
-      cAlpha->SaveAs("alpha_e_corrected.pdf");
+      //cAlpha->SaveAs("alpha_e_corrected.pdf");
    }  
    
    //############################################################  for xf-xn correction
    printf("############## xf - xn correction \n");
    TLine line(0,0,0,0);
    line.SetLineColor(4);
+   
+   double eGate = 0;
+   if( method == 2) {
+      int peakID = 0;
+      printf("------ pick the i-th peak (0..%d): ", nPeaks-1);
+      temp = scanf("%d", &peakID);
+      eGate = energy[0][peakID];
+      printf("------ using the peak at : %f \n", eGate);
+   }
    
    printf("----- plotting xf vs xn with energy gate near the peak...\n");
    TH2F ** h = new TH2F*[numDet];
@@ -146,30 +242,35 @@ void Cali_xf_xn(TTree * tree){
       name.Form("xn[%d]", i); h[i]->SetXTitle(name);
       
       TString expression;
-      expression.Form("xf[%d]:xn[%d]>> h%d" ,i ,i, i);
-      gate[i].Form("xf[%d]!=0 && xn[%d]!=0 && xf[%d] + xn[%d] > 10 && TMath::Abs(e[%d]-%f)<50", i, i, i, i, i, xHalf[i]-25);
+      expression.Form("xf[%d]:xn[%d]>> h%d" , i, i, i);
+      if(method == 1) gate[i].Form("xf[%d]>0 && xn[%d]>0 && TMath::Abs(e[%d]-%f)<50", i, i, i, xHalf[i]-25);
+      if(method == 2) gate[i].Form("xf[%d]>0 && xn[%d]>0 && TMath::Abs(e[%d] * %f + %f - %f)<50", i, i, i, a1[i], a0[i], eGate);
       
       cAlpha->cd(i+1);
-      
       tree->Draw(expression, gate[i] , "");
       
       line.SetX2(1600);
       line.SetY1(1600);
       line.Draw("same");
+      
+      cAlpha->Update();
+      gSystem->ProcessEvents();
+      
    }
    
    //-------- 1, pause for saving Canvas
    cAlpha->Update();
-   printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
-   temp = scanf("%d", &dummy);
-   if( dummy == 0 ) {
-      return;
-   }else if(dummy == 1){
-      cAlpha->SaveAs("alpha_xf_xn.pdf");
-   }
+   gSystem->ProcessEvents();
+   //printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
+   //temp = scanf("%d", &dummy);
+   //if( dummy == 0 ) {
+   //   return;
+   //}else if(dummy == 1){
+   //   cAlpha->SaveAs("alpha_xf_xn.pdf");
+   //}
    
-   printf("----- profile and obtain the fit function...\n");
    //-------- 2, profileX and get the fit function
+   printf("----- profile and obtain the fit function...\n");
    double para[numDet][2];
    double xnScale[numDet];
    TF1 * fit = new TF1("fit", "pol1");
@@ -179,9 +280,9 @@ void Cali_xf_xn(TTree * tree){
       fit->GetParameters(para[i]);
       xnScale[i] = -para[i][1]; 
    }
-   
-   printf("----- correcting...\n");
+
    //--------- 3, correction
+   printf("----- correcting...\n");
    TH2F ** k = new TH2F*[numDet];
    for( int i = 0; i < numDet; i ++){
       TString name;
@@ -200,10 +301,14 @@ void Cali_xf_xn(TTree * tree){
       line.SetX2(para[i][0]);
       line.SetY1(para[i][0]);
       line.Draw("same");
+      
+      cAlpha->Update();
+      gSystem->ProcessEvents();
    }
    
    //--------- 4, pause for saving correction parameter
    cAlpha->Update();
+   gSystem->ProcessEvents();
    printf("0 for stop, 1 for save xf-xn-correction : ");
    temp = scanf("%d", &dummy);
    if( dummy == 0 ) return;

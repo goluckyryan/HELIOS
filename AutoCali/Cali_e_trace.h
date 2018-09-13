@@ -97,12 +97,14 @@ public :
    Int_t eventID;
    Int_t run;
    Float_t eC[24];
+   Float_t xfC[24];
+   Float_t xnC[24];
    ULong64_t eC_t[24];
    Float_t x[24]; // unadjusted position, range (-1,1)
    Float_t z[24]; 
-   int det;
-   int hitID; // is e, xf, xn are all fired.
-   int zMultiHit; // multipicity of z
+   int det;    //TODO, when multiHit, which is detID?
+   int hitID[24]; // is e, xf, xn are all fired.
+   int multiHit; // multipicity of z
    
    Float_t thetaCM;
    Float_t Ex;   
@@ -230,12 +232,14 @@ void Cali_e_trace::Init(TTree *tree)
    newTree->Branch("eventID",&eventID,"eventID/I"); 
    newTree->Branch("run",&run,"run/I"); 
    
-   newTree->Branch("e" ,  eC, "eC[24]/F");
-   newTree->Branch("x" ,   x, "x[24]/F");
-   newTree->Branch("z" ,   z, "z[24]/F");
+   newTree->Branch("e" ,   eC, "e[24]/F");
+   newTree->Branch("xf",  xfC, "xf[24]/F");
+   newTree->Branch("xn",  xnC, "xn[24]/F");
+   newTree->Branch("x" ,    x, "x[24]/F");
+   newTree->Branch("z" ,    z, "z[24]/F");
    newTree->Branch("detID", &det, "det/I");
-   newTree->Branch("hitID", &hitID, "hitID/I");
-   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
+   newTree->Branch("hitID", hitID, "hitID[24]/I");
+   newTree->Branch("multiHit", &multiHit, "multiHit/I");
    
    newTree->Branch("Ex", &Ex, "Ex/F");
    newTree->Branch("thetaCM", &thetaCM, "thetaCM/F");
@@ -381,9 +385,9 @@ void Cali_e_trace::Init(TTree *tree)
       int i = 0;
       while( file >> a >> b){
          if( i >= numDet) break;
-         eCorr[i][0] = a;
-         eCorr[i][1] = b;
-         //printf("\n%2d, e0: %f, e1: %f ", i, eCorr[i][0], eCorr[i][1]);
+         eCorr[i][0] = a;  // 1/a1
+         eCorr[i][1] = b;  //  a0 , e' = e * a1 + a0
+         //printf("\n%2d, e0: %9.4f, e1: %9.4f", i, eCorr[i][0], eCorr[i][1]);
          i = i + 1;
       }
       printf("... done.\n");

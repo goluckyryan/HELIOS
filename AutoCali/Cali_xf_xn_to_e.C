@@ -31,11 +31,14 @@ void Cali_xf_xn_to_e(TTree *tree){
       cCali_xf_xn_e->cd(i)->SetGrid();
    }
    
-   gStyle->SetOptStat(1111111);
+   gStyle->SetOptStat(0);
    gStyle->SetStatY(1.0);
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
+   
+   if(cCali_xf_xn_e->GetShowEditor()  )cCali_xf_xn_e->ToggleEditor();
+   if(cCali_xf_xn_e->GetShowToolBar() )cCali_xf_xn_e->ToggleToolBar();
 
 /**///========================================================= load xn correction
    const int nDet = 24;
@@ -50,7 +53,6 @@ void Cali_xf_xn_to_e(TTree *tree){
       while( file >> a ){
          if( i >= nDet) break;
          xnCorr[i] = a;
-         //xnCorr[i] = 1;
          i = i + 1;
       }
       
@@ -70,19 +72,20 @@ void Cali_xf_xn_to_e(TTree *tree){
    for( int i = 0; i < nDet; i ++){
       TString name;
       name.Form("d%d", i);
-      d[i] = new TH2F(name, name , 300, -100 , 3500 , 300, -100 , 3500);
+      d[i] = new TH2F(name, name , 200, 0 , 2000 , 200, 0 , 2000);
       d[i]->SetXTitle("xf+xn");
       d[i]->SetYTitle("e");
       
       TString expression;
       expression.Form("e[%d]:(xf[%d]+xn[%d] * %f)>> d%d" , i,i,i, xnCorr[i],i);
       TString gate;
-      gate.Form("e[%d]!=0 && xf[%d]!=0 && xn[%d]!=0",i,i,i);
-      //gate.Form("xf[%d]!=0 && xn[%d]!=0",i,i);
+      gate.Form("e[%d]>0 && xf[%d]>0 && xn[%d]>0 ",i, i, i);
+      //gate.Form("e[%d]>0 && xf[%d]>0 && xn[%d]>0 && TMath::Abs(xf[%d] - xn[%d]*%f)< 100",i, i, i, i, i, xnCorr[i]);
       
       cCali_xf_xn_e->cd(i+1);
       tree->Draw(expression, gate , "");
       cCali_xf_xn_e->Update();  
+      gSystem->ProcessEvents();
    }
    
    //======== profileX
@@ -90,15 +93,24 @@ void Cali_xf_xn_to_e(TTree *tree){
    Double_t* slope = new Double_t[nDet];
    Double_t* intep = new Double_t[nDet];
    
-   TF1 *fit = new TF1("fit", "pol1"); 
+   TF1 *fit = new TF1("fit", "pol1", 0, 3500); 
       
    for( int i = 0; i < nDet; i ++){
    
       cCali_xf_xn_e->cd(i+1);
-      d[i]->Fit("fit", "q");
+      
+      fit->SetParameter(0, 0);
+      fit->SetParameter(1, 1);
+      
+      d[i]->Fit("fit", "qR");
       
       slope[i] = fit->GetParameter(1);
       intep[i] = fit->GetParameter(0);
+      
+      printf("%2d, %9.6f, %9.6f \n", i, intep[i], slope[i]);
+      
+      cCali_xf_xn_e->Update();  
+      gSystem->ProcessEvents();
       
    }
    
@@ -114,7 +126,7 @@ void Cali_xf_xn_to_e(TTree *tree){
       paraOut = fopen ("correction_xfxn_e.dat", "w+");
       
       for( int i = 0; i < nDet; i++){
-         printf("%2d, %9.6f, %9.6f \n", i, intep[i], slope[i]);
+         
          fprintf(paraOut, "%9.6f  %9.6f\n", intep[i], slope[i]);
       }
    

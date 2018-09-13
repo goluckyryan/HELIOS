@@ -49,12 +49,15 @@ void AutoCalibrationTrace(){
 //==================================================== data files
    
    //======== alpha data
-   TString rootfileAlpha="../H052/data/gen_run107.root";
+   TChain * chainAlpha = new TChain("gen_tree");
+   //chainAlpha->Add("data/gen_run11.root");
+   chainAlpha->Add("data/gen_run12.root");
    
    //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
 
-   chain->Add("../H052/data/gen_run107.root");
+   chain->Add("data/gen_run11.root");
+   chain->Add("data/gen_run12.root");
 
 /*   chain->Add("../H060/data/gen_run11.root");  //01
    chain->Add("../H060/data/gen_run12.root");  //02
@@ -76,16 +79,24 @@ void AutoCalibrationTrace(){
    chain->Add("../H060/data/gen_run30.root");  //18
 */
 //   chain->Add("../H052/data/H052_Mg25.root");
+
+/**///=========================================== Calibration
+   if( option > 5 || option < 0 ) return;
    
+   if( option == 0 ) {
+      printf(" ================ alpha source files :  \n");
+      chainAlpha->GetListOfFiles()->Print();
+      printf(" ================================================== \n");
+      Cali_xf_xn(chainAlpha);
+      return ;
+   }
+   
+      
    printf(" ================ files :  \n");
    chain->GetListOfFiles()->Print();
    printf(" ================================================== \n");
-      
-   TFile *fa = new TFile (rootfileAlpha, "read"); 
-   TTree * atree = (TTree*)fa->Get("gen_tree");
 
-/**///=========================================== Calibration
-   if( option == 0 ) Cali_xf_xn(atree);
+   
    if( option == 1 ) Cali_xf_xn_to_e(chain);
    
    TString rootfileSim="transfer.root";
