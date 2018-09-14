@@ -118,6 +118,9 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
 
 /**///======================================================== Analysis
    
+   if( cCheck->GetShowEditor() )cCheck->ToggleEditor();
+   if( cCheck->GetShowToolBar())cCheck->ToggleToolBar();
+   
    TLine * line = new TLine(-1, eThreshold, 1, eThreshold);
    line->SetLineColor(2);
    
@@ -180,7 +183,7 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    if(!cCheck3->GetShowToolBar() )cCheck3->ToggleToolBar(); // force show tool bar
    cCheck3->SetLogy();
    TH1F * hMulti = new TH1F("hMulti", "Multi", 20, 0, 20);
-   tree->Draw("zMultiHit >> hMulti", "" );
+   tree->Draw("multiHit >> hMulti", "" );
    cCheck3->Update();   
    
    

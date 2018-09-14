@@ -106,10 +106,10 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       }else{
          continue; // when e is invalid, nothing need to do
       }
-            
+       
       if( !TMath::IsNaN(xf[idet]) || xf[idet] > 0) xfC[idet] = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       if( !TMath::IsNaN(xn[idet]) || xn[idet] > 0) xnC[idet] = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
-   
+      
       //========= calculate x
       if(xf[idet] > 0  && xn[idet] > 0 ) {
          x[idet] = (xfC[idet]-xnC[idet])/(xfC[idet]+xnC[idet]);

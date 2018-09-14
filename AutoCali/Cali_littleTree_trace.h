@@ -89,7 +89,7 @@ public :
    double zTemp; 
    int detIDTemp;
    int hitID; // is e, xf, xn are all fired.
-   int zMultiHit; // multipicity of z
+   int multiHit; // multipicity of z
    
    Float_t coinTimeUC; 
    Float_t coinTime;
@@ -308,7 +308,7 @@ void Cali_littleTree_trace::Init(TTree *tree)
    newTree->Branch("z" ,  &zTemp, "zTemp/D");
    newTree->Branch("detID", &detIDTemp, "detIDTemp/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
-   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
+   newTree->Branch("multiHit", &multiHit, "multiHit/I");
       
    if( isTraceDataExist ) {
    
