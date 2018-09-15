@@ -322,6 +322,7 @@ private:
    double eB, zB, rhoB, tB;
    double vt0B, vp0B;
    double rhoBHit; // particle-B hit radius
+   double rxHit, ryHit;
    bool isDetReady;
    
    double z0, t0; // infinite detector 
@@ -469,6 +470,8 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    zB = TMath::QuietNaN();
    tB = TMath::QuietNaN();
    rhoB = TMath::QuietNaN();
+   rxHit = TMath::QuietNaN();
+   ryHit = TMath::QuietNaN();
    phiB = TMath::QuietNaN();
 
    

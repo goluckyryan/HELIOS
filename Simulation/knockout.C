@@ -210,6 +210,8 @@ void knockout(){
    tree->Branch("mB", &mB, "mB/D");
    tree->Branch("mb", &mb, "mb/D");
    
+   tree->Branch("Bfield", &BField, "Bfield/D");
+   
    TClonesArray * arr = new TClonesArray("TLorentzVector");
    tree->Branch("fV", arr, 256000);
    arr->BypassStreamer();
@@ -288,11 +290,18 @@ void knockout(){
          }
          
          int rKEA = gRandom->Integer(nKEA);
-         
          KEA = KEAList[rKEA];
          
+         /*
+         KEA = 300*gRandom->Rndm();
+         BField = 4*gRandom->Rndm();
+			helios1.SetMagneticField(BField);
+			helios2.SetMagneticField(BField);
+			*/
+         
          reaction.SetIncidentEnergyAngle(KEA, theta, 0.);
-
+         
+         
          /*
          //For target scattering
          reaction.CalIncidentChannel(isNormalKinematics); // but only need is PA
