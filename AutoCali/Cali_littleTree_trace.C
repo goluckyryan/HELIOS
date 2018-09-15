@@ -64,7 +64,7 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
    
    detIDTemp = -4;
    hitID = -4;
-   zMultiHit = 0;
+   multiHit = 0;
    
    coinTimeUC = TMath::QuietNaN(); //uncorrected
    coinTime = TMath::QuietNaN();
@@ -85,11 +85,11 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
    }
    
    //=========== gate
-   bool rdt_energy = false;
-   for( int rID = 0; rID < 8; rID ++){
-      if( rdt[rID] > rdtGate ) rdt_energy = true; 
-   }
-   if( !rdt_energy ) return kTRUE;
+   //bool rdt_energy = false;
+   //for( int rID = 0; rID < 8; rID ++){
+   //   if( rdt[rID] > rdtGate ) rdt_energy = true; 
+   //}
+   //if( !rdt_energy ) return kTRUE;
 
    //#################################################################### processing
    ULong64_t eTime = -2000; //this will be the time for Ex valid
@@ -112,15 +112,15 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
       //========= calculate x
       if(xf[idet] > 0  && xn[idet] > 0 ) {
          xTemp = (xfC-xnC)/(xfC+xnC);
-         zMultiHit++;
+         multiHit++;
          hitID = 0;
       }else if(xf[idet] == 0 && xn[idet] > 0 ){
          xTemp = (1-2*xnC/e[idet]);
-         zMultiHit++;
+         multiHit++;
          hitID = 1;
       }else if(xf[idet] > 0 && xn[idet] == 0 ){
          xTemp = (2*xfC/e[idet]-1);
-         zMultiHit++;
+         multiHit++;
          hitID = 2;
       }else{
          xTemp = TMath::QuietNaN();
@@ -145,10 +145,10 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
       }
    }//end of idet-loop
    
-   if( zMultiHit == 0 ) return kTRUE;
+   if( multiHit == 0 ) return kTRUE;
    
    //for coincident time bewteen array and rdt
-   if( zMultiHit == 1 && isTraceDataExist ) {
+   if( multiHit == 1 && isTraceDataExist ) {
       ULong64_t rdtTime = 0;
       Float_t rdtQ = 0;
       Float_t trdtTime = 0.;

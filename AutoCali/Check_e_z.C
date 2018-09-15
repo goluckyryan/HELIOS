@@ -28,9 +28,10 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
    return result;
 }
 
-void Check_e_z(){  
+void Check_e_z(TString rootfile){  
 /**///======================================================== User input
-   const char* rootfile="A_gen_run107.root"; const char* treeName="tree";
+   //const char* rootfile="A_gen_run107.root"; 
+   const char* treeName="tree";
    const char* simfile="transfer.root"; const char* treeNameS="tree";
 
    int Div[2] = {6,4};  //x,y
@@ -38,12 +39,12 @@ void Check_e_z(){
    double ExRange[3] = {200, -1, 10};
 	double eRange[3]  = {400, 0, 10};
    
-   bool showFx = true;
+   bool showFx = false;
    bool showTx = false;
 
    TString drawOption ="colz"; 
    
-   TString detGate = "detID%6 < 6 && !(800> coin_t && coin_t > 2)";
+   TString detGate = "";// "detID%6 < 6 && !(800> coin_t && coin_t > 2)";
 
 /**///======================================================== read tree   
    printf("################### Check_e_z.C ######################\n");
@@ -52,11 +53,11 @@ void Check_e_z(){
    
    TFile *file0 = new TFile (rootfile, "read"); 
    tree = (TTree*)file0->Get(treeName);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", rootfile,  tree->GetEntries());
+   printf("=====> /// %20s //// is loaded. Total #Entry: %10lld \n", rootfile.Data(),  tree->GetEntries());
    
    TFile *file1 = new TFile (simfile, "read"); 
    TTree *sTree = (TTree*)file1->Get(treeNameS);
-   printf("=====> /// %15s //// is loaded. Total #Entry: %10lld \n", simfile,  sTree->GetEntries());
+   printf("=====> /// %20s //// is loaded. Total #Entry: %10lld \n", simfile,  sTree->GetEntries());
 
    gStyle->SetOptStat(10001);
    gStyle->SetStatY(0.9);
@@ -67,7 +68,7 @@ void Check_e_z(){
    gStyle->SetTitleFontSize(0.1);
 
 //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    int numDet;
    int rDet = 6; // number of detector at different position, row-Det
    int cDet = 4; // number of detector at same position, column-Det
@@ -201,11 +202,11 @@ void Check_e_z(){
    printf("============= Fit.....");
    printf(" found %d peaks \n", nPeaks);
    
-   float * xpos =  peak->GetPositionX();
-   float * ypos =  peak->GetPositionY();
+   //float * xpos =  peak->GetPositionX();
+   //float * ypos =  peak->GetPositionY();
 	// in root-6, 
-   //double * xpos = peak->GetPositionX();
-   //double * ypos = peak->GetPositionY();
+   double * xpos = peak->GetPositionX();
+   double * ypos = peak->GetPositionY();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );

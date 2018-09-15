@@ -322,7 +322,7 @@ private:
    double eB, zB, rhoB, tB;
    double vt0B, vp0B;
    double rhoBHit; // particle-B hit radius
-   double rxHit, ryHit;
+   double rxHit, ryHit; // particle-B hit position
    bool isDetReady;
    
    double z0, t0; // infinite detector 

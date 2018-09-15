@@ -3,6 +3,7 @@
 *.d
 *.so
 *.pcm
+*.DS_Store
 
 output.txt
 
@@ -10,6 +11,7 @@ output.txt
 RUNs/
 H060_ana/
 H052_ana/
+H052_test/
 
 #symblic link
 data

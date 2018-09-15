@@ -1,4 +1,5 @@
 #include <TROOT.h>
+#include <TSystem.h>
 #include <TStyle.h>
 #include <TTree.h>
 #include <TFile.h>
@@ -83,10 +84,12 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    gStyle->SetStatX(0.99);
    gStyle->SetStatW(0.2);
    gStyle->SetStatH(0.1);
+   
+   gStyle->SetPalette(1,0);
 /**///========================================================= load correction
 
 //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    int numDet;
    int rDet = 6; // number of detector at different position, row-Det
    int cDet = 4; // number of detector at same position, column-Det
@@ -174,7 +177,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       printf("... fail.\n");
       return;
    }
-   file.close();
+   file.close(); */
 
 /**///======================================================== setup tree
 
@@ -182,7 +185,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    double  zTemp;
    int detIDTemp; 
    int hitIDTemp;
-   float coinTimeTemp;
+   float coinTimeTemp = 0.0;
    
    bool isCoinTimeBranchExist = false;
    TBranch * br = (TBranch*) expTree->GetListOfBranches()->FindObject("coinTime");
@@ -279,19 +282,21 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             if( isXFXN && hitIDTemp != 0 ) continue;
             if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
             
-            printf("%d | %f, %f, %f \n", i, zTemp, eTemp, coinTimeTemp);
+            //printf("%d | %f, %f, %f \n", i, zTemp, eTemp, coinTimeTemp);
             
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
-         cScript->Update();
          
          cScript->cd(2);
          dummy[idet]->Draw();
          for( int i = 0; i < numFx; i++){
             fx[i]->Draw("same");
          }         
+         cScript->Modified();
          cScript->Update();
+         
+         gSystem->ProcessEvents();
          
       }
       /**///======================================================== Calculate minDist
@@ -373,7 +378,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             clock.Stop("timer");
             Double_t time = clock.GetRealTime("timer");
             clock.Start("timer");
-            printf("%4d | %7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
+            printf("%4d | %7.3f < %6.3f [%4d, %4d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
             printf( "|%5.0f sec| \n", time);
          }
                   
@@ -387,7 +392,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             Double_t time = clock.GetRealTime("timer");
             clock.Start("timer");
             //display
-            printf("%4d | %7.3f < %6.3f [%3d, %3d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
+            printf("%4d | %7.3f < %6.3f [%4d, %4d(%2.0f%%)] ", iTrial, totalMinDist, minTotalMinDist, count, countMax, countMax*100./countEvent);   
             printf( "|%5.0f sec| ", time);
             printf("%5.1f, %6.3f \n", A1, A0);
             
@@ -403,7 +408,9 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
                }
                cScript->cd(2);
                exPlotC[idet]->Draw("same");
-               cScript->Update();      
+               cScript->Update();
+               
+               gSystem->ProcessEvents();
             }            
 
          }
@@ -432,18 +439,19 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             exPlot[idet]->Fill(zTemp, eTemp);
          }
          exPlot[idet]->Draw();
-         cScript->Update();
-         caliResult->cd(); exPlot[idet]->Write(); caliResult->Write();
+         caliResult->cd(); exPlot[idet]->Write(); caliResult->Write("exPlot", TObject::kSingleKey);
          
          cScript->cd(2);
          dummy[idet]->Draw();
-         caliResult->cd(); dummy[idet]->Write(); caliResult->Write();
+         //caliResult->cd(); dummy[idet]->Write(); caliResult->Write("dummy", TObject::kSingleKey);
          
          for( int i = 0; i < numFx; i++){
             fx[i]->Draw("same");
-            caliResult->cd(); fx[i]->Write(); caliResult->Write();
+            caliResult->cd(); fx[i]->Write(); caliResult->Write("fx", TObject::kSingleKey);
          }  
+         
          cScript->Update();
+         gSystem->ProcessEvents();
          
       }
 
@@ -461,20 +469,27 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       if( option == -1 ) {
          caliResult->cd(); 
          exPlotC[idet]->Write(); 
-         caliResult->Write();
+         caliResult->Write("exPlotC", TObject::kSingleKey);
       }   
 
       cScript->cd(3);
+      double zMax = gDist->GetZmax();
+      double zMin = gDist->GetZmin();
+      gDist->SetMaximum(zMax);
+      gDist->SetMinimum(zMin);
       gDist->Draw("tri1");
       if( option == -1 ){
          caliResult->cd(); 
          gDist->Write(); 
-         caliResult->Write();
+         caliResult->Write("gDist", TObject::kSingleKey);
       }
          
       cScript->cd(3)->SetTheta(90);
       cScript->cd(3)->SetPhi(0);
       cScript->Update();
+      cScript->Draw();
+      
+      gSystem->ProcessEvents();
    
    } // end of loop idet  
 /**///======================================================== save result

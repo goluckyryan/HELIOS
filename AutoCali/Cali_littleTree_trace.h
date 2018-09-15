@@ -89,7 +89,7 @@ public :
    double zTemp; 
    int detIDTemp;
    int hitID; // is e, xf, xn are all fired.
-   int zMultiHit; // multipicity of z
+   int multiHit; // multipicity of z
    
    Float_t coinTimeUC; 
    Float_t coinTime;
@@ -166,7 +166,7 @@ void Cali_littleTree_trace::Init(TTree *tree)
    
    //===================================================== loading parameter
    //========================================= detector Geometry
-   string detGeoFileName = "detectorGeo_upstream.txt";
+   string detGeoFileName = "detectorGeo.txt";
    printf("----- loading detector geometery : %s.", detGeoFileName.c_str());
    ifstream file;
    file.open(detGeoFileName.c_str());
@@ -206,6 +206,7 @@ void Cali_littleTree_trace::Init(TTree *tree)
       
    }else{
        printf("... fail\n");
+       Terminate();
        return;
    }
    
@@ -227,6 +228,7 @@ void Cali_littleTree_trace::Init(TTree *tree)
       printf("... done.\n");
    }else{
       printf("... fail.\n");
+      Terminate();
       return;
    }
    file.close();
@@ -247,46 +249,50 @@ void Cali_littleTree_trace::Init(TTree *tree)
       printf("... done.\n");
    }else{
       printf("... fail.\n");
+      Terminate();
       return;
    }
    file.close();
 
    //========================================= coinTime correction
-   printf("----- loading coin-Time correction parameters.");
-   file.open("correction_coinTime.dat");
+   if( isTraceDataExist ) {
    
-   
-   if( file.is_open() ){
-      isCoinTimeLoaded = true;
-      double d, a0, a1, a2, a3, a4, a5, a6, a7, a8;
-      int i = 0;
-      while( file >> d >> a0 >> a1 >> a2 >> a3 >> a4 >> a5 >> a6 >> a7 >> a8){
-         if( i >= numDet) break;
-         cTCorr[i][0] = a0;
-         cTCorr[i][1] = a1;
-         cTCorr[i][2] = a2;
-         cTCorr[i][3] = a3;
-         cTCorr[i][4] = a4;
-         cTCorr[i][5] = a5;
-         cTCorr[i][6] = a6;
-         cTCorr[i][7] = a7;
-         cTCorr[i][8] = a8;
-         //printf("\n%2d, a0: %7.4f, a1: %7.4f .... a7: %7.4f", i, cTCorr[i][0], cTCorr[i][1], cTCorr[i][7]);
-         i = i + 1;
-      }
-      printf("... done.\n");
+      printf("----- loading coin-Time correction parameters.");
+      file.open("correction_coinTime.dat");
+      
+      
+      if( file.is_open() ){
+         isCoinTimeLoaded = true;
+         double d, a0, a1, a2, a3, a4, a5, a6, a7, a8;
+         int i = 0;
+         while( file >> d >> a0 >> a1 >> a2 >> a3 >> a4 >> a5 >> a6 >> a7 >> a8){
+            if( i >= numDet) break;
+            cTCorr[i][0] = a0;
+            cTCorr[i][1] = a1;
+            cTCorr[i][2] = a2;
+            cTCorr[i][3] = a3;
+            cTCorr[i][4] = a4;
+            cTCorr[i][5] = a5;
+            cTCorr[i][6] = a6;
+            cTCorr[i][7] = a7;
+            cTCorr[i][8] = a8;
+            //printf("\n%2d, a0: %7.4f, a1: %7.4f .... a7: %7.4f", i, cTCorr[i][0], cTCorr[i][1], cTCorr[i][7]);
+            i = i + 1;
+         }
+         printf("... done.\n");
 
-   }else{
-      isCoinTimeLoaded = false;
-      printf("... fail.\n");
-      printf(" ---> coincident time has x-dependent\n");
-      for( int i = 0; i < numDet; i++){
-         for( int j = 0 ; j < 9; j++){
-            cTCorr[i][j] = 0.;
-         } 
-      }
-   } 
-   file.close();
+      }else{
+         isCoinTimeLoaded = false;
+         printf("... fail.\n");
+         printf(" ---> coincident time has x-dependent\n");
+         for( int i = 0; i < numDet; i++){
+            for( int j = 0 ; j < 9; j++){
+               cTCorr[i][j] = 0.;
+            } 
+         }
+      } 
+      file.close();
+   }
    
    //====================================== make tree
    saveFileName = "temp.root"; 
@@ -302,7 +308,7 @@ void Cali_littleTree_trace::Init(TTree *tree)
    newTree->Branch("z" ,  &zTemp, "zTemp/D");
    newTree->Branch("detID", &detIDTemp, "detIDTemp/I");
    newTree->Branch("hitID", &hitID, "hitID/I");
-   newTree->Branch("zMultiHit", &zMultiHit, "zMultiHit/I");
+   newTree->Branch("multiHit", &multiHit, "multiHit/I");
       
    if( isTraceDataExist ) {
    

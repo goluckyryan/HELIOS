@@ -25,14 +25,16 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    //#################################################################### initialization
    for(int i = 0; i < numDet; i++){
       eC[i]    = TMath::QuietNaN();
+      xfC[i]   = TMath::QuietNaN();
+      xnC[i]   = TMath::QuietNaN();
       x[i]     = TMath::QuietNaN();
       z[i]     = TMath::QuietNaN();
+      hitID[i] = -4;
       eC_t[i]  = 0;
    }
    
-   det = -4;
-   hitID = -4;
-   zMultiHit = 0;
+   det      = -4;
+   multiHit = 0;
    
    Ex  = TMath::QuietNaN();
    thetaCM  = TMath::QuietNaN();
@@ -82,45 +84,50 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    }
    
    //#################################################################### gate
-   bool rdt_energy = false;
-   for( int rID = 0; rID < 8; rID ++){
-      if( rdt[rID] > 5000 ) rdt_energy = true; 
-   }
-   if( !rdt_energy ) return kTRUE;
+//   bool rdt_energy = false;
+//   for( int rID = 0; rID < 8; rID ++){
+//      if( rdt[rID] > 5000 ) rdt_energy = true; 
+//   }
+//   if( !rdt_energy ) return kTRUE;
    
-   
+   //#################################################################### processing
    for(int i = 0 ; i < 8 ; i++){
       rdtC[i]   = rdt[i];
       rdtC_t[i] = rdt_t[i]; 
    }
-
-   //#################################################################### processing
+   
    ULong64_t eTime = -2000; //this will be the time for Ex valid
    Float_t teTime = 0.; //time from trace
    for(int idet = 0 ; idet < numDet; idet++){
       
-      if( e[idet] > 0 ){
+      if( !TMath::IsNaN(e[idet]) || e[idet] > 0 ){
          eC[idet]   = e[idet]/eCorr[idet][0] + eCorr[idet][1];  
          eC_t[idet] = e_t[idet]; // ch
+      }else{
+         continue; // when e is invalid, nothing need to do
       }
-            
-      double xfC = 0, xnC = 0;
-      if( xf[idet] > 0) xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
-      if( xn[idet] > 0) xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
-   
+       
+      if( !TMath::IsNaN(xf[idet]) || xf[idet] > 0) xfC[idet] = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
+      if( !TMath::IsNaN(xn[idet]) || xn[idet] > 0) xnC[idet] = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
+      
       //========= calculate x
       if(xf[idet] > 0  && xn[idet] > 0 ) {
-         x[idet] = (xfC-xnC)/(xfC+xnC);
-         hitID = 0;
-      }else if(xf[idet] == 0 && xn[idet] > 0 ){
-         x[idet] = (1-2*xnC/e[idet]);
-         hitID = 1;
-      }else if(xf[idet] > 0 && xn[idet] == 0 ){
-         x[idet] = (2*xfC/e[idet]-1);
-         hitID = 2;
+         x[idet] = (xfC[idet]-xnC[idet])/(xfC[idet]+xnC[idet]);
+         hitID[idet] = 0;
+      }else if((xf[idet] == 0 || TMath::IsNaN(xf[idet])) && ( xn[idet] > 0 || !TMath::IsNaN(xn[idet])) ){
+         x[idet] = (1-2*xnC[idet]/e[idet]);
+         hitID[idet] = 1;
+      }else if(( xf[idet] > 0 || !TMath::IsNaN(xf[idet])) && (xn[idet] == 0 || TMath::IsNaN(xn[idet])) ){
+         x[idet] = (2*xfC[idet]/e[idet]-1);
+         hitID[idet] = 2;
       }else{
          x[idet] = TMath::QuietNaN();
       }
+   
+   
+      //if( idet == 1 && e[idet] > 0 ){
+      //   printf(" e: %9.3f , %9.3f | xf : %9.3f, %9.3f | xn : %9.3f, %9.3f | x : %9.3f , hitID: %d\n", e[idet], eC[idet], xf[idet], xfC[idet], xn[idet], xnC[idet], x[idet], hitID[idet]);
+      //} 
       
       //if( idet >= 17 && e[idet] > 0) printf("%d, %d , %f, %f \n", eventID, idet, eC[idet], e[idet]);
       
@@ -134,7 +141,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          }else{
             z[idet] = pos[detID] + (x[idet] + 1.)*length/2 ; 
          }
-         zMultiHit ++;
+         multiHit ++;
          count ++;
          det = idet;
       
@@ -209,7 +216,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    }//end of idet-loop
    
    //================================= for coincident time bewteen array and rdt
-   if( zMultiHit >= 1 ) {
+   if( multiHit == 1 ) {
       ULong64_t rdtTime = 0;
       Float_t rdtQ = 0;
       Float_t trdtTime = 0.;
@@ -237,7 +244,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       }
    }
    
-   if( zMultiHit == 0 ) return kTRUE;
+   if( multiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file
