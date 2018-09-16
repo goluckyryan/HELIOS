@@ -29,10 +29,12 @@ void transfer(){
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 1000000;
+   int numEvent = 100000;
    
    //---- HELIOS detector geometry
-   string heliosDetGeoFile = "detectorGeo.txt";
+   string heliosDetGeoFile = "";//"detectorGeo.txt";
+   double BField = 2.5; // T
+   double BFieldTheta = 90.; // direction of B-field
    bool isCoincidentWithRecoil = false; 
    double eSigma = 0.0001 ; // detector energy sigma MeV
    double zSigma = 0.001 ; // detector position sigma mm
@@ -59,7 +61,7 @@ void transfer(){
    
    //---- Auxiliary setting
    bool isDecay = false;
-   bool isReDo = true; // redo calculation until detected. 
+   bool isReDo = false; // redo calculation until detected. 
    
    //=============================================================
    //=============================================================
@@ -85,8 +87,12 @@ void transfer(){
    //======== Set HELIOS
    printf("############################################## HELIOS configuration\n");   
    HELIOS helios;
+   helios.SetMagneticFieldDirection(BFieldTheta);
    bool sethelios = helios.SetDetectorGeometry(heliosDetGeoFile);
-   if( !sethelios) return;
+   if( !sethelios){
+		helios.SetMagneticField(BField);
+		printf("======== B-field : %5.2f T, Theta : %6.2f deg\n", BField, BFieldTheta);
+	}
    helios.SetCoincidentWithRecoil(isCoincidentWithRecoil);
    int mDet = helios.GetNumberOfDetectorsInSamePos();
    printf("========== energy resol.: %f MeV\n", eSigma);
@@ -255,6 +261,9 @@ void transfer(){
    tree->Branch("rxHit2", &rxHit2, "rxHit2/D");
    tree->Branch("ryHit2", &ryHit2, "ryHit2/D");
    
+   double reactionP;
+   tree->Branch("reactionP", &reactionP, "reactionP/D");
+   
    //======= function for e-z plot for ideal case
    printf("##################  generate functions and save to *root");
    TObjArray * gList = new TObjArray();
@@ -410,7 +419,7 @@ void transfer(){
          double phiCM = TMath::TwoPi() * gRandom->Rndm(); 
          
          TLorentzVector * output = reaction.Event(thetaCM, phiCM);
-      
+         
          TLorentzVector Pb = output[2];
          TLorentzVector PB = output[3];
          
@@ -450,6 +459,8 @@ void transfer(){
          
          phib = Pb.Phi() * TMath::RadToDeg();
          phiB = PB.Phi() * TMath::RadToDeg();
+         
+         reactionP = reaction.GetMomentumbCM();
          
          //==== Helios
          hit = helios.CalHit(Pb, zb, PB, zB);

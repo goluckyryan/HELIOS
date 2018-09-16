@@ -259,6 +259,7 @@ public:
    }
    bool SetDetectorGeometry(string filename);
    void SetMagneticField(double BField){ this->Bfield = BField;}
+   void SetMagneticFieldDirection(double BfieldTheta){ this->BfieldTheta = BfieldTheta * TMath::DegToRad();} // TODO move to detectorGeo.txt?
    int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
    
    int GetNumberOfDetectorsInSamePos(){return mDet;}
@@ -329,6 +330,7 @@ private:
    
    //detetcor Geometry
    double Bfield; // T
+   double BfieldTheta; // rad, 0 = z-axis, pi/2 = y axis, pi = -z axis
    double bore; // bore , mm
    double a; // distance from axis
    double w; // width   
@@ -372,6 +374,7 @@ HELIOS::HELIOS(){
    t0 = TMath::QuietNaN();
 
    Bfield = 0;
+   BfieldTheta = 0;
    bore = 1000;
    a = 10;
    w = 10;
@@ -429,7 +432,7 @@ bool HELIOS::SetDetectorGeometry(string filename){
          pos[id] = firstPos + pos[id];
       }
       
-      printf("================ B-field: %8.2f T \n", Bfield);
+      printf("================ B-field: %8.2f T, Theta : %6.2f deg \n", Bfield, BfieldTheta * TMath::RadToDeg());
       printf("==== Recoil detector pos: %8.2f mm, radius: %6.2f mm \n", posRecoil, rhoRecoil);
       printf("====== gap of multi-loop: %8.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
       for(int i = 0; i < nDet ; i++){
@@ -473,10 +476,13 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    rxHit = TMath::QuietNaN();
    ryHit = TMath::QuietNaN();
    phiB = TMath::QuietNaN();
-
    
+   //rotate Pb and PB to B-Field 
+   Pb.RotateX(BfieldTheta);
+   PB.RotateX(BfieldTheta);
+
    //====================== X-Y plane
-   rho = Pb.Pt() / Bfield / Zb / c * 1000; //mm
+   rho = Pb.Pt()  / Bfield / Zb / c * 1000; //mm
    theta = Pb.Theta();
    phi = Pb.Phi();
 
