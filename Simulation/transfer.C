@@ -32,9 +32,9 @@ void transfer(){
    int numEvent = 100000;
    
    //---- HELIOS detector geometry
-   string heliosDetGeoFile = "";//"detectorGeo.txt";
+   string heliosDetGeoFile = "detectorGeo.txt";
    double BField = 2.5; // T
-   double BFieldTheta = 90.; // direction of B-field
+   double BFieldTheta = 0.; // direction of B-field
    bool isCoincidentWithRecoil = false; 
    double eSigma = 0.0001 ; // detector energy sigma MeV
    double zSigma = 0.001 ; // detector position sigma mm
