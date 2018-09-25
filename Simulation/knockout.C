@@ -29,18 +29,19 @@ void knockout(){
    
    //---- beam
    double KEAmean = 100; // MeV/u
-   const int nKEA = 4; 
-   double KEAList[nKEA] = {50, 100, 200, 300}; 
+   const int nKEA = 1; 
+   double KEAList[nKEA] = {300}; 
    
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 1000000;
+   int numEvent = 100000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "";//"detectorGeo_upstream.txt";
    double BField = 4.0; // if not detector, must set B-field, else, this value is not used.
+   double BFieldTheta = 0.; // direction of B-field
    double eSigma = 0.0001 ; // detector energy sigma MeV
    double zSigma = 0.1 ; // detector position sigma mm
    
@@ -92,6 +93,8 @@ void knockout(){
    printf("############################################## HELIOS configuration\n");   
    HELIOS helios1; // for particle-1
    HELIOS helios2; // for particle-2
+   helios1.SetMagneticFieldDirection(BFieldTheta);
+   helios2.SetMagneticFieldDirection(BFieldTheta);
    bool sethelios1 = helios1.SetDetectorGeometry(heliosDetGeoFile);
    bool sethelios2 = helios2.SetDetectorGeometry(heliosDetGeoFile);
    if( sethelios1 && sethelios2 ) {
@@ -101,7 +104,7 @@ void knockout(){
 	}else{
 		helios1.SetMagneticField(BField);
 		helios2.SetMagneticField(BField);
-		printf("======== B-field : %5.2f T\n", BField);
+		printf("======== B-field : %5.2f T, Theta: %5.2f deg\n", BField, BFieldTheta);
 	}
 	
 	//==== Target scattering, only energy loss

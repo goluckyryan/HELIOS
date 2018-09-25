@@ -19,25 +19,25 @@ void transfer(){
 
    //================================================= User Setting
    //---- reaction
-   int AA = 28, zA = 12;
+   int AA = 22, zA = 10;
    int Aa = 2,  za = 1;
    int Ab = 1,  zb = 1;
    
    //---- beam
-   double KEAmean = 8.5; // MeV/u 
+   double KEAmean = 9.5; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
    
-   int numEvent = 100000;
+   int numEvent = 1000000;
    
    //---- HELIOS detector geometry
    string heliosDetGeoFile = "detectorGeo.txt";
    double BField = 2.5; // T
    double BFieldTheta = 0.; // direction of B-field
    bool isCoincidentWithRecoil = false; 
-   double eSigma = 0.0001 ; // detector energy sigma MeV
-   double zSigma = 0.001 ; // detector position sigma mm
+   double eSigma = 0.040 ; // detector energy sigma MeV
+   double zSigma = 0.500 ; // detector position sigma mm
    
    //---- excitation of Beam 
    int nExA = 1;

@@ -92,7 +92,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    
    //#################################################################### processing
    for(int i = 0 ; i < 8 ; i++){
-      rdtC[i]   = rdt[i];
+      rdtC[i]   = rdtCorr[i] * rdt[i];
       rdtC_t[i] = rdt_t[i]; 
    }
    
@@ -109,6 +109,13 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
        
       if( !TMath::IsNaN(xf[idet]) || xf[idet] > 0) xfC[idet] = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       if( !TMath::IsNaN(xn[idet]) || xn[idet] > 0) xnC[idet] = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
+      
+      //mapping correction 
+      if( 12 <= idet && idet <= 17 ) {
+         float temp = xnC[idet];
+         xnC[idet] = xfC[idet];
+         xfC[idet] = temp;
+      } 
       
       //========= calculate x
       if(xf[idet] > 0  && xn[idet] > 0 ) {

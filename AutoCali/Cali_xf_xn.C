@@ -20,6 +20,9 @@ void Cali_xf_xn(TTree * tree){
    
 /**///========================================================  load tree
 
+   printf("============================================================= \n");
+   printf("====================== Cali_xf_xn.C ========================= \n");
+   printf("============================================================= \n");
    printf("============ calibration for PSD detectors using alpha souce. \n");
    printf("1, calibration energy using charateristic energy of alpha souce. \n");
    printf("2, calibration xf-xn with energy-gate. \n");
@@ -86,10 +89,12 @@ void Cali_xf_xn(TTree * tree){
    printf("============== method to find edge:\n");
    printf("1) maximum peak edge.\n");
    printf("2) TSpectrum fit.\n");
+   printf("9) Exit.\n");
    printf("====== choice : ");
    int method = 0;
    temp = scanf("%d", &method);
    
+   if( method == 9 ) return;
    
    double xHalf[numDet];
    if( method == 1 ){
@@ -105,18 +110,20 @@ void Cali_xf_xn(TTree * tree){
          printf("%2d | iHalf : %3d, xHalf : %6f \n", i, iHalf, xHalf[i]);
       }
       
-      
-      printf("----- adjusting the energy to det-0......\n");
+      int refID = 0;
+      printf("========== which detector to be the reference? ");
+      temp = scanf("%d", &refID);
+      printf("----- adjusting the energy to det-%d......\n", refID);
       //------------ 3, correction
       TH1F ** p = new TH1F*[numDet];
       for( int i = 0; i < numDet; i ++){
          TString name;
          name.Form("p%d", i);
-         p[i] = new TH1F(name, name, 200, 500, 1800);
+         p[i] = new TH1F(name, name, 200, 100, 1800);
          p[i]->SetXTitle(name);
          
          TString expression;
-         expression.Form("e[%d]  * %f >> p%d", i,  xHalf[0]/xHalf[i], i);
+         expression.Form("e[%d]  * %f >> p%d", i,  xHalf[refID]/xHalf[i], i);
          gate[i].Form("e[%d] > 0", i);
          cAlpha->cd(i+1);
          tree->Draw(expression, gate[i] , "");
@@ -128,6 +135,7 @@ void Cali_xf_xn(TTree * tree){
    vector<double> * energy = new vector<double> [numDet]; 
    double a0[numDet];
    double a1[numDet];
+   vector<double> refEnergy;
    if( method == 2 ){
       printf("---- finding edge using TSepctrum Class...\n");
       for( int i = 0; i < numDet; i++){
@@ -159,11 +167,50 @@ void Cali_xf_xn(TTree * tree){
       }
       
       //------------ 3, correction
-      printf("----- adjusting the energy to det-0......\n");
+      int refID = 0;
+      printf("========== which detector to be the reference?\n");
+      printf(" X =  det-X reference\n");
+      printf("-1 =  manual reference\n");
+      printf("-9 =  stop \n");
+      printf("your choice = ");
+      temp = scanf("%d", &refID);
+      
+      if( refID == -9 ) {
+         printf("------ stopped by user.\n");
+         return;
+      }
+      
+      //======== fill reference energy
+      if( refID >= 0 ){
+         int n = energy[refID].size();
+         for( int k = 0; k < n; k++){
+            refEnergy.push_back(energy[refID][k]);
+            
+         }
+      }
+      
+      if(refID == -1){
+         int n = 0;
+         float eng = -1;
+         do{
+            printf("%2d-th peak energy (< 0 to stop):", n);
+            temp = scanf("%f", &eng);
+            printf("             input: %f \n", eng);
+            if( eng >= 0 ) refEnergy.push_back(eng);
+            n ++ ;
+         }while(eng >= 0);
+      }
+      
+      printf("----- adjusting the energy to det-%d......\n", refID);
+      int n = refEnergy.size();
+      for( int k = 0; k < n; k++){
+         printf("%2d-th peak : %f \n", k,  refEnergy[k]);
+      }
+      printf("----------------------------------\n");
       TH1F ** p = new TH1F*[numDet];
       for( int i = 0; i < numDet; i ++){
          
-         TGraph * graph = new TGraph(nPeaks, &energy[i][0], &energy[0][0] );
+         TGraph * graph = new TGraph(nPeaks, &energy[i][0], &refEnergy[0] );
          
          TF1 * fit = new TF1("fit", "pol1" );
          graph->Fit("fit", "q");
@@ -181,7 +228,7 @@ void Cali_xf_xn(TTree * tree){
          
          TString name;
          name.Form("p%d", i);
-         p[i] = new TH1F(name, name, 200, 500, 1800);
+         p[i] = new TH1F(name, name, 200, 0., refEnergy.back() * 1.3);
          p[i]->SetXTitle(name);
          
          TString expression;
@@ -226,9 +273,12 @@ void Cali_xf_xn(TTree * tree){
    double eGate = 0;
    if( method == 2) {
       int peakID = 0;
-      printf("------ pick the i-th peak (0..%d): ", nPeaks-1);
+      printf("------ pick the i-th peak (0..%d, -1 to stop): ", nPeaks-1);
       temp = scanf("%d", &peakID);
-      eGate = energy[0][peakID];
+      if( peakID < 0 ) {
+         return;
+      }
+      eGate = refEnergy[peakID];
       printf("------ using the peak at : %f \n", eGate);
    }
    
@@ -244,7 +294,7 @@ void Cali_xf_xn(TTree * tree){
       TString expression;
       expression.Form("xf[%d]:xn[%d]>> h%d" , i, i, i);
       if(method == 1) gate[i].Form("xf[%d]>0 && xn[%d]>0 && TMath::Abs(e[%d]-%f)<50", i, i, i, xHalf[i]-25);
-      if(method == 2) gate[i].Form("xf[%d]>0 && xn[%d]>0 && TMath::Abs(e[%d] * %f + %f - %f)<50", i, i, i, a1[i], a0[i], eGate);
+      if(method == 2) gate[i].Form("xf[%d]>0 && xn[%d]>0 && TMath::Abs(e[%d] * %f + %f - %f)< %f", i, i, i, a1[i], a0[i], eGate, eGate * 0.05);
       
       cAlpha->cd(i+1);
       tree->Draw(expression, gate[i] , "");

@@ -44,12 +44,15 @@ void Check_e_z(TString rootfile){
 
    TString drawOption ="colz"; 
    
-   TString detGate = "";// "detID%6 < 6 && !(800> coin_t && coin_t > 2)";
+   TString detGate = "detID != 11 && -20 < coin_t && coin_t < 50";// "detID%6 < 6 && !(800> coin_t && coin_t > 2)";
 
 /**///======================================================== read tree   
    printf("################### Check_e_z.C ######################\n");
    
    printf("Gate : %s \n", detGate.Data());
+   
+   printf("======================================== \n");
+   
    
    TFile *file0 = new TFile (rootfile, "read"); 
    tree = (TTree*)file0->Get(treeName);

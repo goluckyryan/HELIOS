@@ -145,6 +145,7 @@ public :
    double xfxneCorr[24][2]; //xf, xn correction for e = xf + xn
    
    double eCorr[24][2]; // e-correction
+   double rdtCorr[8]; //rdt-correction
    
    double cTCorr[24][9]; // coinTime correction
    TF1 ** f7 ; //!
@@ -339,7 +340,6 @@ void Cali_e_trace::Init(TTree *tree)
       while( file >> a ){
          if( i >= numDet) break;
          xnCorr[i] = a;
-         //xnCorr[i] = 1;
          i = i + 1;
       }
       
@@ -348,7 +348,7 @@ void Cali_e_trace::Init(TTree *tree)
       printf("... fail.\n");
       
       for(int i = 0; i < numDet; i++){
-	xnCorr[i] = 1;
+         xnCorr[i] = 1;
       }
    }
    file.close();
@@ -370,8 +370,8 @@ void Cali_e_trace::Init(TTree *tree)
    }else{
       printf("... fail.\n");
       for(int i = 0; i < numDet; i++){
-	xfxneCorr[i][0] = 0;
-	xfxneCorr[i][1] = 1;
+         xfxneCorr[i][0] = 0;
+         xfxneCorr[i][1] = 1;
       }
    }
    file.close();
@@ -399,6 +399,28 @@ void Cali_e_trace::Init(TTree *tree)
          eCorr[i][1] = 0.;
       }
       //return;
+   }
+   file.close();
+   
+   //========================================= rdt correction
+   
+   printf("----- loading rdt correction.");
+   file.open("correction_rdt.dat");
+   if( file.is_open() ){
+      double a, b;
+      int i = 0;
+      while( file >> a){
+         if( i >= 8) break;
+         rdtCorr[i] = a;  //
+         i = i + 1;
+      }
+      printf("... done.\n");
+      
+   }else{
+      printf("... fail.\n");
+      for( int i = 0; i < 24 ; i++){
+         rdtCorr[i] = 1.;
+      }
    }
    file.close();
    
