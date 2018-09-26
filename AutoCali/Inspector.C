@@ -29,8 +29,10 @@
 #include <TCanvas.h>
 #include <TMath.h>
 
-TH2F ** hRDT = NULL;
+TH2F ** hdEE  = NULL;
+TH2F ** hdEEC = NULL;
 TH2F *  hRDTa = NULL;
+TH1F ** hRDT = NULL;
 TH2F *  hArrayRDT = NULL;
 TH2F *  hETDiff = NULL;
 TH2F ** hEX = NULL;
@@ -39,19 +41,24 @@ TH2F ** hEX = NULL;
 double rdtPeak[8];
 double corrRDT[8];
 
+TString openFileName;
 
-void Inspector::Begin(TTree * /*tree*/)
+void Inspector::Begin(TTree * tree)
 {
    TString option = GetOption();
    
-   rdtPeak[0] = 1475;
-   rdtPeak[1] =  841;
-   rdtPeak[2] =  864;
-   rdtPeak[3] = 1498;
-   rdtPeak[4] = 4648;
-   rdtPeak[5] = 5488;
-   rdtPeak[6] = 5420;
-   rdtPeak[7] = 4671;
+   openFileName = tree->GetDirectory()->GetName();
+   int findslat = openFileName.Last('/');
+   openFileName.Remove(0, findslat+1);
+   
+   rdtPeak[0] = 2811;
+   rdtPeak[1] = 1577;
+   rdtPeak[2] = 1541;
+   rdtPeak[3] = 2884;
+   rdtPeak[4] = 4372;
+   rdtPeak[5] = 5823;
+   rdtPeak[6] = 5896;
+   rdtPeak[7] = 4190;
 
    
    corrRDT[0] = rdtPeak[0]/rdtPeak[0];
@@ -65,14 +72,26 @@ void Inspector::Begin(TTree * /*tree*/)
    corrRDT[7] = rdtPeak[4]/rdtPeak[7];
 
    TString name, title;
-   hRDT = new TH2F* [4]; 
+   hdEE  = new TH2F* [4]; 
+   hdEEC = new TH2F* [4]; 
    for ( int i = 0; i < 4; i++){
-      name.Form("hRDT%d", i);
-      title.Form("hRDT - %d (corrected) ; E ; dE", i);
-      hRDT[i] = new TH2F(name, title, 300, 0, 8000, 300, 0, 5000);
+      name.Form("hdEEC%d", i);
+      title.Form("hdEEC - %d (corrected) ; E ; dE", i);
+      hdEEC[i] = new TH2F(name, title, 200, 0, 8000, 200, 0, 5000);
+      
+      name.Form("hdEE%d", i);
+      title.Form("hdEE - %d (raw) ; E ; dE", i);
+      hdEE[i] = new TH2F(name, title, 200, 0, 8000, 200, 0, 5000);
    }
 
-   hRDTa = new TH2F("hRDTa", "hRDTa (raw); rdt; id", 300, 0, 8000, 8, 0, 8 );
+   hRDTa = new TH2F("hRDTa", "hRDTa (raw); rdt; id", 200, 0, 8000, 8, 0, 8 );
+   
+   hRDT = new TH1F* [8];
+   for( int i = 0; i < 8 ; i++){
+      name.Form("hRDT%d", i);
+      title.Form("RDT-%d (raw)", i);
+      hRDT[i] = new TH1F(name, title, 200, 0, 8000);
+   }
 
    hArrayRDT = new TH2F("hArrayRDT", "RDT - Arrat Hit", 24, 0, 24, 8, 0, 8);
    
@@ -118,15 +137,21 @@ Bool_t Inspector::Process(Long64_t entry)
       }
    }
    
-   if( TMath::Abs(coinTime) > 50 ) return kTRUE;  
+   //if( TMath::Abs(coinTime) > 50 ) return kTRUE;  
    
    //============= recoil
    bool rej = true;
    for( int i = 0; i < 4; i++){
       if(!TMath::IsNaN(rdt[i]) && !TMath::IsNaN(rdt[i+4])) {
-         hRDT[i]->Fill(corrRDT[i+4] * rdt[i+4], corrRDT[i] * rdt[i]); //x, y
+         hdEE[i]->Fill(rdt[i+4], rdt[i]); //x, y
+         hdEEC[i]->Fill(corrRDT[i+4] * rdt[i+4], corrRDT[i] * rdt[i]); //x, y
          if( TMath::Abs(corrRDT[i+4] * rdt[i+4] - 4400) < 500 && TMath::Abs(corrRDT[i] * rdt[i] - 1500)< 300 ) rej = false;
       }
+   }
+   
+   
+   for( int i = 0; i < 8; i++){
+      hRDT[i]->Fill(rdt[i]);
    }
    
    //if( rej) return kTRUE;
@@ -197,26 +222,45 @@ void Inspector::Terminate()
    gStyle->SetLabelSize(0.04, "XY");
    gStyle->SetTitleFontSize(0.1);
    
-   Int_t Div[2] = {4,2};
-   Int_t size[2] = {300,300}; //x,y
-   TCanvas * cAna22Ne = new TCanvas("cAna22Ne", "cAna22Ne", 0, 0, size[0]*Div[0], size[1]*Div[1]);
-   if(cAna22Ne->GetShowEditor() )cAna22Ne->ToggleEditor();
-   if(cAna22Ne->GetShowToolBar() )cAna22Ne->ToggleToolBar();
-   cAna22Ne->Divide(Div[0],Div[1]);
+   //Int_t Div[2] = {4,4};
+   Int_t Div[2] = {4,1};
+   Int_t size[2] = {400,400}; //x,y
+   TCanvas * cInspector = new TCanvas("cInspector", openFileName, 0, 0, size[0]*Div[0], size[1]*Div[1]);
+   if(cInspector->GetShowEditor() )cInspector->ToggleEditor();
+   if(cInspector->GetShowToolBar() )cInspector->ToggleToolBar();
+   cInspector->Divide(Div[0],Div[1]);
    for( int i = 1; i <= Div[0]*Div[1] ; i++){
-      cAna22Ne->cd(i)->SetGrid();
-      cAna22Ne->cd(i)->SetLogz();
+      cInspector->cd(i)->SetGrid();
+      cInspector->cd(i)->SetLogz();
    }
    
-   cAna22Ne->cd(1); hRDT[0]->Draw("colz");
-   cAna22Ne->cd(2); hRDT[1]->Draw("colz");
-   cAna22Ne->cd(3); hRDT[2]->Draw("colz");
-   cAna22Ne->cd(4); hRDT[3]->Draw("colz");
+   cInspector->cd(1); hdEE[0]->Draw("colz");
+   cInspector->cd(2); hdEE[1]->Draw("colz");
+   cInspector->cd(3); hdEE[2]->Draw("colz");
+   cInspector->cd(4); hdEE[3]->Draw("colz");
    
-   cAna22Ne->cd(5); hRDTa->Draw("colz");
-   cAna22Ne->cd(6); hArrayRDT->Draw("colz");
-   cAna22Ne->cd(7); hETDiff->Draw("colz");
+   /*
+   cInspector->cd(1) ; hRDT[0] ->Draw();
+   cInspector->cd(5) ; hRDT[1] ->Draw();
+   cInspector->cd(9) ; hRDT[2] ->Draw();
+   cInspector->cd(13); hRDT[3] ->Draw();
    
+   cInspector->cd(2); hRDT[4] ->Draw();
+   cInspector->cd(6); hRDT[5] ->Draw();
+   cInspector->cd(10); hRDT[6] ->Draw();
+   cInspector->cd(14); hRDT[7] ->Draw();
+   
+   
+   cInspector->cd(3) ; hdEEC[0]->Draw("colz");
+   cInspector->cd(7); hdEEC[1]->Draw("colz");
+   cInspector->cd(11); hdEEC[2]->Draw("colz");
+   cInspector->cd(15); hdEEC[3]->Draw("colz");
+   
+   cInspector->cd(4); hRDTa->Draw("colz");
+   cInspector->cd(8); hArrayRDT->Draw("colz");
+   cInspector->cd(12); hETDiff->Draw("colz");
+   
+   /*
    //===================== 2nd canvas
    Div[0] = 6; Div[1] = 4;
    size[0] = 230; size[1] = 230;
@@ -230,5 +274,5 @@ void Inspector::Terminate()
       cAnaEX->cd(i); 
       hEX[i-1]->Draw("colz");
    }
-   
+   */
 }

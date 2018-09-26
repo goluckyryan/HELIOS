@@ -18,7 +18,7 @@ void script(){
    
    gStyle->SetOptStat(0);
    
-   /*
+   
    tree0->Draw("e:z >> h(400, -550, -100, 400, 0, 10)", "-20 < coin_t && coin_t < 50", "colz");
    
    fxList->At(0)->Draw("same"); // 0.000
@@ -29,8 +29,5 @@ void script(){
    //fxList->At(5)->Draw("same"); // 2.517
    fxList->At(6)->Draw("same"); // 3.432
    fxList->At(7)->Draw("same"); // 3.831
-   * 
-   */
    
-
 }
