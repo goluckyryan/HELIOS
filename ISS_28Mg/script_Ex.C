@@ -21,7 +21,7 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 
 void script_Ex(){
    
-   double ExRange[3] = {140, -1, 6};
+   double ExRange[3] = {180, -3, 6};
 	double eRange[3]  = {400, 0, 10};
 
    
@@ -53,9 +53,9 @@ void script_Ex(){
    //============= Gate
    //TString gate_RDT = "(cut0 || cut1 || cut2 || cut3) && -20 < coin_t && coin_t < 40 && rdtMultiHit == 2 && arrayRDT == 0 && multiHit == 1 ";
    
-   //TString gate_RDT = "(cut0 || cut1 || cut2 || cut3) && -20 < coin_t && coin_t < 40";
+   TString gate_RDT = "(cut0 || cut1 || cut2 || cut3) && -20 < coin_t && coin_t < 40";
    
-   TString gate_RDT = "cut3 && -20 < coin_t && coin_t < 40 && rdtMultiHit == 2 && arrayRDT == 0 && multiHit == 1 ";
+   //TString gate_RDT = "cut3 && -20 < coin_t && coin_t < 40 && rdtMultiHit == 2 && arrayRDT == 0 && multiHit == 1 ";
    
    TString detGate = "&& detID != 11 ";
    
@@ -82,7 +82,7 @@ void script_Ex(){
    //gList->At(15)->Draw("same");
    //gList->At(20)->Draw("same");
    
-   fxList->At(0)->Draw("same"); // 0.000
+   //fxList->At(0)->Draw("same"); // 0.000
    //fxList->At(1)->Draw("same"); // 0.591
    //fxList->At(2)->Draw("same"); // 1.095
    //fxList->At(3)->Draw("same"); // 1.431

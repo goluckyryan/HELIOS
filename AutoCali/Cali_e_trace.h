@@ -38,6 +38,10 @@ public :
    ULong64_t       rdt_t[100];
    Float_t         tac[100];
    ULong64_t       tac_t[100];
+   Float_t         elum[32];
+   ULong64_t       elum_t[32];
+   Float_t         ezero[10];
+   ULong64_t       ezero_t[10];
    
    //Trace
    Float_t         te[24];
@@ -58,6 +62,10 @@ public :
    TBranch        *b_RDTTimestamp;   //!
    TBranch        *b_TAC;   //!
    TBranch        *b_TACTimestamp;   //!
+   TBranch        *b_ELUM;   //!
+   TBranch        *b_ELUMTimestamp;   //!
+   TBranch        *b_EZERO;   //!
+   TBranch        *b_EZEROTimestamp;   //!
    
    TBranch        *b_Trace_Energy;  //!
    TBranch        *b_Trace_Energy_Time;  //!
@@ -198,6 +206,12 @@ void Cali_e_trace::Init(TTree *tree)
    fChain->SetBranchAddress("tac", tac, &b_TAC);
    fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
 
+   fChain->SetBranchAddress("elum", elum, &b_ELUM);
+   fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
+
+   fChain->SetBranchAddress("ezero", ezero, &b_EZERO);
+   fChain->SetBranchAddress("ezero_t", ezero_t, &b_EZEROTimestamp);
+
    isTraceDataExist = false;
    
    TBranch * br = (TBranch *) fChain->GetListOfBranches()->FindObject("te_t");
@@ -261,6 +275,9 @@ void Cali_e_trace::Init(TTree *tree)
    newTree->Branch("rdtMultiHit", &rdtMultiHit, "rdtMultiHit/I");
    
    newTree->Branch("arrayRDT", &arrayRDT, "arrayRDT/I");
+   
+   newTree->Branch("elum", elum, "elum[32]/F");
+   newTree->Branch("ezero", ezero, "ezero[10]/F");
    
    newTree->Branch("coin_t", &coin_t, "coin_t/I");
    

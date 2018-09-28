@@ -60,9 +60,6 @@ void AutoCalibrationTrace(){
    chain->Add("data/gen_run60_69.root");
    chain->Add("data/gen_run70_74.root");
    chain->Add("data/gen_run75_87.root");
-   //chain->Add("data/gen_run54.root");
-   //chain->Add("data/gen_run52.root");
-   //chain->Add("data/gen_run50.root");
 
 /*=============== 208Pb   
    chain->Add("../H060/data/gen_run11.root");  //01

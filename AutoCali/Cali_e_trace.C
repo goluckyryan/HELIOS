@@ -67,7 +67,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    
    //#################################################################### get event
    eventID += 1;
-   if( entry == 1 ) run += 1;
+   if( entry == 1 ) run += 1; 
    
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
@@ -75,6 +75,8 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    b_RDT->GetEntry(entry,0);
    b_EnergyTimestamp->GetEntry(entry,0);
    b_RDTTimestamp->GetEntry(entry,0);
+   b_ELUM->GetEntry(entry,0);
+   b_EZERO->GetEntry(entry,0);
    
    b_TAC->GetEntry(entry,0);
    
