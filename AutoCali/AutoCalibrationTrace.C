@@ -57,10 +57,10 @@ void AutoCalibrationTrace(){
    //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
 
-   chain->Add("data/gen_run60_69.root");
-   chain->Add("data/gen_run70_74.root");
-   chain->Add("data/gen_run75_87.root");
-   //chain->Add("data/gen_run87.root");
+   //chain->Add("data/gen_run60_69.root");
+   //chain->Add("data/gen_run70_74.root");
+   //chain->Add("data/gen_run75_87.root");
+   chain->Add("data/gen_run92.root");
 
 /*=============== 208Pb   
    chain->Add("../H060/data/gen_run11.root");  //01

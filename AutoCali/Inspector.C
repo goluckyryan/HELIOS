@@ -40,6 +40,8 @@ TH2F *  hArrayRDT = NULL;
 TH1F *  hTDiff = NULL;
 TH2F ** hEX = NULL;
 TH2F *  hEZ = NULL;
+TH2F *  hS1RDT = NULL;
+TH2F *  hElum = NULL;
 
 
 TString openFileName;
@@ -233,6 +235,7 @@ void Inspector::Begin(TTree * tree)
    }
 
    hArrayRDT = new TH2F("hArrayRDT", "RDT - Arrat Hit", 24, 0, 24, 8, 0, 8);
+   hS1RDT = new TH2F("hS1RDT", "RDT - S1 Hit", 4, 4, 8, 8, 0, 8);
    
    hTDiff = new TH1F("hTDiff", "TDiff; time diff [ch]", 400, -200, 200);
 
@@ -245,6 +248,7 @@ void Inspector::Begin(TTree * tree)
    
    hEZ = new TH2F("hEZ", "E- Z; Z [mm]; E", zRange[0], zRange[1], zRange[2], 300, 0, 10);
 
+   hElum = new TH2F("hElum", "Elum; energy; ID", 500, 0, 1200, 4, 4, 8);
 }
 
 void Inspector::SlaveBegin(TTree * /*tree*/)
@@ -261,6 +265,7 @@ Bool_t Inspector::Process(Long64_t entry)
    b_EnergyTimestamp->GetEntry(entry);
    b_XF->GetEntry(entry);
    b_XN->GetEntry(entry);
+   b_ELUM->GetEntry(entry);
    
    
    //============== coincident time
@@ -290,7 +295,7 @@ Bool_t Inspector::Process(Long64_t entry)
       }
    }
    
-   if( refCoinTime ) return kTRUE;  //######### coinTime gate
+   //if( refCoinTime ) return kTRUE;  //######### coinTime gate
    
    for( int i = 0; i < nCT; i++){
       hTDiff->Fill(coinTime[i]);
@@ -302,14 +307,14 @@ Bool_t Inspector::Process(Long64_t entry)
       if( !TMath::IsNaN(rdt[i]) ) rdtMultiHit ++;
    }
    
-   if( rdtMultiHit != 2 ) return kTRUE; //######### multiHit gate
+   //if( rdtMultiHit != 2 ) return kTRUE; //######### multiHit gate
    
    bool refRDT1 = true; if( cut[0]->IsInside( rdt[4], rdt[0] )) refRDT1 = false;
    bool refRDT2 = true; if( cut[1]->IsInside( rdt[5], rdt[1] )) refRDT2 = false;
    bool refRDT3 = true; if( cut[2]->IsInside( rdt[6], rdt[2] )) refRDT3 = false;
    bool refRDT4 = true; if( cut[3]->IsInside( rdt[7], rdt[3] )) refRDT4 = false;
    
-   if( refRDT1 && refRDT2 && refRDT3 && refRDT4) return kTRUE; //######### rdt gate
+   //if( refRDT1 && refRDT2 && refRDT3 && refRDT4) return kTRUE; //######### rdt gate
    
    //============= coincdient with recoil and array
    bool rejArrayRDT = true;
@@ -326,7 +331,7 @@ Bool_t Inspector::Process(Long64_t entry)
       }
    }
    
-   if( rejArrayRDT ) return kTRUE; //######### Array -rdt gate
+   //if( rejArrayRDT ) return kTRUE; //######### Array -rdt gate
    
    for( int i = 0; i < 8; i++){
       if( !TMath::IsNaN(rdt[i]) ) {
@@ -350,6 +355,29 @@ Bool_t Inspector::Process(Long64_t entry)
    for( int i = 0; i < 8; i++){
       hRDT[i]->Fill(rdt[i]);
    }
+   
+   //============= S1 and recoil
+   bool rejS1RDT = true;
+   for( int i = 0; i < 8; i++){
+      if( !TMath::IsNaN(rdt[i]) ) {
+         hRDTa->Fill(rdt[i], i); // x, y
+   
+         for( int j = 4; j < 8; j++){
+            if( !TMath::IsNaN(elum[j]) ) {
+               hS1RDT->Fill(j, i);
+               rejS1RDT = false;
+            }
+         }
+      }
+   }
+   
+   if( rejS1RDT ) return kTRUE; //######### S1 -rdt gate
+   
+   //============ ELUM
+   for( int i = 4; i < 8 ; i ++){
+      if( !TMath::IsNaN(elum[i]))hElum->Fill( elum[i], i );
+   }
+   
 
 
    //============= e and x
@@ -426,7 +454,7 @@ void Inspector::Terminate()
    gStyle->SetTitleFontSize(0.1);
    
    //Int_t Div[2] = {4,4};
-   Int_t Div[2] = {4,2};
+   Int_t Div[2] = {2,1};
    Int_t size[2] = {400,300}; //x,y
    TCanvas * cInspector = new TCanvas("cInspector", openFileName, 0, 0, size[0]*Div[0], size[1]*Div[1]);
    if(cInspector->GetShowEditor() )cInspector->ToggleEditor();
@@ -437,10 +465,13 @@ void Inspector::Terminate()
       //cInspector->cd(i)->SetLogz();
    }
    
-   cInspector->cd(1); hdEE[0]->Draw("colz"); cut[0]->Draw("same");
-   cInspector->cd(2); hdEE[1]->Draw("colz"); cut[1]->Draw("same");
-   cInspector->cd(3); hdEE[2]->Draw("colz"); cut[2]->Draw("same");
-   cInspector->cd(4); hdEE[3]->Draw("colz"); cut[3]->Draw("same");
+   cInspector->cd(1); hS1RDT->Draw("colz");
+   cInspector->cd(2); hElum->Draw("colz");
+   
+   //cInspector->cd(1); hdEE[0]->Draw("colz"); cut[0]->Draw("same");
+   //cInspector->cd(2); hdEE[1]->Draw("colz"); cut[1]->Draw("same");
+   //cInspector->cd(3); hdEE[2]->Draw("colz"); cut[2]->Draw("same");
+   //cInspector->cd(4); hdEE[3]->Draw("colz"); cut[3]->Draw("same");
    
    //cInspector->cd(5); hdEEG[0]->Draw("colz");
    //cInspector->cd(6); hdEEG[1]->Draw("colz");
@@ -458,10 +489,10 @@ void Inspector::Terminate()
    //cInspector->cd(14); hRDT[7] ->Draw();
 
    
-   cInspector->cd(5); hRDTa->Draw("colz");
-   cInspector->cd(6); hArrayRDT->Draw("colz");
-   cInspector->cd(7); hTDiff->Draw("colz");
-   cInspector->cd(8); hEZ->Draw("scat");
+   //cInspector->cd(5); hRDTa->Draw("colz");
+   //cInspector->cd(6); hArrayRDT->Draw("colz");
+   //cInspector->cd(7); hTDiff->Draw("colz");
+   //cInspector->cd(8); hEZ->Draw("scat");
    
    /*
    //===================== 2nd canvas

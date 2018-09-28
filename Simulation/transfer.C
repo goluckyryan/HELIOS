@@ -21,7 +21,7 @@ void transfer(){
    //---- reaction
    int AA = 28, zA = 12;
    int Aa = 2,  za = 1;
-   int Ab = 1,  zb = 1;
+   int Ab = 2,  zb = 1;
    
    //---- beam
    double KEAmean = 9.473; // MeV/u 
@@ -46,10 +46,11 @@ void transfer(){
    //ExAList[1] = 1.567;
     
    //---- excitation of recoil
-   string excitationFile = "excitation_energies.txt";
+   string excitationFile = "";//"excitation_energies.txt"; //when no file, only ground state
    
    //---- save root file name
    TString saveFileName = "transfer.root";
+   TString filename = "reaction.dat";
    
    //---- target
    bool isTargetScattering = false;
@@ -109,8 +110,6 @@ void transfer(){
    
    //============ save reaction.dat
    FILE * paraOut;
-   TString filename;
-   filename.Form("reaction.dat");
    paraOut = fopen (filename.Data(), "w+");
    
    printf("=========== save reaction constants to %s \n", filename.Data());
@@ -189,8 +188,12 @@ void transfer(){
          }
       }
    }else{
-       printf("... fail\n");
-       return;
+      printf("... fail ------> only ground state.\n");
+      ExKnown.push_back(0.0);
+      reaction.SetExB(ExKnown[0]);
+      reaction.CalReactionConstant();
+      kCM.push_back(reaction.GetMomentumbCM());
+      y0.push_back(TMath::Sqrt(mb*mb + kCM[0]*kCM[0])/gamma - mb);
    }
    
    //====================== build tree
@@ -474,9 +477,13 @@ void transfer(){
          dphi = helios.GetdPhi();
          rho = helios.GetRho();
          rhoHit = helios.GetRhoHit();
+         //rhoHit = helios.GetR(120.4);
          rhoBHit = helios.GetRecoilRhoHit();
+         //rhoBHit = helios.GetR(134.8);
          xHit = helios.GetXPos(z);
          yHit = helios.GetYPos(z);
+         //xHit = helios.GetR(127.6);
+         //yHit = helios.GetYPos(134.8);
          z += gRandom->Gaus(0, zSigma);
          
          recoilT = helios.GetRecoilTime();

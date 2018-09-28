@@ -47,6 +47,7 @@ void script_Ex(){
       const int numCut = cutList->GetEntries();
       cut = new TCutG * [numCut];
       
+      printf(" ======== found %d cuts in %s \n", numCut, fileCut->GetName());
       for( int i = 0 ; i < numCut; i++){
          cut[i] = (TCutG* ) cutList->At(i);
          printf("cut name: %s , VarX: %s, VarY: %s\n", cut[i]->GetName(), cut[i]->GetVarX(), cut[i]->GetVarY()); 
@@ -192,7 +193,7 @@ void script_Ex(){
    TH1F ** hTheta = new TH1F *[nPeaks];
    double yMax = 0;
    
-   TLegend * legend = new TLegend(0.6,0.1,0.9,0.35);
+   TLegend * legend = new TLegend(0.1,0.9,0.5,1-0.35);
    legend->SetName("legend");
    
    //for(int i = 0; i < nPeaks; i++){
