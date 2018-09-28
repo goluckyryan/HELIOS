@@ -11,7 +11,7 @@
 void script(){
 
    
-   TFile * file0 = new TFile("A_gen_run60_69.root");
+   TFile * file0 = new TFile("A_gen_run60_87.root");
    TFile * file1 = new TFile("transfer.root");
    
    TFile * fileCut = new TFile("rdtCuts.root");
@@ -36,8 +36,12 @@ void script(){
       }
    }
    
-   TString gate_RDT = "(cut0 || cut1 || cut2 || cut3) && detID != 12 && -20 < coin_t && coin_t < 40 && rdtMultiHit == 2 && arrayRDT == 0 && multiHit == 1 ";
+   //========================== Gate
+   //TString gate_RDT = "(cut0 || cut1 || cut2 || cut3) && detID != 12 && -20 < coin_t && coin_t < 40 && rdtMultiHit == 2 && arrayRDT == 0 && multiHit == 1 ";   
    
+   TString gate_RDT = "(cut0 || cut1 || cut2 || cut3) && -20 < coin_t && coin_t < 40 ";
+   
+   //========================== Canvas
    TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, 1600, 600);
    cScript->Divide(4,2);
    for( int i = 1; i <= 4 ; i++){
@@ -50,6 +54,10 @@ void script(){
    if(cScript->GetShowEditor() )cScript->ToggleEditor();
    if(cScript->GetShowToolBar())cScript->ToggleToolBar();
    
+   
+   //========================== Plot
+   
+   /*
    cScript->cd(1);
    tree0->Draw("rdt[0]:rdt[4]>>rdt1(300, 0, 8000, 300, 0, 4000)", "", "colz");
    cut[0]->Draw("same");
@@ -107,5 +115,5 @@ void script(){
    //tree0->Draw("e:coin_t >> j(100, -100, 100, 400, 0, 10)", gate_RDT + "&& 18 <= detID ", "colz");
    tree0->Draw("e:coin_t >> j(100, -100, 100, 400, 0, 10)", gate_RDT, "colz");
    
-   
+   /**/
 }

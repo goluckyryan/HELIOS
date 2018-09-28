@@ -6,7 +6,7 @@
 #include <TStyle.h>
 
 #define NUMPRINT 20 //>0
-ULong64_t NUMSORT=100000000;
+ULong64_t NUMSORT=1000000000;
 
 #define MAXNUMHITS 200 //Highest multiplicity
 #define M 100 //M value for energy filter from digi setting
@@ -47,9 +47,9 @@ Int_t idKindMap[160] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 			-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 			2,2,1,1,1,1,1,1,-1,-1,//4
 			0,0,0,0,2,2,2,2,-1,-1,//5
-			1,1,1,1,1,1,0,0,-1,-1,//6
+			2,2,2,2,2,2,0,0,-1,-1,//6
 			-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-			0,0,2,2,2,2,2,2,-1,-1,//7
+			0,0,1,1,1,1,1,1,-1,-1,//7
 			1,1,1,1,0,0,0,0,-1,-1,//8
 			2,2,2,2,2,2,1,1,-1,-1,//9
 			-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
@@ -67,6 +67,7 @@ TCanvas *cc0;
 
 //PSD struct
 typedef struct {
+  int runID;
   Float_t Energy[100];
   Float_t XF[100];
   Float_t XN[100];
@@ -90,6 +91,10 @@ typedef struct {
 
 PSD psd; 
 
+int runIDPresent = 0;
+int runIDFirst = 0;
+TString fileNum = "";
+
 void GeneralSort::Begin(TTree * tree)
 {
    
@@ -97,15 +102,18 @@ void GeneralSort::Begin(TTree * tree)
   NumEntries = tree->GetEntries();
 
   saveFileName = tree->GetDirectory()->GetName();
+  
   int findslat = saveFileName.Last('/');
   saveFileName.Remove(0, findslat+1);
   saveFileName = "gen_" + saveFileName;
-
+  
   hEvents = new TH1F("hEvents","Number of events; Events;",NumEntries*1.2,0,NumEntries*1.2);
 
   oFile = new TFile(saveFileName,"RECREATE");
 
   gen_tree = new TTree("gen_tree","PSD Tree");
+  gen_tree->Branch("runID", &psd.runID,"runID/I");
+
   gen_tree->Branch("e",psd.Energy,"Energy[100]/F");
   gen_tree->Branch("e_t",psd.EnergyTimestamp,"EnergyTimestamp[100]/l");
   
@@ -139,6 +147,26 @@ void GeneralSort::SlaveBegin(TTree * /*tree*/)
 
 Bool_t GeneralSort::Process(Long64_t entry)
 { 
+   
+   if( entry == 0 ) {
+      fileNum = fChain->GetDirectory()->GetName();
+      
+      printf("----------------------- openning  %s \n", fileNum.Data());
+      
+      int findslat = fileNum.Last('/');
+      fileNum.Remove(0, findslat+1);
+      int found = fileNum.First(".");
+      fileNum.Remove(found);
+      //the fileNum should be something like "xxx_run4563" now
+      while( !fileNum.IsDigit() ){
+         fileNum.Remove(0,1);
+      }
+      runIDPresent = fileNum.Atoi();
+      if( runIDFirst == 0 ) runIDFirst = runIDPresent;
+
+   } 
+   psd.runID = runIDPresent; 
+  
   ProcessedEntries++;
   if (ProcessedEntries<NUMSORT) {
     hEvents->Fill(ProcessedEntries);
@@ -152,8 +180,8 @@ Bool_t GeneralSort::Process(Long64_t entry)
     //Zero struct
     for (Int_t i=0;i<100;i++) {//num dets
       psd.Energy[i]=TMath::QuietNaN();
-      psd.XF[i]=0;
-      psd.XN[i]=0;
+      psd.XF[i]=TMath::QuietNaN();
+      psd.XN[i]=TMath::QuietNaN();
       psd.Ring[i]=TMath::QuietNaN();
       psd.RDT[i]=TMath::QuietNaN();
       psd.TAC[i]=TMath::QuietNaN();
@@ -196,9 +224,8 @@ Bool_t GeneralSort::Process(Long64_t entry)
       if ((id[i]>1000&&id[i]<2000)&&(psd8Chan<8)&&(idDet>-1)) { //IF PSD	
 	//Information
 	if (idDet<0 && CrapPrint==0) {printf("ohhhhhhhhhhh craaaaaaap\n"); CrapPrint=1;}
-	if (ProcessedEntries<NUMPRINT)
-	  printf("id %i, idKind %i, idDet %i, idConst %i\n",id[i],idKind,idDet,idConst);
-	
+	if (ProcessedEntries<NUMPRINT) printf("id %i, idKind %i, idDet %i, idConst %i\n",id[i],idKind,idDet,idConst);
+   
 	switch(idKind)
 	  {
 	  case 0: /* Energy signal */
@@ -285,7 +312,20 @@ void GeneralSort::Terminate()
   printf("Total time for sort: %3.1f\n",StpWatch.RealTime());
   printf("Rate for sort: %3.1f k/s\n",(Float_t)ProcessedEntries/StpWatch.RealTime()/1000.0);
   StpWatch.Start(kFALSE);
-
-  printf("Save file to %s. \n",saveFileName.Data());
+  
+  TString newFileName;
+  TString command;
+  if( runIDFirst < runIDPresent ) {
+     
+     newFileName.Form("gen_run%d_%d.root", runIDFirst, runIDPresent);
+     command.Form(".!mv %s %s", saveFileName.Data(), newFileName.Data());
+     
+     gROOT->ProcessLine(command);
+     
+  }else{
+     newFileName = saveFileName;
+  }
+  
+  printf("Save file to %s. \n", newFileName.Data());
   gROOT->ProcessLine(".q");
 }

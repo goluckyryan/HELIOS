@@ -9,9 +9,14 @@
 #include <TH2.h>
 #include <TStyle.h>
 
+bool rejZeroHit = false;
+
 void Cali_e_trace::Begin(TTree * /*tree*/)
 {
    TString option = GetOption();  
+   
+   if( rejZeroHit ) printf(" ================= reject when zero hit on array \n");
+   
 }
 
 void Cali_e_trace::SlaveBegin(TTree * /*tree*/)
@@ -67,7 +72,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    
    //#################################################################### get event
    eventID += 1;
-   if( entry == 1 ) run += 1; 
+   if( entry == 1 ) run += 1; //TODO need to modified the GeneralSort.C for run_number
    
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
@@ -121,13 +126,6 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
        
       if( !TMath::IsNaN(xf[idet]) || xf[idet] > 0) xfC[idet] = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       if( !TMath::IsNaN(xn[idet]) || xn[idet] > 0) xnC[idet] = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
-      
-      //mapping correction for iss
-      if( 12 <= idet && idet <= 17 ) {
-         float temp = xnC[idet];
-         xnC[idet] = xfC[idet];
-         xfC[idet] = temp;
-      } 
       
       //========= calculate x
       if(xf[idet] > 0  && xn[idet] > 0 ) {
@@ -287,7 +285,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       }
    }
    
-   if( multiHit == 0 ) return kTRUE;
+   if( rejZeroHit && multiHit == 0 ) return kTRUE;
    
    //#################################################################### Timer  
    saveFile->cd(); //set focus on this file

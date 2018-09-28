@@ -17,7 +17,7 @@ void RDTCutCreator(){
    chain->Add("data/gen_run70_74.root");
    chain->Add("data/gen_run75_87.root");
    
-   TString saveFileName = "rdtCuts_Si.root";
+   TString saveFileName = "rdtCuts.root";
    
    chain->GetListOfFiles()->Print();
    
@@ -28,9 +28,7 @@ void RDTCutCreator(){
 	TCanvas * cCutCreator = new TCanvas("cCutCreator", "RDT Cut Creator", 100, 100, 800, 800);
 	if( !cCutCreator->GetShowToolBar() ) cCutCreator->ToggleToolBar();
 	
-   
-   TFile * cutFile = new TFile(saveFileName, "recreate");
-	cCutCreator->Update();
+   cCutCreator->Update();
 	
 	TCutG * cut = NULL;
 	TObjArray * cutList = new TObjArray();
@@ -40,7 +38,7 @@ void RDTCutCreator(){
 
 	for (Int_t i = 0; i < 4; i++) {
 
-      printf("======== make a graphic cut on the plot, %d-th cut: ", i );
+      printf("======== make a graphic cut on the plot (double click to stop), %d-th cut: ", i );
 
       varX.Form("rdt[%d]",i+4); varY.Form("rdt[%d]",i);
 
@@ -56,7 +54,10 @@ void RDTCutCreator(){
 
       cut = (TCutG*) gROOT->FindObject("CUTG");
       
-      if( cut == NULL )break;
+      if( cut == NULL ){
+         printf(" stopped by user. no file saved or changed. \n");
+         break;
+      }
 
       TString name; name.Form("cut%d", i);
       cut->SetName(name);
@@ -71,6 +72,7 @@ void RDTCutCreator(){
      
 	}
 	
+   TFile * cutFile = new TFile(saveFileName, "recreate");
 	cutList->Write("cutList", TObject::kSingleKey);
 	
 	printf("====> saved %d cuts into %s\n", 4, saveFileName.Data());

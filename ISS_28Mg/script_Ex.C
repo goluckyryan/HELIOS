@@ -6,6 +6,8 @@
 #include "TStyle.h"
 #include "TChain.h"
 #include "TCutG.h"
+#include "TLegend.h"
+
 
 int nPeaks = 16;
 Double_t fpeaks(Double_t *x, Double_t *par) {
@@ -21,11 +23,12 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 
 void script_Ex(){
    
-   double ExRange[3] = {180, -3, 6};
+   double ExRange[3] = {140, -1, 6};
 	double eRange[3]  = {400, 0, 10};
+	double thetaCMRange[3]  = {40, 0, 40};
 
    
-   TFile * file0 = new TFile("A_gen_run60_87.root");
+   TFile * file0 = new TFile("A_gen_run92.root");
    TFile * file1 = new TFile("transfer.root");
    
    TFile * fileCut = new TFile("rdtCuts.root");
@@ -61,8 +64,8 @@ void script_Ex(){
    
    
    //============== Plot
-   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, 1600, 600);
-   cScript->Divide(2,2);
+   TCanvas * cScript = new TCanvas("cScript", "cScript", 0, 0, 1600, 900);
+   cScript->Divide(2,3);
    for( int i = 1; i <= 4 ; i++){
       cScript->cd(i)->SetGrid();
    }
@@ -82,7 +85,7 @@ void script_Ex(){
    //gList->At(15)->Draw("same");
    //gList->At(20)->Draw("same");
    
-   //fxList->At(0)->Draw("same"); // 0.000
+   fxList->At(0)->Draw("same"); // 0.000
    //fxList->At(1)->Draw("same"); // 0.591
    //fxList->At(2)->Draw("same"); // 1.095
    //fxList->At(3)->Draw("same"); // 1.431
@@ -181,5 +184,42 @@ void script_Ex(){
               paraA[3*i+2], paraE[3*i+2]);
    }
    cScript->Update();
+   
+   //================================ thetaCM distribution
+   cScript->cd(5);
+   gStyle->SetOptStat(0);
+   
+   TH1F ** hTheta = new TH1F *[nPeaks];
+   double yMax = 0;
+   
+   TLegend * legend = new TLegend(0.6,0.1,0.9,0.35);
+   legend->SetName("legend");
+   
+   //for(int i = 0; i < nPeaks; i++){
+   for(int i = 0; i < 3; i++){
+      TString name, title, gate, expression;
+      name.Form("hTheta%d", i);
+      title.Form("thetaCM +-3Sigma; thetCM [deg]; count / %3.1f deg", (thetaCMRange[2]-thetaCMRange[1])/thetaCMRange[0]);
+      hTheta[i] = new TH1F(name, title, thetaCMRange[0], thetaCMRange[1], thetaCMRange[2]);
+      hTheta[i]->SetLineColor(2*i+2);
+      expression.Form("thetaCM >> hTheta%d", i);
+      gate.Form("%f > Ex && Ex > %f", ExPos[i] + 3*ExSigma[i], ExPos[i] - 3*ExSigma[i] );
+      if( i == 0 )tree0->Draw(expression, gate_RDT + detGate + "&&" + gate);
+      if( i > 0 )tree0->Draw(expression, gate_RDT + detGate + "&&" + gate, "same");
+      
+      TString lTitle;
+      lTitle.Form("Ex = %6.2f MeV, %3.0f keV", ExPos[i], ExSigma[i]*1000.);
+      legend->AddEntry(name,lTitle, "l");
+   
+      if( hTheta[i]->GetMaximum() > yMax ) yMax = hTheta[i]->GetMaximum();
+      hTheta[0]->GetYaxis()->SetRangeUser(1, yMax*1.5);
+      
+      cScript->SetLogy();
+      cScript->Update();
+   }
+   
+   legend->Draw();
+   
+   
    
 }

@@ -58,7 +58,7 @@ void Check_e_z(TString rootfile){
       
       const int numCut = cutList->GetEntries();
       cut = new TCutG * [numCut];
-      printf(" ======== found %d cuts in %d \n", numCut, fileCut->GetName());
+      printf(" ======== found %d cuts in %s \n", numCut, fileCut->GetName());
       for( int i = 0 ; i < numCut; i++){
          cut[i] = (TCutG* ) cutList->At(i);
          printf("cut name: %s , VarX: %s, VarY: %s\n", cut[i]->GetName(), cut[i]->GetVarX(), cut[i]->GetVarY()); 

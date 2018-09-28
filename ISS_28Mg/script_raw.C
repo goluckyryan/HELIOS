@@ -17,7 +17,6 @@ void script_raw(){
    
    chain->GetListOfFiles()->Print();
    
-   chain->Process("../../ISS_22Ne/sort_code/GeneralSort.C+");
-   
+   chain->Draw("Iteration$:elum>>h(400, 0, 500, 32, 0, 32)", "", "colz");
    
 }
