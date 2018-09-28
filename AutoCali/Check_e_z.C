@@ -36,7 +36,7 @@ void Check_e_z(TString rootfile){
 
    int Div[2] = {6,4};  //x,y
    
-   double ExRange[3] = {200, -1, 10};
+   double ExRange[3] = {180, -1, 8};
 	double eRange[3]  = {400, 0, 10};
    
    bool showFx = false;
@@ -44,7 +44,30 @@ void Check_e_z(TString rootfile){
 
    TString drawOption ="colz"; 
    
-   TString detGate = "detID != 11 && -20 < coin_t && coin_t < 50";// "detID%6 < 6 && !(800> coin_t && coin_t > 2)";
+   //============================= RDT cut
+   TFile * fileCut = new TFile("rdtCuts.root");
+   
+   TObjArray * cutList = NULL;
+   TCutG ** cut = NULL;
+   
+   TString gate_RDT = "";
+   
+   if( fileCut->IsOpen() ){
+      
+      TObjArray * cutList = (TObjArray*) fileCut->FindObjectAny("cutList");
+      
+      const int numCut = cutList->GetEntries();
+      cut = new TCutG * [numCut];
+      printf(" ======== found %d cuts in %d \n", numCut, fileCut->GetName());
+      for( int i = 0 ; i < numCut; i++){
+         cut[i] = (TCutG* ) cutList->At(i);
+         printf("cut name: %s , VarX: %s, VarY: %s\n", cut[i]->GetName(), cut[i]->GetVarX(), cut[i]->GetVarY()); 
+      }
+      
+      gate_RDT = "&& (cut0 || cut1 || cut2 || cut3)";
+   }
+   
+   TString detGate = "detID != 11 && detID !=12 ";
 
 /**///======================================================== read tree   
    printf("################### Check_e_z.C ######################\n");
@@ -176,7 +199,7 @@ void Check_e_z(TString rootfile){
    hEx->GetYaxis()->SetTitleSize(0.06);
    hEx->GetXaxis()->SetTitleOffset(0.7);
    hEx->GetYaxis()->SetTitleOffset(0.6);
-   tree->Draw("Ex >> hEx", detGate); 
+   tree->Draw("Ex >> hEx", detGate + gate_RDT); 
    
    
    TH1F * specS = (TH1F*) hEx->Clone();
@@ -266,7 +289,7 @@ void Check_e_z(TString rootfile){
    if(cCheck2->GetShowToolBar() )cCheck2->ToggleToolBar();
    cCheck2->SetGrid();
    TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1], eRange[2]);
-   tree->Draw("e:z >> hEZ", "hitID >= 0 &&" + detGate , drawOption);
+   tree->Draw("e:z >> hEZ", "hitID >= 0 &&" + detGate + gate_RDT , drawOption);
    
    if( showFx ) {
       TObjArray * fxList = (TObjArray*) file1->FindObjectAny("fxList");
@@ -285,7 +308,7 @@ void Check_e_z(TString rootfile){
    if(cCheck4->GetShowToolBar() )cCheck4->ToggleToolBar();
    cCheck4->SetGrid();
    TH2F * hExTheta = new TH2F("hExTheta", "Ex:thetaCM:z; thetaCM [deg]; Ex [MeV]", 400, 0, 45, ExRange[0], ExRange[1], ExRange[2]);
-   tree->Draw("Ex:thetaCM >> hExTheta", detGate,  drawOption); 
+   tree->Draw("Ex:thetaCM >> hExTheta", detGate + gate_RDT,  drawOption); 
    
    if( showTx ) {
       TObjArray * txList = (TObjArray*)  file1->FindObjectAny("txList");
@@ -306,7 +329,7 @@ void Check_e_z(TString rootfile){
    if(cCheck5->GetShowToolBar() )cCheck5->ToggleToolBar();
    cCheck5->SetGrid();
    TH2F * hExZ = new TH2F("hExZ", "z:Ex; Ex [MeV]; z [mm]", ExRange[0], ExRange[1], ExRange[2], zRange[0], zRange[1], zRange[2]);
-   tree->Draw("z : Ex >> hExZ", detGate, drawOption); 
+   tree->Draw("z : Ex >> hExZ", detGate + gate_RDT, drawOption); 
    cCheck5->Update();
 
 
@@ -331,8 +354,8 @@ void Check_e_z(TString rootfile){
       hTheta[i]->SetLineColor(2*i+2);
       expression.Form("thetaCM >> hTheta%d", i);
       gate.Form("%f > Ex && Ex > %f", ExPos[i] + 3*ExSigma[i], ExPos[i] - 3*ExSigma[i] );
-      if( i == 0 )tree->Draw(expression, gate + "&&" + detGate);
-      if( i > 0 )tree->Draw(expression, gate + "&&" + detGate, "same");
+      if( i == 0 )tree->Draw(expression, gate + "&&" + detGate + gate_RDT);
+      if( i > 0 )tree->Draw(expression, gate + "&&" + detGate + gate_RDT, "same");
       
       TString lTitle;
       lTitle.Form("Ex = %6.2f MeV, %3.0f keV", ExPos[i], ExSigma[i]*1000.);
@@ -348,7 +371,7 @@ void Check_e_z(TString rootfile){
    legend->Draw();
    cCheck6->Update();
    
-   //========================== save histograms and fit result
+   //========================== save histograms and fit-result
    TFile * saveFile = new TFile("checkResult.root", "recreate");
    
    TObjArray * hEXList = new TObjArray();

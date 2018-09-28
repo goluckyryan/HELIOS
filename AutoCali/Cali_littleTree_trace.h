@@ -25,6 +25,7 @@
 #include <string>
 #include <fstream>
 #include <TObjArray.h>
+#include <TCutG.h>
 
 // Headers needed by this particular selector
 
@@ -116,6 +117,10 @@ public :
    double cTCorr[24][9]; // coinTime correction
    bool isCoinTimeLoaded;
    TF1 ** f7 ; //!
+   
+   //============ RDT cut
+   bool isRDTCutExist;
+   TCutG ** cut = NULL;
    
 };
 
@@ -292,6 +297,25 @@ void Cali_littleTree_trace::Init(TTree *tree)
          }
       } 
       file.close();
+   }
+   
+   //====================================== load RDT cut
+   TFile * fileCut = new TFile("rdtCuts.root");   
+   TObjArray * cutList = NULL;
+   isRDTCutExist = false;
+   if( fileCut->IsOpen() ){
+      TObjArray * cutList = (TObjArray*) fileCut->FindObjectAny("cutList");
+      
+      if( cutList != NULL){
+         isRDTCutExist = true;
+         const int numCut = cutList->GetEntries();
+         cut = new TCutG * [numCut];
+         printf("=========== found %d cuts in %s \n", numCut, fileCut->GetName());
+         for( int i = 0 ; i < numCut; i++){
+            cut[i] = (TCutG* ) cutList->At(i);
+            printf("cut name: %s , VarX: %s, VarY: %s\n", cut[i]->GetName(), cut[i]->GetVarX(), cut[i]->GetVarY()); 
+         }
+      }
    }
    
    //====================================== make tree

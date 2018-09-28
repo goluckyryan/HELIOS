@@ -24,7 +24,7 @@ void transfer(){
    int Ab = 1,  zb = 1;
    
    //---- beam
-   double KEAmean = 9.4; // MeV/u 
+   double KEAmean = 9.473; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle

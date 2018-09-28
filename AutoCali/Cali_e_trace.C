@@ -33,8 +33,12 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       eC_t[i]  = 0;
    }
    
-   det      = -4;
+   det   = -4;
+   
    multiHit = 0;
+   rdtMultiHit = 0;
+   
+   arrayRDT = -4;
    
    Ex  = TMath::QuietNaN();
    thetaCM  = TMath::QuietNaN();
@@ -43,6 +47,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    for(int i = 0; i < 8 ; i++){
       rdtC[i] = TMath::QuietNaN();
       rdtC_t[i] = 0;
+      rdtID[i] = -4;
    }
    
    coin_t = -2000;
@@ -94,10 +99,15 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    for(int i = 0 ; i < 8 ; i++){
       rdtC[i]   = rdtCorr[i] * rdt[i];
       rdtC_t[i] = rdt_t[i]; 
+      if( !TMath::IsNaN(rdt[i]) ) {
+         rdtID[i] = i;
+         rdtMultiHit ++;
+      }
    }
    
    ULong64_t eTime = -2000; //this will be the time for Ex valid
    Float_t teTime = 0.; //time from trace
+   int detTime = -1; // for coinTime
    for(int idet = 0 ; idet < numDet; idet++){
       
       if( !TMath::IsNaN(e[idet]) || e[idet] > 0 ){
@@ -110,7 +120,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       if( !TMath::IsNaN(xf[idet]) || xf[idet] > 0) xfC[idet] = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       if( !TMath::IsNaN(xn[idet]) || xn[idet] > 0) xnC[idet] = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
       
-      //mapping correction 
+      //mapping correction for iss
       if( 12 <= idet && idet <= 17 ) {
          float temp = xnC[idet];
          xnC[idet] = xfC[idet];
@@ -151,9 +161,33 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          multiHit ++;
          count ++;
          det = idet;
-      
-         eTime  = eC_t[idet];
          
+         //========== coincident between array and RDT
+         if( 0 <= det && det < iDet ){
+            if( !TMath::IsNaN(rdt[0]) && !TMath::IsNaN(rdt[4]) ) arrayRDT = 1;
+            if( !TMath::IsNaN(rdt[1]) && !TMath::IsNaN(rdt[5]) ) arrayRDT = 2;
+            if( !TMath::IsNaN(rdt[2]) && !TMath::IsNaN(rdt[6]) ) arrayRDT = 3;
+            if( !TMath::IsNaN(rdt[3]) && !TMath::IsNaN(rdt[7]) ) arrayRDT = 0;
+         }else if( iDet <= det && det < 2*iDet ){
+            if( !TMath::IsNaN(rdt[0]) && !TMath::IsNaN(rdt[4]) ) arrayRDT = 0;
+            if( !TMath::IsNaN(rdt[1]) && !TMath::IsNaN(rdt[5]) ) arrayRDT = 1;
+            if( !TMath::IsNaN(rdt[2]) && !TMath::IsNaN(rdt[6]) ) arrayRDT = 2;
+            if( !TMath::IsNaN(rdt[3]) && !TMath::IsNaN(rdt[7]) ) arrayRDT = 3;
+         }else if( 2*iDet <= det && det < 3*iDet ){
+            if( !TMath::IsNaN(rdt[0]) && !TMath::IsNaN(rdt[4]) ) arrayRDT = 3;
+            if( !TMath::IsNaN(rdt[1]) && !TMath::IsNaN(rdt[5]) ) arrayRDT = 0;
+            if( !TMath::IsNaN(rdt[2]) && !TMath::IsNaN(rdt[6]) ) arrayRDT = 1;
+            if( !TMath::IsNaN(rdt[3]) && !TMath::IsNaN(rdt[7]) ) arrayRDT = 2;
+         }else if( 3*iDet <= det && det < 4*iDet ){
+            if( !TMath::IsNaN(rdt[0]) && !TMath::IsNaN(rdt[4]) ) arrayRDT = 2;
+            if( !TMath::IsNaN(rdt[1]) && !TMath::IsNaN(rdt[5]) ) arrayRDT = 3;
+            if( !TMath::IsNaN(rdt[2]) && !TMath::IsNaN(rdt[6]) ) arrayRDT = 0;
+            if( !TMath::IsNaN(rdt[3]) && !TMath::IsNaN(rdt[7]) ) arrayRDT = 1;
+         }
+            
+         //========== coincident time
+         detTime = idet;
+         eTime  = eC_t[idet];
          if ( isTraceDataExist ){
             teTime = te_t[idet];
             teS    = te[idet];
@@ -165,7 +199,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          //========== Calculate Ex and thetaCM
          if( TMath::IsNaN(eC[idet]) || isReaction == false ){
             Ex = TMath::QuietNaN();
-            thetaCM = TMath::QuietNaN();
+            thetaCM = TMath::QuietNaN(); 
             thetaLab = TMath::QuietNaN();
             
          }else{
@@ -246,7 +280,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
       if ( isTraceDataExist ){
          tcoin_t = teTime - trdtTime;
          coinTimeUC = coin_t + tcoin_t;
-         double f7corr = f7[det]->Eval(x[det]) + cTCorr[det][8];
+         double f7corr = f7[detTime]->Eval(x[detTime]) + cTCorr[detTime][8];
          coinTime = (coinTimeUC - f7corr)*10.;
       }
    }

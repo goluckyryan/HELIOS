@@ -112,6 +112,13 @@ public :
    
    Float_t rdtC[8];
    ULong64_t rdtC_t[8];
+   int rdtID[8]; // rdt hit ID
+   int rdtMultiHit;
+   
+   int arrayRDT; // det(0-5)  | 0 = rdt(3,7), 1 = rdt(0,4), 2 = rdt(1,5), 3 = rdt(2,6) 
+                 // det(6-11) | 3 = rdt(3,7), 0 = rdt(0,4), 1 = rdt(1,5), 2 = rdt(2,6) 
+                 // det(12-17)| 2 = rdt(3,7), 3 = rdt(0,4), 0 = rdt(1,5), 1 = rdt(2,6) 
+                 // det(18-23)| 1 = rdt(3,7), 2 = rdt(0,4), 3 = rdt(1,5), 0 = rdt(2,6) 
    
    Int_t   coin_t;
    Float_t tcoin_t;
@@ -234,8 +241,8 @@ void Cali_e_trace::Init(TTree *tree)
    newTree->Branch("run",&run,"run/I"); 
    
    newTree->Branch("e" ,   eC, "e[24]/F");
-   newTree->Branch("xf",  xfC, "xf[24]/F");
-   newTree->Branch("xn",  xnC, "xn[24]/F");
+   //newTree->Branch("xf",  xfC, "xf[24]/F");
+   //newTree->Branch("xn",  xnC, "xn[24]/F");
    newTree->Branch("x" ,    x, "x[24]/F");
    newTree->Branch("z" ,    z, "z[24]/F");
    newTree->Branch("detID", &det, "det/I");
@@ -250,6 +257,10 @@ void Cali_e_trace::Init(TTree *tree)
    
    newTree->Branch("rdt", rdtC, "rdtC[8]/F");
    newTree->Branch("rdt_t", rdtC_t, "rdtC_t[8]/l");
+   newTree->Branch("rdtID", rdtID, "rdtID[8]/I");
+   newTree->Branch("rdtMultiHit", &rdtMultiHit, "rdtMultiHit/I");
+   
+   newTree->Branch("arrayRDT", &arrayRDT, "arrayRDT/I");
    
    newTree->Branch("coin_t", &coin_t, "coin_t/I");
    
