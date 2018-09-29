@@ -26,7 +26,7 @@
 //         //TODO detect branch te_t and trdt_t exist or not, if exist, calibrate with coinTime
 //==========================================
 
-double eThreshold = 400;
+double eThreshold = 300;
 
 void AutoCalibrationTrace(){
    
@@ -57,10 +57,12 @@ void AutoCalibrationTrace(){
    //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
 
-   //chain->Add("data/gen_run60_69.root");
-   //chain->Add("data/gen_run70_74.root");
-   //chain->Add("data/gen_run75_87.root");
-   chain->Add("data/gen_run92.root");
+   chain->Add("data/gen_run5[6-9].root");
+   chain->Add("data/gen_run6[0-9].root");
+   chain->Add("data/gen_run7[0-9].root");
+   chain->Add("data/gen_run8[0-9].root");
+   chain->Add("data/gen_run9[0-9].root");
+   chain->Add("data/gen_run100.root");
 
 /*=============== 208Pb   
    chain->Add("../H060/data/gen_run11.root");  //01

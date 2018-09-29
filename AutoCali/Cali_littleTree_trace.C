@@ -123,12 +123,6 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
       double xfC = xf[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0] ;
       double xnC = xn[idet] * xnCorr[idet] * xfxneCorr[idet][1] + xfxneCorr[idet][0];
       
-      //mapping correction for iss
-      if( 12 <= idet && idet <= 17 ) {
-         float temp = xnC;
-         xnC = xfC;
-         xfC = temp;
-      }
       //========= calculate x
       if(xf[idet] > 0  && xn[idet] > 0 ) {
          xTemp = (xfC-xnC)/(xfC+xnC);

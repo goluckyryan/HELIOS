@@ -438,7 +438,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
             exPlot[idet]->Fill(zTemp, eTemp);
          }
-         exPlot[idet]->Draw();
+         exPlot[idet]->Draw("box");
          caliResult->cd(); exPlot[idet]->Write(); caliResult->Write("exPlot", TObject::kSingleKey);
          
          cScript->cd(2);
