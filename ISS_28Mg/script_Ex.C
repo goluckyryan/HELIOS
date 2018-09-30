@@ -72,7 +72,7 @@ void script_Ex(){
    }
    
    gStyle->SetOptStat(0);
-   //gStyle->SetOptStat(11111111);
+   //gStyle->SetOptStat("neiou");
    if(cScript->GetShowEditor() )cScript->ToggleEditor();
    if(cScript->GetShowToolBar())cScript->ToggleToolBar();
    
