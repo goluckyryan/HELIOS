@@ -5,13 +5,18 @@
 
 void Proof_onGeneralSortTrace(){
    
+   //+++++++++++++++++++++++++++++
+   //    for some unknown reason, have to copy it and run in local folder. 
+   //    cannot use symbolic link
+   //++++++++++++++++++++++++++++++
+   
    //=============== process after GEBSortMerge
    TChain * chain = new TChain("tree");
    //filename should be in the format "*runXXXX.root", otherwise, the runID will be incorrect
    //chain->Add("/lcrc/project/HELIOS/h057_he6/root_data/run200.root"); 
-   chain->Add("data/trace_run107.root"); 
+   chain->Add("data/trace_run70.root"); 
    
-   TProof * p = TProof::Open("", "workers=1");
+   TProof * p = TProof::Open("", "workers=3");
    
    chain->SetProof();
    chain->Process("GeneralSortTraceProof.C+");
@@ -32,5 +37,5 @@ void Proof_onGeneralSortTrace(){
    
    delete chain2;
    delete p2;
-   
+   /**/
 }

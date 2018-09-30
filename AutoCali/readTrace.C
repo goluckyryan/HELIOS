@@ -34,12 +34,14 @@ void readTrace(){
    int eventID;
    float e[24], xf[24], xn[24];
    float te[24];
+   float rdt[8];
    
    tree->SetBranchAddress("eventID",   &eventID);
    tree->SetBranchAddress("e",         e);
    tree->SetBranchAddress("xf",        xf);
    tree->SetBranchAddress("xn",        xn);
    tree->SetBranchAddress("te",        te);
+   tree->SetBranchAddress("rdt",      rdt);
 
 	char s [1] ;
 	char b [1] ;
@@ -59,8 +61,16 @@ void readTrace(){
          if( e[i] > 0 ){
             nextFlag = false;
          }
-         printf("========= ev: %d, #trace: %d , (e, xf, xn , te[i]) = (%7.2f, %7.2f, %7.2f, %7.2f)\n", 
-                    eventID, arr->GetEntriesFast(), e[i], xf[i], xn[i], te[i]);
+         printf("========= ev: %d, #trace: %d | %d, (e, xf, xn , te[i]) = (%7.2f, %7.2f, %7.2f, %7.2f)\n", 
+                    eventID, arr->GetEntriesFast(), i, e[i], xf[i], xn[i], te[i]);
+        
+      }
+      for( int i = 0; i < 8; i++){
+         if( TMath::IsNaN(rdt[i]) ) continue;    
+         if( rdt[i] > 0 ){
+            nextFlag = false;
+         }
+         printf("      rdt: %d , %7.2f\n", i, rdt[i]);
         
       }
       
@@ -81,7 +91,7 @@ void readTrace(){
             int kind = gFit->GetLineColor();
             int det  = gFit->GetLineStyle();
             
-            if( det < 100 ) continue;
+            //if( det < 100 ) continue;
             
             TString gTitle;
             gTitle.Form("(%d,%d), base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
@@ -101,10 +111,12 @@ void readTrace(){
          cRead->cd(1);
          cRead->Clear();
          g->Draw("");
-         g->GetXaxis()->SetRangeUser(0, 200);
+         //g->GetXaxis()->SetRangeUser(0, 200);
          //g->GetYaxis()->SetRangeUser(7500, 35000);
          timeVLine.Draw("same");
          cRead->Update();
+         
+         gSystem->ProcessEvents();
          
          gets(s);    
          if( s[0] == b[0] ) {
@@ -114,6 +126,8 @@ void readTrace(){
       }
       if( breakFlag ) break;
    }
+   
+   gROOT->ProcessLine(".q");
 
 /*
    TH2F * hEE = new TH2F("hEE", "jj; e(trace); e(digit)", 500, 0, 8000, 500, 0, 8000);

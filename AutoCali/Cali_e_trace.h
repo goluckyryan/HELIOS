@@ -75,6 +75,9 @@ public :
    TBranch        *b_Trace_RDT_Time;  //!
    TBranch        *b_Trace_RDT_RiseTime;  //!
    
+   bool isTACExist;
+   bool isELUMExist;
+   bool isEZEROExist;
    bool isTraceDataExist; // if b_Trace_** exist
 
    Cali_e_trace(TTree * /*tree*/ =0) : fChain(0) { }
@@ -189,6 +192,15 @@ void Cali_e_trace::Init(TTree *tree)
    
    // Set branch addresses and branch pointers
    if (!tree) return;
+   
+   //======================================   
+   totnumEntry = tree->GetEntries();
+   printf( "=========================================================================== \n");
+   printf( "========================== Cali_e_trace.h ================================= \n");
+   printf( "====== Make a new tree with all calibrations, total Entry : %d \n", totnumEntry);
+   printf( "=========================================================================== \n");
+
+   
    fChain = tree;
    //printf("========== number of tree loaded : %d \n", fChain->GetNTree());
    fChain->SetMakeClass(1);
@@ -202,19 +214,39 @@ void Cali_e_trace::Init(TTree *tree)
    fChain->SetBranchAddress("rdt_t", rdt_t, &b_RDTTimestamp);   
    //fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);
    //fChain->SetBranchAddress("xn_t", xn_t, &b_XNTimestamp);
-
-   fChain->SetBranchAddress("tac", tac, &b_TAC);
-   fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
-
-   fChain->SetBranchAddress("elum", elum, &b_ELUM);
-   fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
-
-   fChain->SetBranchAddress("ezero", ezero, &b_EZERO);
-   fChain->SetBranchAddress("ezero_t", ezero_t, &b_EZEROTimestamp);
-
-   isTraceDataExist = false;
    
-   TBranch * br = (TBranch *) fChain->GetListOfBranches()->FindObject("te_t");
+   isTACExist = false;
+   TBranch * br = (TBranch *) fChain->GetListOfBranches()->FindObject("tac");
+   if( br == NULL ){
+      printf(" ++++++++ no tac data.\n");
+   }else{
+      isTACExist = true;
+      fChain->SetBranchAddress("tac", tac, &b_TAC);
+      fChain->SetBranchAddress("tac_t", tac_t, &b_TACTimestamp);
+   }
+   
+   isELUMExist = false;
+   br = (TBranch *) fChain->GetListOfBranches()->FindObject("elum");
+   if( br == NULL ){
+      printf(" ++++++++ no elum data.\n");
+   }else{
+      isELUMExist = true;
+      fChain->SetBranchAddress("elum", elum, &b_ELUM);
+      fChain->SetBranchAddress("elum_t", elum_t, &b_ELUMTimestamp);
+   }
+   
+   isEZEROExist = false;
+   br = (TBranch *) fChain->GetListOfBranches()->FindObject("ezero");
+   if( br == NULL ){
+      printf(" ++++++++ no zero data.\n");
+   }else{
+      isEZEROExist = true;
+      fChain->SetBranchAddress("ezero", ezero, &b_EZERO);
+      fChain->SetBranchAddress("ezero_t", ezero_t, &b_EZEROTimestamp);
+   }
+   
+   isTraceDataExist = false;
+   br = (TBranch *) fChain->GetListOfBranches()->FindObject("te_t");
    if( br == NULL ){
       printf(" WARNING! cannot find trace data -> proceed without trace. \n");
    }else{
@@ -229,13 +261,8 @@ void Cali_e_trace::Init(TTree *tree)
       fChain->SetBranchAddress("trdt_r", trdt_r, &b_Trace_RDT_RiseTime);
    }
    
-   //======================================   
-   totnumEntry = tree->GetEntries();
-   printf( "=========================================================================== \n");
-   printf( "========================== Cali_e_trace.h ================================= \n");
-   printf( "====== Make a new tree with all calibrations, total Entry : %d \n", totnumEntry);
-   printf( "=========================================================================== \n");
 
+   //=================
    saveFileName = fChain->GetDirectory()->GetName();
    //remove any folder path to get the name;
    int found;
@@ -276,8 +303,8 @@ void Cali_e_trace::Init(TTree *tree)
    
    newTree->Branch("arrayRDT", &arrayRDT, "arrayRDT/I");
    
-   newTree->Branch("elum", elum, "elum[32]/F");
-   newTree->Branch("ezero", ezero, "ezero[10]/F");
+   if( isELUMExist ) newTree->Branch("elum", elum, "elum[32]/F");
+   if( isEZEROExist ) newTree->Branch("ezero", ezero, "ezero[10]/F");
    
    newTree->Branch("coin_t", &coin_t, "coin_t/I");
    

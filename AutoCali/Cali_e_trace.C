@@ -80,10 +80,10 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    b_RDT->GetEntry(entry,0);
    b_EnergyTimestamp->GetEntry(entry,0);
    b_RDTTimestamp->GetEntry(entry,0);
-   b_ELUM->GetEntry(entry,0);
-   b_EZERO->GetEntry(entry,0);
+   if( isELUMExist ) b_ELUM->GetEntry(entry,0);
+   if( isEZEROExist) b_EZERO->GetEntry(entry,0);
    
-   b_TAC->GetEntry(entry,0);
+   if( isTACExist ) b_TAC->GetEntry(entry,0);
    
    if ( isTraceDataExist ){
       b_Trace_Energy->GetEntry(entry,0);

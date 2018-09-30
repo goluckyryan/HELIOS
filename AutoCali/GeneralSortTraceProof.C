@@ -17,7 +17,7 @@ bool isSaveFitTrace = true;
 int traceMethod = 1; //0 = no process; 1 = fit;
 int traceLength = 200;
 
-bool isTACRF = true;
+bool isTACRF = false;
 bool isRecoil = true;
 bool isElum = false;
 bool isEZero = false;
@@ -280,7 +280,7 @@ Bool_t GeneralSortTraceProof::Process(Long64_t entry)
          //Set gTrace
          
          if( traceMethod == 0 ){
-            for ( int j = 0 ; j < 300; j++){
+            for ( int j = 0 ; j < traceLength; j++){
                gTrace->SetPoint(j, j, trace[i][j]);
             }
             continue;
@@ -299,19 +299,28 @@ Bool_t GeneralSortTraceProof::Process(Long64_t entry)
             
             //Set gFit
             gFit->SetLineStyle(idDet);
-            gFit->SetLineColor(idKind == 0 ? 3 : idKind);
+            
+            int lineColor = 1;
+            switch(idKind){
+               case  0: lineColor = 3; break;
+               case  1: lineColor = 1; break;
+               case  2: lineColor = 2; break;
+               case -1: lineColor = 4; break;
+            }
+            
+            gFit->SetLineColor(lineColor);
             gFit->SetRange(0, traceLength);
 
             base = gTrace->Eval(1);
-            double fileNameTemp = gTrace->Eval(80) - base;
+            double fileNameTemp = gTrace->Eval(180) - base;
 
             gFit->SetParameter(0, fileNameTemp); //energy
-            gFit->SetParameter(1, 50); // time
+            gFit->SetParameter(1, 100); // time
             gFit->SetParameter(2, 1); //riseTime
             gFit->SetParameter(3, base);
 
-            if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
-            if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
+            //if( gTrace->Eval(120) < base ) gFit->SetRange(0, 100); //sometimes, the trace will drop    
+            //if( gTrace->Eval(20) < base) gFit->SetParameter(1, 5); //sometimes, the trace drop after 5 ch
 
             if( isSaveFitTrace ) {
                gTrace->Fit("gFit", "qR");
