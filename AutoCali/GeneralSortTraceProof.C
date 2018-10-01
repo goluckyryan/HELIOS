@@ -16,6 +16,7 @@ bool isSaveTrace = true;
 bool isSaveFitTrace = true;
 int traceMethod = 1; //0 = no process; 1 = fit;
 int traceLength = 200;
+float delayChannel = 100.; //initial guess of the time
 
 bool isTACRF = false;
 bool isRecoil = true;
@@ -312,10 +313,10 @@ Bool_t GeneralSortTraceProof::Process(Long64_t entry)
             gFit->SetRange(0, traceLength);
 
             base = gTrace->Eval(1);
-            double fileNameTemp = gTrace->Eval(180) - base;
+            double fileNameTemp = gTrace->Eval(delayChannel*1.5) - base;
 
             gFit->SetParameter(0, fileNameTemp); //energy
-            gFit->SetParameter(1, 100); // time
+            gFit->SetParameter(1, delayChannel); // time
             gFit->SetParameter(2, 1); //riseTime
             gFit->SetParameter(3, base);
 

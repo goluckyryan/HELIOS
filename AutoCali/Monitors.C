@@ -41,6 +41,7 @@ TH2F* hxfxnC[24];
 TH2F* hxfxneC[24];
 TH2F* hecalVxcal[24];
 TH2F* hecalVz;
+TH2F* hecalVzRow[4];
 TH2F* hecalVzR;
 TH2F* hrdt[4];
 TH2F* hrdtg[4];
@@ -202,9 +203,17 @@ void Monitors::Begin(TTree *tree)
       hecalVxcal[i] = new TH2F(Form("hecalVxcal%d",i),
                            Form("Cal PSD E vs. X (ch=%d);X (cm);E (MeV)",i),
                            500,-0.25,5.25,500,0,20);
-   }//array loop
+   }
+   
+   //array loop
    hecalVz = new TH2F("hecalVz","E vs. Z;Z (cm);E (MeV)",700,-55,0,750,0,10);
    hecalVzR = new TH2F("hecalVzR","E vs. Z gated;Z (cm);E (MeV)",700,-55,0,750,0,10);
+   
+   for( int i = 0; i < 4; i++){
+      hecalVzRow[i] = new TH2F(Form("hecalVz%d", i),
+                               Form("E vs. Z (ch=%d-%d); Z (cm); E (MeV)", 6*i, 6*i+5),
+                               500, -55, 0, 500, 0, 7);
+   }
 
    //Recoils
    for (Int_t i=0;i<4;i++) {
@@ -349,14 +358,17 @@ Bool_t Monitors::Process(Long64_t entry)
       hxfxneC[i]->Fill(xncal[i] + xfcal[i], e[i]);
       
       //calculate X
-      if (xf[i]>0 || xn[i]>0 || !TMath::IsNaN(xf[i]) || !TMath::IsNaN(xn[i])) {
-        //x[i] = 0.5*((xf[i]-xn[i]) / (xf[i]+xn[i]))+0.5;
-        x[i] = 0.5*((xf[i]-xn[i]) / e[i])+0.5;
+      if( (xf[i] > 0 || !TMath::IsNaN(xf[i])) && ( xn[i]>0 || !TMath::IsNaN(xn[i])) ) {
+        x[i] = 0.5*((xf[i]-xn[i]) / (xf[i]+xn[i]))+0.5;
+        //x[i] = 0.5*((xf[i]-xn[i]) / e[i])+0.5;
       }
+      
       if (xfcal[i]>0.5*e[i]) {
         xcal[i] = xfcal[i]/e[i];
       }else if (xncal[i]>=0.5*e[i]) {
         xcal[i] = 1.0 - xncal[i]/e[i];
+      }else{
+        xcal[i] = TMath::QuietNaN();
       }
       
       //calculate Z
@@ -372,6 +384,13 @@ Bool_t Monitors::Process(Long64_t entry)
       }
       
     }//array loop
+    
+    for( int i = 0; i < 4; i++){
+      for(int j = 0; j < 6; j++){
+         int k = 6*i+j;
+         if( ((xf[k] > 0 || !TMath::IsNaN(xf[k]))  && ( xn[k]>0 || !TMath::IsNaN(xn[k]))) ) hecalVzRow[i] -> Fill( z[k], ecrr[k]);
+      }
+    }
     
     /* RECOILS */
     for (Int_t ii=0;ii<4;ii++) hrdt[ii]->Fill(rdt[ii+4],rdt[ii]);
