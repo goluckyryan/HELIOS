@@ -146,7 +146,7 @@ Float_t eCorr[24][2] = {
 {265.202952,  -0.048925},
 {255.575575,   0.092847},
 {289.613274,  -0.078108},
-{242.487892,   0.047080}";
+{242.487892,   0.047080}};
    
 Float_t exCorr[6] = { 938.272,  // mass of proton
 	                   1,        // charge of proton
@@ -203,8 +203,8 @@ void Monitors::Begin(TTree *tree)
                            Form("Cal PSD E vs. X (ch=%d);X (cm);E (MeV)",i),
                            500,-0.25,5.25,500,0,20);
    }//array loop
-   hecalVz = new TH2F("hecalVz","E vs. Z;Z (cm);E (MeV)",700,-70,0,750,0,15);
-   hecalVzR = new TH2F("hecalVzR","E vs. Z gated;Z (cm);E (MeV)",700,-70,0,750,0,15);
+   hecalVz = new TH2F("hecalVz","E vs. Z;Z (cm);E (MeV)",700,-55,0,750,0,10);
+   hecalVzR = new TH2F("hecalVzR","E vs. Z gated;Z (cm);E (MeV)",700,-55,0,750,0,10);
 
    //Recoils
    for (Int_t i=0;i<4;i++) {
@@ -257,7 +257,6 @@ void Monitors::Begin(TTree *tree)
    rateGraph->SetTitle("Instantaneous Beam rate [pps]; Delta Time [sec]; Rate [pps]");
 	
    //Get any cuts;
-   //TFile *fi=new TFile("cut.root");		   // open file
    TFile * fCut = new TFile("rdtCuts.root");		   // open file
    isCutFileOpen = fCut->IsOpen(); 
    numCut = 0 ;
@@ -484,7 +483,7 @@ void Monitors::SlaveTerminate()
 void Monitors::Terminate()
 {
    //when recoils are available...
-   /*
+   
    cCanvas  = new TCanvas("cCanvas","Plots",1250,1000);
    cCanvas->Modified(); cCanvas->Update();
    cCanvas->cd(); cCanvas->Divide(1,2);
@@ -503,10 +502,10 @@ void Monitors::Terminate()
    cCanvas->cd(2);gPad->cd(1); hecalVz->Draw("colz");
    cCanvas->cd(2);gPad->cd(2); hecalVzR->Draw("colz box");//hexC->Draw();
    cCanvas->cd();
-   */
+   
    StpWatch.Start(kFALSE);
    
-   gROOT->ProcessLine(".L ~/HELIOS/AutoCali/Utils.C");
+   gROOT->ProcessLine(".L ../ryanAnalysisCodes/AutoCali/Utils.C");
    printf("=============== loaded Utils.C\n");
    gROOT->ProcessLine("listDraws()");
 }
