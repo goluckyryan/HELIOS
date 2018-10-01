@@ -17,6 +17,7 @@ void listDraws(void) {
   printf("     elum() - Luminosity Energy Spectra\n");
   printf("---------------------------------------------------\n");
   printf("   ecalVz() - Energy vs. Z\n");
+  printf("ecalVzRow() - Energy vs. Z for each row\n");
   printf("   excite() - Excitation Energy\n");
   printf("fitExcite() - Auto-Fit the Excitation Energy\n");  
 }
@@ -153,6 +154,19 @@ void ecalVz(void) {
   gStyle->SetOptStat("neiou");
   cecalVz->cd(1);hecalVz->Draw("col");
   cecalVz->cd(2);hecalVzR->Draw("col");
+}
+
+void ecalVzRow() {
+  TCanvas *cecalVzRow = new TCanvas("cevalVzRow","ECALVZ",1200,800);
+  cecalVzRow->Clear(); cecalVzRow->Divide(2,2);
+  gStyle->SetOptStat("neiou");
+  
+  for(int row = 0; row < 4; row ++){
+     cecalVzRow->cd(row+1);
+     cecalVzRow->cd(row+1)->SetGrid();
+     hecalVzRow[row]->Draw("colz");
+  }
+  
 }
 
 void excite(void) {
