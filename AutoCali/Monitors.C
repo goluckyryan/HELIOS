@@ -32,8 +32,13 @@ vector<int> countFromCut;
 TGraph ** graphRateCut; //!
 TMultiGraph * rateGraph; //!
 
+TH1F* he[24];
 TH2F* hxfxn[24];
-TH2F* heVx[24]; 
+TH2F* hxfxne[24];
+TH2F* heVx[24];
+TH1F* heC[24];
+TH2F* hxfxnC[24]; 
+TH2F* hxfxneC[24];
 TH2F* hecalVxcal[24];
 TH2F* hecalVz;
 TH2F* hecalVzR;
@@ -66,50 +71,83 @@ Float_t xcal[24],ecal[24],xfcal[24],xncal[24],ecrr[24],ezero[10];
 Int_t tacA[24];
 Float_t z_array_pos[6] = {35.868,29.987,24.111,18.248,12.412,6.676};//in cm
 Float_t z_off=6.5;//to the physical end of array from the target (-20 to si start)
-Float_t xnCorr[24] = {0.907342,0.907342,0.976727,0.914866,1.021736,
-		      0.887032,0.923250,0.953968,1.020180,0.918340,
-		      0.983084,0.983084,0.997550,0.985319,0.959048,
-		      1.008677,0.959601,1.066846,0.927771,0.985274,
-		      0.921273,0.976498,1.062241,1.079507};
-Float_t xfxneCorr[24][2] = {{29.091896,0.919262},{-0.744352,0.989133},{5.332432,1.046711},
-			    {4.770114,1.073863},{-4.352881,0.901518},{-8.543459,0.995114},
-			    {4.678705,1.015215},{3.955090,0.972769},{5.163730,0.998306},
-			    {3.863314,  0.989275},{2.298429,  0.916884},{-17.435897,  0.897436},
-			    {8.143049,  0.571533},{5.428828,  0.927071},{4.554876,  0.960028},
-			    {4.423083,  0.967342},{1.436683,  1.026855},
-			    {0.747782,  0.912706},
-			    {6.048360, 0.914865},
-			    {2.104460,  0.962689},
-			    {1.011006,  1.034467},
-			    {15.249334,  0.887257},
-			    {14.071915,  1.095258},
-			    {-2.256993,  0.896878}};
-Float_t eCorr[24][2] = {{256.060637	,0.021569},
-			{253.083810	,0.010404},
-			{275.757609	,-0.012115},
-			{266.830570	,0.028129},
-			{247.134021	,0.013641},
-			{244.161153	,0.002046},
-			{263.857355	,0.042191},
-			{250.108256	,-0.001003},
-			{262.017938	,0.018393},
-			{256.060637	,0.021569},
-			{238.219726	,0.005357},
-			{ 1.000000	,0.000000},
-			{0	,0},
-			{248.283604	,-0.026163},
-			{242.321161	,-0.024002},
-			{250.108256	,-0.001003},
-			{262.017938	,-0.006414},
-			{257.914882	,0.020954},
-			{250.108256	,0.024985},
-			{259.038694	,0.007406},
-			{266.830570	,0.028129},
-			{250.108256	,0.024985},
-			{292.477670	,0.015062},
-			{239.341772	-0.009266}};
+Float_t xnCorr[24] = { 
+ 0.927777,
+ 0.997416,
+ 0.983927,
+ 0.921836,
+ 1.031119,
+ 0.932300,
+ 0.924544,
+ 0.964924,
+ 1.031305,
+ 0.948247,
+ 0.993230,
+ 0.993230,
+ 0.982570,
+ 0.996820,
+ 1.025245,
+ 0.968476,
+ 1.032115,
+ 0.916941,
+ 0.968057,
+ 0.934456,
+ 0.903874,
+ 0.969678,
+ 1.029105,
+ 1.088023};
+Float_t xfxneCorr[24][2] = {
+{21.734893,   0.903570},
+{16.983617,   0.926099},
+{11.953286,   1.037609},
+{11.118699,   1.068145},
+{12.792129,   0.886603},
+{10.134575,   0.959260},
+{ 6.012734,   1.014910},
+{ 5.246817,   0.965618},
+{ 4.760088,   0.982979},
+{ 5.140974,   0.975379},
+{ 3.307871,   0.910984},
+{ 0.000000,   1.000000},
+{ 6.678441,   0.787783},
+{11.383868,   0.917190},
+{11.139707,   0.927444},
+{10.806677,   0.981076},
+{ 9.559186,   0.983702},
+{ 8.281657,   0.977478},
+{ 8.727315,   0.898558},
+{ 6.783902,   0.981707},
+{15.131056,   1.042929},
+{14.245593,   0.893980},
+{16.216401,   1.102147},
+{ 2.493960,   0.884956}};
 
-                     
+Float_t eCorr[24][2] = {
+{256.060637,	-0.003816},
+{253.083810,	-0.015280},
+{278.735623,	 0.021721},
+{267.979831,	-0.008818},
+{250.108256,	-0.001003},
+{247.134021,	 0.013641},
+{262.017938,	-0.006414},
+{253.083810,	 0.010404},
+{262.017938,	-0.006414},
+{256.060637,	-0.003816},
+{239.341772,	-0.009266},
+{ 1.000000,	 0.000000   },
+{213.689980,	-0.026390},
+{250.108256,	-0.001003},
+{244.161153,	 0.002046},
+{253.083810,	 0.010404},
+{263.857355,	 0.017556},
+{259.038694,	 0.032498},
+{252.842600,  -0.036309},
+{254.005728,  -0.141253},
+{265.202952,  -0.048925},
+{255.575575,   0.092847},
+{289.613274,  -0.078108},
+{242.487892,   0.047080}";
+   
 Float_t exCorr[6] = { 938.272,  // mass of proton
 	                   1,        // charge of proton
 	                   27954.0982, // cm frame total energy
@@ -133,12 +171,34 @@ void Monitors::Begin(TTree *tree)
    //Generate all of the histograms needed for drawing later on
   
    for (Int_t i=0;i<24;i++) {//array loop
+      he[i] = new TH1F(Form("he%d", i), 
+                       Form("Raw e (ch=%d); e (channel); count", i),
+                       500, -500, 2000);
+      
       hxfxn[i] = new TH2F(Form("hxfxn%d",i),
                            Form("Raw PSD XF vs. XN (ch=%d);XF (channel);XN (channel)",i),
-                           500,0,4000,500,0,4000);
+                           500,0,2000,500,0,2000);
+      
+      hxfxne[i] = new TH2F(Form("hxfxne%d", i), 
+                       Form("Raw e vs xf+xn (ch=%d); xf+xn (channel); e (channel)", i),
+                       500, -500, 2000, 500, -500, 2000);
+      
+      heC[i] = new TH1F(Form("heC%d", i), 
+                       Form("Corrected e (ch=%d); e (MeV); count", i),
+                       500, 1, 7);
+      
+      hxfxnC[i] = new TH2F(Form("hxnC%d",i),
+                           Form("Corrected XF vs. XN (ch=%d);XF (channel);XN (channel)",i),
+                           500,0,2000,500,0,2000);      
+                           
+      hxfxneC[i] = new TH2F(Form("hxfxneC%d", i), 
+                       Form("Raw e vs Corrected xf+xn (ch=%d); corrected xf+xn (channel); Raw e (channel)", i),
+                       500, -500, 2000, 500, -500, 2000);           
+      
       heVx[i] = new TH2F(Form("heVx%d",i),
                            Form("Raw PSD E vs. X (ch=%d);X (channel);E (channel)",i),
                            500,-0.1,1.1,500,0,4000);
+                           
       hecalVxcal[i] = new TH2F(Form("hecalVxcal%d",i),
                            Form("Cal PSD E vs. X (ch=%d);X (cm);E (MeV)",i),
                            500,-0.25,5.25,500,0,20);
@@ -198,7 +258,7 @@ void Monitors::Begin(TTree *tree)
 	
    //Get any cuts;
    //TFile *fi=new TFile("cut.root");		   // open file
-   TFile * fCut = new TFile("cutsFile.root");		   // open file
+   TFile * fCut = new TFile("rdtCuts.root");		   // open file
    isCutFileOpen = fCut->IsOpen(); 
    numCut = 0 ;
    if( isCutFileOpen ){
@@ -247,7 +307,7 @@ void Monitors::SlaveBegin(TTree * /*tree*/)
 ###########################################################*/
 Bool_t Monitors::Process(Long64_t entry)
 {
-  ProcessedEntries++;
+   ProcessedEntries++;
     
       if (ProcessedEntries>NumEntries*Frac-1) {
          printf(" %3.0f%% (%llu/%llu k) processed in %6.1f seconds\n",
@@ -272,28 +332,40 @@ Bool_t Monitors::Process(Long64_t entry)
     //Do calculations and fill histograms
     //Array calcs first
     for (Int_t i = 0; i < 24; i++) {
+      
+      //fill raw data
+      he[i]->Fill(e[i]);
+      hxfxn[i]->Fill(xf[i],xn[i]);
+      hxfxne[i]->Fill(xf[i]+xn[i], e[i]);
+      
       //Calibrations go here
       xfcal[i] = xf[i]*xfxneCorr[i][1]+xfxneCorr[i][0];
       xncal[i] = xn[i]*xnCorr[i]*xfxneCorr[i][1]+xfxneCorr[i][0];
       ecal[i] = e[i]/eCorr[i][0]+eCorr[i][1];
       ecrr[i] = e[i]/eCorr[i][0]+eCorr[i][1];
       
-      if (xf[i]>0 || xn[i]>0 || !TMath::IsNaN(xf[i]) || !TMath::IsNaN(xn[i])) {
-        x[i] = 0.5*((xf[i]-xn[i]) / (xf[i]+xn[i]))+0.5;
-      }
+      //fill corrected data
+      heC[i]->Fill(ecrr[i]);
+      hxfxnC[i]->Fill(xfcal[i], xncal[i]);
+      hxfxneC[i]->Fill(xncal[i] + xfcal[i], e[i]);
       
+      //calculate X
+      if (xf[i]>0 || xn[i]>0 || !TMath::IsNaN(xf[i]) || !TMath::IsNaN(xn[i])) {
+        //x[i] = 0.5*((xf[i]-xn[i]) / (xf[i]+xn[i]))+0.5;
+        x[i] = 0.5*((xf[i]-xn[i]) / e[i])+0.5;
+      }
       if (xfcal[i]>0.5*e[i]) {
         xcal[i] = xfcal[i]/e[i];
       }else if (xncal[i]>=0.5*e[i]) {
         xcal[i] = 1.0 - xncal[i]/e[i];
       }
       
+      //calculate Z
       //z[i] = 5.0*(xcal[i]-0.5) + z_off + z_array_pos[i%6];//for downstream?
       z[i] = 5.0*(xcal[i]-0.5) - z_off - z_array_pos[i%6];
       
       //Array fill next
-      hxfxn[i]->Fill(xf[i],xn[i]);
-      if (x[i]>-1.1&&x[i]<1.1&&e[i]>100&&(xn[i]>0||xf[i]>0)) {
+      if( -1.1 < x[i] && x[i] < 1.1 && e[i]>100 && (xn[i]>0||xf[i]>0)) {
         heVx[i]->Fill(x[i],e[i]);
         hecalVxcal[i]->Fill(xcal[i]*5.0,ecrr[i]);
         hecalVz->Fill(z[i],ecrr[i]);
@@ -412,10 +484,14 @@ void Monitors::SlaveTerminate()
 void Monitors::Terminate()
 {
    //when recoils are available...
+   /*
    cCanvas  = new TCanvas("cCanvas","Plots",1250,1000);
    cCanvas->Modified(); cCanvas->Update();
    cCanvas->cd(); cCanvas->Divide(1,2);
    cCanvas->cd(1); gPad->Divide(4,1);
+   
+   gStyle->SetOptStat("neiou");
+   
    for (Int_t i=0;i<4;i++) {
       cCanvas->cd(1);gPad->cd(i+1); hrdtg[i]->Draw("box colz");
       if( isCutFileOpen ) {
@@ -427,6 +503,10 @@ void Monitors::Terminate()
    cCanvas->cd(2);gPad->cd(1); hecalVz->Draw("colz");
    cCanvas->cd(2);gPad->cd(2); hecalVzR->Draw("colz box");//hexC->Draw();
    cCanvas->cd();
- 
+   */
    StpWatch.Start(kFALSE);
+   
+   gROOT->ProcessLine(".L ~/HELIOS/AutoCali/Utils.C");
+   printf("=============== loaded Utils.C\n");
+   gROOT->ProcessLine("listDraws()");
 }
