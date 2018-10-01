@@ -51,9 +51,9 @@ void GetCoinTimeCorrectionCutG(TString fileName, int detID){
    
    TString name, expression, gate;
 
-   TH2F * hTX   = new TH2F("hTX",   "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
-   TH2F * hTXg  = new TH2F("hTXg",  "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
-   TH2F * hTXc2 = new TH2F("hTXc2", "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -10, 40);
+   TH2F * hTX   = new TH2F("hTX",   "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -30, 40);
+   TH2F * hTXg  = new TH2F("hTXg",  "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -30, 40);
+   TH2F * hTXc2 = new TH2F("hTXc2", "time vs X; x; coinTime [ch]", 300, -1.5, 1.5, 300, -30, 40);
    TH1F * hT = new TH1F("hT", "", 100, -5, 10);
    TProfile * hp = new TProfile("hp", "time Profile", 400, -1.5,1.5);
    TSpectrum * spec = new TSpectrum(5);
