@@ -50,41 +50,12 @@ void AutoCalibrationTrace(){
    
    //======== alpha data
    TChain * chainAlpha = new TChain("gen_tree");
-   //chainAlpha->Add("data/gen_run11.root");
-   //chainAlpha->Add("data/gen_run19.root"); //22Ne
    chainAlpha->Add("data/gen_run122.root"); //28Mg
    
    //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
    chain->Add("data/gen_run122.root");
-   
-   //chain->Add("data/gen_run5[6-9].root");
-   //chain->Add("data/gen_run6[0-9].root");
-   //chain->Add("data/gen_run7[0-9].root");
-   //chain->Add("data/gen_run8[0-9].root");
-   //chain->Add("data/gen_run9[0-9].root");
-   //chain->Add("data/gen_run100.root");
 
-/*=============== 208Pb   
-   chain->Add("../H060/data/gen_run11.root");  //01
-   chain->Add("../H060/data/gen_run12.root");  //02
-   chain->Add("../H060/data/gen_run13.root");  //03
-   chain->Add("../H060/data/gen_run15.root");  //04
-   chain->Add("../H060/data/gen_run16.root");  //05
-   chain->Add("../H060/data/gen_run17.root");  //06
-   chain->Add("../H060/data/gen_run18.root");  //07
-   chain->Add("../H060/data/gen_run19.root");  //08
-   chain->Add("../H060/data/gen_run20.root");  //09
-   chain->Add("../H060/data/gen_run21.root");  //10
-   chain->Add("../H060/data/gen_run22.root");  //11
-   chain->Add("../H060/data/gen_run23.root");  //12
-   chain->Add("../H060/data/gen_run24.root");  //13
-   chain->Add("../H060/data/gen_run25.root");  //14
-   chain->Add("../H060/data/gen_run27.root");  //15
-   chain->Add("../H060/data/gen_run28.root");  //16
-   chain->Add("../H060/data/gen_run29.root");  //17
-   chain->Add("../H060/data/gen_run30.root");  //18
-*/
 
 /**///=========================================== Calibration
    if( option > 5 || option < 0 ) return;
