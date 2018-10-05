@@ -174,7 +174,7 @@ void Monitors::Begin(TTree *tree)
    for (Int_t i=0;i<24;i++) {//array loop
       he[i] = new TH1F(Form("he%d", i), 
                        Form("Raw e (ch=%d); e (channel); count", i),
-                       500, -500, 2000);
+                       500, -500, 3500);
       
       hxfxn[i] = new TH2F(Form("hxfxn%d",i),
                            Form("Raw PSD XF vs. XN (ch=%d);XF (channel);XN (channel)",i),
@@ -502,7 +502,7 @@ void Monitors::SlaveTerminate()
 void Monitors::Terminate()
 {
    //when recoils are available...
-   
+   /*
    cCanvas  = new TCanvas("cCanvas","Plots",1250,1000);
    cCanvas->Modified(); cCanvas->Update();
    cCanvas->cd(); cCanvas->Divide(1,2);
@@ -521,10 +521,10 @@ void Monitors::Terminate()
    cCanvas->cd(2);gPad->cd(1); hecalVz->Draw("colz");
    cCanvas->cd(2);gPad->cd(2); hecalVzR->Draw("colz box");//hexC->Draw();
    cCanvas->cd();
-   
+   */
    StpWatch.Start(kFALSE);
    
-   gROOT->ProcessLine(".L ../ryanAnalysisCodes/AutoCali/Utils.C");
+   gROOT->ProcessLine(".L ~/experiments/iss000/analysis/ryanAnaCodes/AutoCali/Utils.C");
    printf("=============== loaded Utils.C\n");
    gROOT->ProcessLine("listDraws()");
 }

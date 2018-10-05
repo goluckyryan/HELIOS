@@ -11,7 +11,7 @@
 void script(){
 
    
-   TFile * file0 = new TFile("A_gen_run60_87.root");
+   TFile * file0 = new TFile("A_gen_run110.root");
    TFile * file1 = new TFile("transfer.root");
    
    TFile * fileCut = new TFile("rdtCuts.root");
@@ -57,9 +57,6 @@ void script(){
    
    //========================== Plot
    
-   
-   
-   /*
    cScript->cd(1);
    tree0->Draw("rdt[0]:rdt[4]>>rdt1(300, 0, 8000, 300, 0, 4000)", "", "colz");
    cut[0]->Draw("same");
@@ -81,11 +78,11 @@ void script(){
    //tree0->Draw("e:z >> k1(400, -500,  0, 400, 0, 10)", gate_RDT + "&& detID < 6", "colz");
    //tree1->Draw("e:z>> k1", "hit==1 && ExID <= 2 && loop == 1", "colz");
    
-   //tree0->Draw("e:z >> h1(400, -550, -100, 400, 0, 10)", "detID!= 12", "colz");
+   tree0->Draw("e:z >> h1(400, -550, -100, 400, 0, 10)", "", "colz");
    //gList->At(10)->Draw("same");
    //gList->At(15)->Draw("same");
    //gList->At(20)->Draw("same");
-   tree0->Draw("rdtID:detID>>w(24, 0, 24, 8, 0, 8)", gate_RDT + "&& detID > -1 && rdtID >= 0", "colz");
+   //tree0->Draw("rdtID:detID>>w(24, 0, 24, 8, 0, 8)", gate_RDT + "&& detID > -1 && rdtID >= 0", "colz");
    
    
    cScript->cd(6);

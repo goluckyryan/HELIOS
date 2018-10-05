@@ -13,9 +13,7 @@ void RDTCutCreator(){
 	printf("================ Graphic Cut Creator for RDT ============== \n");
    
    TChain * chain = new TChain("gen_tree");
-   chain->Add("data/gen_run60_69.root");
-   chain->Add("data/gen_run70_74.root");
-   chain->Add("data/gen_run75_87.root");
+   chain->Add("data/gen_run100.root");
    
    TString saveFileName = "rdtCuts.root";
    

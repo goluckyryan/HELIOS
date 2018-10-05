@@ -54,14 +54,14 @@ void AutoCalibrationTrace(){
    
    //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
-   chain->Add("data/gen_run122.root");
+   //chain->Add("data/trace_run119.root");
    
-   //chain->Add("data/gen_run5[6-9].root");
-   //chain->Add("data/gen_run6[0-9].root");
-   //chain->Add("data/gen_run7[0-9].root");
-   //chain->Add("data/gen_run8[0-9].root");
-   //chain->Add("data/gen_run9[0-9].root");
-   //chain->Add("data/gen_run100.root");
+   chain->Add("data/gen_run5[6-9].root");
+   chain->Add("data/gen_run6[0-9].root");
+   chain->Add("data/gen_run7[0-9].root");
+   chain->Add("data/gen_run8[0-9].root");
+   chain->Add("data/gen_run9[0-9].root");
+   chain->Add("data/gen_run100.root");
 
 /**///=========================================== Calibration
    if( option > 5 || option < 0 ) return;

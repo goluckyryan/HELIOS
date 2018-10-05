@@ -21,7 +21,7 @@ void transfer(){
    //---- reaction
    int AA = 28, zA = 12;
    int Aa = 2,  za = 1;
-   int Ab = 2,  zb = 1;
+   int Ab = 1,  zb = 1;
    
    //---- beam
    double KEAmean = 9.473; // MeV/u 

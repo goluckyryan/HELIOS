@@ -23,13 +23,12 @@ Double_t fpeaks(Double_t *x, Double_t *par) {
 
 void script_Ex(){
    
-   double ExRange[3] = {140, -1, 6};
+   double ExRange[3] = {350, -1, 6};
 	double eRange[3]  = {400, 0, 10};
 	double thetaCMRange[3]  = {40, 0, 40};
 
    
-   //TFile * file0 = new TFile("A_gen_run70.root");
-   TFile * file0 = new TFile("A_sortedTrace.root");
+   TFile * file0 = new TFile("A_gen_run56_100.root");
    TFile * file1 = new TFile("transfer.root");
    
    TFile * fileCut = new TFile("rdtCuts.root");
@@ -62,7 +61,7 @@ void script_Ex(){
    
    //TString gate_RDT = "cut3 && -20 < coin_t && coin_t < 40 && rdtMultiHit == 2 && arrayRDT == 0 && multiHit == 1 ";
    
-   TString detGate = "&& detID != 11 ";
+   TString detGate = "&& detID != 11";
    
    
    //============== Plot
