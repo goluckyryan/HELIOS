@@ -7,6 +7,7 @@
 #include "TF1.h"
 #include "TTree.h"
 #include "TRandom.h"
+#include <stdlib.h>
 #include <vector>
 #include <fstream>
 #include <TObjArray.h>
@@ -19,12 +20,12 @@ void transfer(){
 
    //================================================= User Setting
    //---- reaction
-   int AA = 28, zA = 12;
+   int AA = 206, zA = 80;
    int Aa = 2,  za = 1;
    int Ab = 1,  zb = 1;
    
    //---- beam
-   double KEAmean = 9.473; // MeV/u 
+   double KEAmean = 7.0; // MeV/u 
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
@@ -46,7 +47,7 @@ void transfer(){
    //ExAList[1] = 1.567;
     
    //---- excitation of recoil
-   string excitationFile = "";//"excitation_energies.txt"; //when no file, only ground state
+   string excitationFile = "excitation_energies.txt"; //when no file, only ground state
    
    //---- save root file name
    TString saveFileName = "transfer.root";
@@ -61,8 +62,38 @@ void transfer(){
    string stoppingPowerForB = "26Mg_in_CD2.txt";
    
    //---- Auxiliary setting
-   bool isDecay = false;
+   bool isDecay = true;
    bool isReDo = false; // redo calculation until detected. 
+   
+   //---- if basicConfig.txt exist, overide the reaction
+   string basicConfig="basicReactionConfig.txt";
+   ifstream cFile;
+   cFile.open(basicConfig.c_str());
+   bool isOverided = false;
+   if( cFile.is_open() ){
+      string line;
+      int i = 0;
+      while( cFile >> line){
+         //printf("%d, %s \n", i,  line.c_str());
+         if( line.substr(0,2) == "//" ) continue;
+         if( i == 0 ) AA = atoi(line.c_str());
+         if( i == 1 ) zA = atoi(line.c_str());
+         if( i == 2 ) Aa = atoi(line.c_str());
+         if( i == 3 ) za = atoi(line.c_str());
+         if( i == 4 ) Ab = atoi(line.c_str());
+         if( i == 5 ) zb = atoi(line.c_str());
+         if( i == 6 ) BField = atof(line.c_str());
+         if( i == 7 ) KEAmean = atof(line.c_str());
+         if( i == 8 ) numEvent = atoi(line.c_str());
+         if( i == 9 ) {
+            if( line.compare("false") == 0 ) isDecay = false;
+            if( line.compare("true") == 0 ) isDecay = true;
+         }
+         i = i + 1;
+      }
+      cFile.close();
+      isOverided = true;
+   }
    
    //=============================================================
    //=============================================================
@@ -78,7 +109,9 @@ void transfer(){
    reaction.CalReactionConstant();
    
    printf("===================================================\n");
-   printf("=========== %s ===========\n", reaction.GetReactionName().Data());
+   printf("=========== %27s ===========\n", reaction.GetReactionName().Data());
+   printf("===================================================\n");
+   if( isOverided )printf("----- overiding reaction from %s. \n", basicConfig.c_str());
    printf("       KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f %% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
    printf("    theta: %7.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
    printf(" Q-value : %7.4f MeV \n", reaction.GetQValue() );
@@ -143,7 +176,7 @@ void transfer(){
    
    //======= Decay of particle-B
    Decay decay;
-   decay.SetMotherDaugther(AB, zB, AB-1,zB); //neutron decay
+   if(isDecay) decay.SetMotherDaugther(AB, zB, AB-1,zB); //neutron decay
    
    //======= loading excitation energy
    printf("############################################## excitation energies\n");
@@ -268,7 +301,7 @@ void transfer(){
    tree->Branch("reactionP", &reactionP, "reactionP/D");
    
    //======= function for e-z plot for ideal case
-   printf("##################  generate functions and save to *root");
+   printf("++++ generate functions and save to %s", saveFileName.Data());
    TObjArray * gList = new TObjArray();
    TF1* g0 = new TF1("g0", "TMath::Sqrt([0] + [1] * x*x) - [2]", -1000, 1000);
    g0->SetParameter(0, mb*mb);
