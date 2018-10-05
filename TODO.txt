@@ -1,0 +1,1 @@
+1) make to code, so that it does not require edition, say, in transfer.C, use transferSetup.txt?
