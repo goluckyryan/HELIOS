@@ -10,10 +10,10 @@
 #include <TF1.h>
 #include <TLine.h>
 
-void readTrace(){
+void readTrace(TString fileName){
    
 /**///==============================================================   
-   TFile * f1 = new TFile ("sortedTrace.root", "read");
+   TFile * f1 = new TFile (fileName, "read");
    TTree * tree = (TTree *) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();

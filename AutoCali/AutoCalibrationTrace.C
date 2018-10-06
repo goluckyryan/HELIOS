@@ -26,9 +26,7 @@
 //         //TODO detect branch te_t and trdt_t exist or not, if exist, calibrate with coinTime
 //==========================================
 
-double eThreshold = 300;
-
-void AutoCalibrationTrace(){
+void AutoCalibrationTrace(double eThreshold = 300){
    
    int option;
    printf(" ========= Auto Calibration w/ Trace ============== \n");
@@ -50,13 +48,35 @@ void AutoCalibrationTrace(){
    
    //======== alpha data
    TChain * chainAlpha = new TChain("gen_tree");
-   chainAlpha->Add("data/gen_run122.root"); //28Mg
    
    //======== experimental sorted data
    TChain * chain = new TChain("gen_tree");
-   chain->Add("data/gen_run122.root");
-
-
+   
+   string dataList="dataList.txt";
+   ifstream file;
+   file.open(dataList.c_str());
+   if( file.is_open() ){
+      string line;
+      while( file >> line){
+         //printf("%s \n", line.c_str());
+         if( line.substr(0,2) == "//" ) continue;
+         if( line.substr(0,1) == "-" ) {
+            chainAlpha->Add(line.substr(1).c_str());
+         }
+         
+         if( line.substr(0,1) == "+" ){
+            chain->Add(line.substr(1).c_str());
+         }
+      }
+      file.close();
+   }
+   
+   printf("====================== alpha data. \n");
+   chainAlpha->GetListOfFiles()->Print();
+   printf("====================== data. \n");
+   chain->GetListOfFiles()->Print();
+   
+   
 /**///=========================================== Calibration
    if( option > 5 || option < 0 ) return;
    
