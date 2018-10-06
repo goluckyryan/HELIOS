@@ -8,21 +8,19 @@
 #include <TString.h>
 #include <TObjArray.h>
 
-void RDTCutCreator(){
+void RDTCutCreator(TString dataList, TString saveFileName = "rdtCuts.root"){
 	
 	printf("================ Graphic Cut Creator for RDT ============== \n");
    
    TChain * chain = new TChain("gen_tree");
-   chain->Add("data/gen_run60_69.root");
-   chain->Add("data/gen_run70_74.root");
-   chain->Add("data/gen_run75_87.root");
-   
-   TString saveFileName = "rdtCuts.root";
+   chain->Add(dataList);
+   //chain->Add("data/gen_run70_74.root");
+   //chain->Add("data/gen_run75_87.root");
    
    chain->GetListOfFiles()->Print();
    
 	TString varX, varY, tag;
-		
+   
 	gStyle->SetOptStat(00000);
 	
 	TCanvas * cCutCreator = new TCanvas("cCutCreator", "RDT Cut Creator", 100, 100, 800, 800);

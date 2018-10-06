@@ -174,7 +174,7 @@ void Monitors::Begin(TTree *tree)
    for (Int_t i=0;i<24;i++) {//array loop
       he[i] = new TH1F(Form("he%d", i), 
                        Form("Raw e (ch=%d); e (channel); count", i),
-                       500, -500, 2000);
+                       500, -500, 3500);
       
       hxfxn[i] = new TH2F(Form("hxfxn%d",i),
                            Form("Raw PSD XF vs. XN (ch=%d);XF (channel);XN (channel)",i),
@@ -266,7 +266,6 @@ void Monitors::Begin(TTree *tree)
    rateGraph->SetTitle("Instantaneous Beam rate [pps]; Delta Time [sec]; Rate [pps]");
 	
    //Get any cuts;
-   //TFile *fi=new TFile("cut.root");		   // open file
    TFile * fCut = new TFile("rdtCuts.root");		   // open file
    isCutFileOpen = fCut->IsOpen(); 
    numCut = 0 ;
@@ -525,7 +524,7 @@ void Monitors::Terminate()
    */
    StpWatch.Start(kFALSE);
    
-   gROOT->ProcessLine(".L ~/HELIOS/AutoCali/Utils.C");
+   gROOT->ProcessLine(".L ~/experiments/iss000/analysis/ryanAnaCodes/AutoCali/Utils.C");
    printf("=============== loaded Utils.C\n");
    gROOT->ProcessLine("listDraws()");
 }

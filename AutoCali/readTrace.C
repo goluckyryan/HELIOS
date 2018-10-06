@@ -10,10 +10,11 @@
 #include <TF1.h>
 #include <TLine.h>
 
-void readTrace(){
+void readTrace(TString fileName){
    
 /**///==============================================================   
-   TFile * f1 = new TFile ("sortedTrace.root", "read");
+
+   TFile * f1 = new TFile (fileName, "read");
    TTree * tree = (TTree *) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();
@@ -92,6 +93,7 @@ void readTrace(){
             int det  = gFit->GetLineStyle();
             
             //if( det < 100 ) continue;
+            if( det != 18 && det != 19 && det !=12 ) continue;
             
             TString gTitle;
             gTitle.Form("(%d,%d), base: %5.1f, rise: %5.3f, time: %5.2f, energy: %6.1f | chi2: %6.2f, %6.2f",
