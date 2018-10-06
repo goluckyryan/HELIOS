@@ -76,7 +76,6 @@ void AutoCalibrationTrace(double eThreshold = 300){
    printf("====================== data. \n");
    chain->GetListOfFiles()->Print();
    
-   
 /**///=========================================== Calibration
    if( option > 5 || option < 0 ) return;
    

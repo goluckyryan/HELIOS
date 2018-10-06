@@ -106,7 +106,7 @@
                totalEvent, size/1024/1024, dTime, dTime/60., dTime/60./60.);
       
       
-      if( i == 1 ) {
+      if( i == 0 ) {
          fprintf(paraOut, "%50s, %10s, %8s, %11s, %11s, %11s\n", "file",  "#event", "size[MB]", "duration[s]", "[min]", "[hour]");   
       
       }   
