@@ -16,7 +16,8 @@
    ULong64_t firstTime, lastTime;
    
    TString cmd;
-   cmd.Form(".!ls -1tr %s > runList.txt", folderPath.Data());
+   //cmd.Form(".!ls -1tr %s > runList.txt", folderPath.Data()); // according to time
+   cmd.Form(".!ls -1 %s | sort > runList.txt", folderPath.Data()); // according to name
    gROOT->ProcessLine(cmd);
    
    ifstream file;

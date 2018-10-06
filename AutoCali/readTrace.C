@@ -10,11 +10,12 @@
 #include <TF1.h>
 #include <TLine.h>
 
-void readTrace(){
+void readTrace(TString fileName){
    
 /**///==============================================================   
-   TFile * f1 = new TFile ("data/trace_run119.root", "read");
-   TTree * tree = (TTree *) f1->Get("gen_tree");
+
+   TFile * f1 = new TFile (fileName, "read");
+   TTree * tree = (TTree *) f1->Get("tree");
    
    int totnumEntry = tree->GetEntries();
    printf( "========== total Entry : %d \n", totnumEntry);
