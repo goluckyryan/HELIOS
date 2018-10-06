@@ -1,7 +1,0 @@
-//--- User input file for DigiOS ---//
-MAXEVENTS; 100000000		            //--- [long] - Total number of events to run
-LED; 15 100.0  				    //--- [int] [float] LED K and Threshold parameters
-CFD; 30 0.3 0				    //--- [int] [float] [int] CFD Delay, Fraction, CFDCross
-ENERGY; 50 50 50 50			    //--- [int] [int] [int] Energy parameters D1 D2 M1 M2
-EVENT; 50     				    //--- [int] Overlap time for coincidence event
-CHANNELMAP; -1 -1 0 3 1 2 -1 -1 -1 -1       //--- [int]s 10 Digi Channels to map to detector channels
