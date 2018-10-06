@@ -72,8 +72,9 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
    
    //#################################################################### get event
    eventID += 1;
-   if( entry == 1 ) run += 1; //TODO need to modified the GeneralSort.C for run_number
+   //if( entry == 1 ) run += 1; //TODO need to modified the GeneralSort.C for run_number
    
+   b_runID->GetEntry(entry,0);  run = runID;
    b_Energy->GetEntry(entry,0);
    b_XF->GetEntry(entry,0);
    b_XN->GetEntry(entry,0);

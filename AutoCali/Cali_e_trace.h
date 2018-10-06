@@ -28,6 +28,7 @@ public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
 
    // Declaration of leaf types
+   Int_t           runID;
    Float_t         e[100];
    ULong64_t       e_t[100];
    Float_t         xf[100];
@@ -52,6 +53,7 @@ public :
    Float_t         trdt_r[8];
 
    // List of branches
+   TBranch        *b_runID; //!
    TBranch        *b_Energy;   //!
    TBranch        *b_EnergyTimestamp;   //!
    TBranch        *b_XF;   //!
@@ -205,6 +207,7 @@ void Cali_e_trace::Init(TTree *tree)
    //printf("========== number of tree loaded : %d \n", fChain->GetNTree());
    fChain->SetMakeClass(1);
 
+   fChain->SetBranchAddress("runID", &runID, &b_runID);
    fChain->SetBranchAddress("e", e, &b_Energy);
    fChain->SetBranchAddress("xf", xf, &b_XF);
    fChain->SetBranchAddress("xn", xn, &b_XN);
