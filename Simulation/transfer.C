@@ -281,8 +281,10 @@ void transfer(){
    tree->Branch("ExAID", &ExAID, "ExAID/I");
    tree->Branch("ExA", &ExA, "ExA/D");
    
-   double Qvalue;
-   tree->Branch("Qvalue", &Qvalue, "Qvalue/D");
+   double mA, mB;
+   tree->Branch("mA", &mA, "mA/D");
+   tree->Branch("mB", &mB, "mB/D");
+   tree->Branch("mb", &mb, "mb/D");
 
    tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
    tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
@@ -502,7 +504,10 @@ void transfer(){
          phiB = PB.Phi() * TMath::RadToDeg();
          
          //reactionP = reaction.GetMomentumbCM();
-         Qvalue = reaction.GetQValue();
+         //Qvalue = reaction.GetQValue();
+         mA = reaction.GetMass_A();
+         mB = reaction.GetMass_B();
+         mb = reaction.GetMass_b();
          
          //==== Helios
          hit = helios.CalHit(Pb, zb, PB, zB);
