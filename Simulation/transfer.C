@@ -270,14 +270,19 @@ void transfer(){
    tree->Branch("loop", &loop, "loop/I");
    tree->Branch("dphi", &dphi, "dphi/D");
    tree->Branch("rho", &rho, "rho/D");
+   
    tree->Branch("ExID", &ExID, "ExID/I");
    tree->Branch("Ex", &Ex, "Ex/D");
+   
    tree->Branch("theta", &theta, "theta/D");
    tree->Branch("phi", &phi, "phi/D");
    tree->Branch("KEA", &KEA, "KEA/D");
    tree->Branch("KEAnew", &KEAnew, "KEAnew/D");
    tree->Branch("ExAID", &ExAID, "ExAID/I");
    tree->Branch("ExA", &ExA, "ExA/D");
+   
+   double Qvalue;
+   tree->Branch("Qvalue", &Qvalue, "Qvalue/D");
 
    tree->Branch("rhoHit", &rhoHit, "rhoHit/D");
    tree->Branch("rhoBHit", &rhoBHit, "rhoBHit/D");
@@ -289,16 +294,16 @@ void transfer(){
    double rxHit, ryHit;
    tree->Branch("rxHit", &rxHit, "rxHit/D");
    tree->Branch("ryHit", &ryHit, "ryHit/D");
-   double rxHit1, ryHit1;
-   tree->Branch("rxHit1", &rxHit1, "rxHit1/D");
-   tree->Branch("ryHit1", &ryHit1, "ryHit1/D");
+   //double rxHit1, ryHit1;
+   //tree->Branch("rxHit1", &rxHit1, "rxHit1/D");
+   //tree->Branch("ryHit1", &ryHit1, "ryHit1/D");
 
-   double rxHit2, ryHit2;
-   tree->Branch("rxHit2", &rxHit2, "rxHit2/D");
-   tree->Branch("ryHit2", &ryHit2, "ryHit2/D");
+   //double rxHit2, ryHit2;
+   //tree->Branch("rxHit2", &rxHit2, "rxHit2/D");
+   //tree->Branch("ryHit2", &ryHit2, "ryHit2/D");
    
-   double reactionP;
-   tree->Branch("reactionP", &reactionP, "reactionP/D");
+   //double reactionP;
+   //tree->Branch("reactionP", &reactionP, "reactionP/D");
    
    //======= function for e-z plot for ideal case
    printf("++++ generate functions and save to %s", saveFileName.Data());
@@ -496,7 +501,8 @@ void transfer(){
          phib = Pb.Phi() * TMath::RadToDeg();
          phiB = PB.Phi() * TMath::RadToDeg();
          
-         reactionP = reaction.GetMomentumbCM();
+         //reactionP = reaction.GetMomentumbCM();
+         Qvalue = reaction.GetQValue();
          
          //==== Helios
          hit = helios.CalHit(Pb, zb, PB, zB);
@@ -522,10 +528,10 @@ void transfer(){
          recoilT = helios.GetRecoilTime();
          rxHit = helios.GetRecoilXHit();
          ryHit = helios.GetRecoilYHit();
-         rxHit1 = helios.GetRecoilXPos(1463.7+100);
-         ryHit1 = helios.GetRecoilYPos(1463.7+100);
-         rxHit2 = helios.GetRecoilXPos(1463.7+200);
-         ryHit2 = helios.GetRecoilYPos(1463.7+200);
+         //rxHit1 = helios.GetRecoilXPos(1463.7+100);
+         //ryHit1 = helios.GetRecoilYPos(1463.7+100);
+         //rxHit2 = helios.GetRecoilXPos(1463.7+200);
+         //ryHit2 = helios.GetRecoilYPos(1463.7+200);
          
          
          //change thetaCM into deg
