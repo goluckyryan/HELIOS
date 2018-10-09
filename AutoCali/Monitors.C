@@ -35,6 +35,7 @@ TMultiGraph * rateGraph; //!
 
 const int numDet = 24;
 
+TH1F* hStat[numDet];
 TH1F* he[numDet];
 TH2F* hxfxn[numDet];
 TH2F* hxfxne[numDet];
@@ -98,6 +99,11 @@ void Monitors::Begin(TTree *tree)
    //Generate all of the histograms needed for drawing later on
   
    for (Int_t i=0;i<numDet;i++) {//array loop
+      
+      hStat[i] = new TH1F(Form("hStat%d", i),
+                          Form("Hit Statistics (ch=%d)", i),
+                          6, 0, 6); // 0 = no hit, 1 = e, 2 = xf, 3 = xn, 4 = xf + xn, 5 = xf +xn + e
+      
       he[i] = new TH1F(Form("he%d", i), 
                        Form("Raw e (ch=%d); e (channel); count", i),
                        500, -500, 3500);
@@ -375,6 +381,13 @@ Bool_t Monitors::Process(Long64_t entry)
       he[i]->Fill(e[i]);
       hxfxn[i]->Fill(xf[i],xn[i]);
       hxfxne[i]->Fill(xf[i]+xn[i], e[i]);
+      
+      if( !TMath::IsNaN(e[i])  && !TMath::IsNaN(xf[i]) && !TMath::IsNaN(xn[i]) hStat->Fill(5);
+      if( !TMath::IsNaN(xf[i]) && !TMath::IsNaN(xn[i]) hStat->Fill(4);
+      if( !TMath::IsNaN(xn[i]) ) hStat->Fill(3);
+      if( !TMath::IsNaN(xf[i]) ) hStat->Fill(2);
+      if( !TMath::IsNaN(e[i]) ) hStat->Fill(1);
+      if( TMath::IsNaN(e[i])  && TMath::IsNaN(xf[i]) && TMath::IsNaN(xn[i]) hStat->Fill(0);
       
       //Calibrations go here
       xfcal[i] = xf[i]*xfxneCorr[i][1]+xfxneCorr[i][0];
