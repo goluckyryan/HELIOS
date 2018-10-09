@@ -102,7 +102,7 @@ void Monitors::Begin(TTree *tree)
       
       hStat[i] = new TH1F(Form("hStat%d", i),
                           Form("Hit Statistics (ch=%d)", i),
-                          6, 0, 6); // 0 = no hit, 1 = e, 2 = xf, 3 = xn, 4 = xf + xn, 5 = xf +xn + e
+                          5, 1, 6); // 0 = no hit, 1 = e, 2 = xf, 3 = xn, 4 = xf + xn, 5 = xf +xn + e
       
       he[i] = new TH1F(Form("he%d", i), 
                        Form("Raw e (ch=%d); e (channel); count", i),
