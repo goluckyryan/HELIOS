@@ -382,12 +382,12 @@ Bool_t Monitors::Process(Long64_t entry)
       hxfxn[i]->Fill(xf[i],xn[i]);
       hxfxne[i]->Fill(xf[i]+xn[i], e[i]);
       
-      if( !TMath::IsNaN(e[i])  && !TMath::IsNaN(xf[i]) && !TMath::IsNaN(xn[i]) hStat->Fill(5);
-      if( !TMath::IsNaN(xf[i]) && !TMath::IsNaN(xn[i]) hStat->Fill(4);
+      if( !TMath::IsNaN(e[i])  && !TMath::IsNaN(xf[i]) && !TMath::IsNaN(xn[i]) ) hStat->Fill(5);
+      if( !TMath::IsNaN(xf[i]) && !TMath::IsNaN(xn[i]) ) hStat->Fill(4);
       if( !TMath::IsNaN(xn[i]) ) hStat->Fill(3);
       if( !TMath::IsNaN(xf[i]) ) hStat->Fill(2);
       if( !TMath::IsNaN(e[i]) ) hStat->Fill(1);
-      if( TMath::IsNaN(e[i])  && TMath::IsNaN(xf[i]) && TMath::IsNaN(xn[i]) hStat->Fill(0);
+      if( TMath::IsNaN(e[i])  && TMath::IsNaN(xf[i]) && TMath::IsNaN(xn[i]) ) hStat->Fill(0);
       
       //Calibrations go here
       xfcal[i] = xf[i]*xfxneCorr[i][1]+xfxneCorr[i][0];
