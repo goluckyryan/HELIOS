@@ -1,6 +1,7 @@
 void listDraws(void) {
   printf("----------------- List of Plots -------------------\n");
   printf("---------------------------------------------------\n");
+  printf("  HitStat() - Hit statistics for all 24 detectors\n");
   printf("     eRaw() - Raw E for all 24 detectors\n");
   printf("     xfxn() - Raw XF vs. XN for all 24 detectors\n");
   printf("    xfxne() - Raw E vs. XF+XN for all 24 detectors\n");
@@ -20,6 +21,16 @@ void listDraws(void) {
   printf("ecalVzRow() - Energy vs. Z for each row\n");
   printf("   excite() - Excitation Energy\n");
   printf("fitExcite() - Auto-Fit the Excitation Energy\n");  
+}
+
+void HitStat(void) {
+  TCanvas *cStat = new TCanvas("cStat","Hit Statistics",1200,800);
+  cStat->Clear();cStat->Divide(6,4);
+  for (Int_t i=0; i<24; i++) {
+    cStat->cd(i+1); 
+    cStat->cd(i+1)->SetGrid();
+    hStat[i]->Draw("");
+  }
 }
 
 void eRaw(void) {
