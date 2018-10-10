@@ -26,9 +26,11 @@ void listDraws(void) {
 void HitStat(void) {
   TCanvas *cStat = new TCanvas("cStat","Hit Statistics",1200,800);
   cStat->Clear();cStat->Divide(6,4);
+  gStyle->SetOptStat("neiou");
   for (Int_t i=0; i<24; i++) {
     cStat->cd(i+1); 
     cStat->cd(i+1)->SetGrid();
+    cStat->cd(i+1)->SetLogy();
     hStat[i]->Draw("");
   }
 }

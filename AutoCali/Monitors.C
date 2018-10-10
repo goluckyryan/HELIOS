@@ -83,8 +83,9 @@ Float_t xfxneCorr[numDet][2];
 Float_t eCorr[numDet][2];
 
 double a = 11.5 ; // perpendicular distance of detector to axis [mm]
+double Bfield = 2.5 ; // in T
 double Ex, thetaCM;
-double q, Bfield, alpha, Et, beta, gamm, G, massB, mass; //variables for Ex calculation
+double q, alpha, Et, beta, gamm, G, massB, mass; //variables for Ex calculation
 bool isReaction;
       
 
@@ -330,7 +331,7 @@ void Monitors::Begin(TTree *tree)
       printf("alpha   : %f MeV/mm \n", alpha);
       printf("a       : %f mm \n", a);
       printf("G       : %f MeV \n", G);
-
+      printf("============\n");
 
    }else{
       printf("... fail.\n");
@@ -574,7 +575,7 @@ void Monitors::Terminate()
    */
    StpWatch.Start(kFALSE);
    
-   gROOT->ProcessLine(".L ~/experiments/iss000/analysis/ryanAnaCodes/AutoCali/Utils.C");
+   gROOT->ProcessLine(".L /Users/heliosdigios/experiments/iss631/ryanAnaCodes/AutoCali/Utils.C");
    printf("=============== loaded Utils.C\n");
    gROOT->ProcessLine("listDraws()");
 }

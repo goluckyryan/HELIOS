@@ -26,8 +26,8 @@
 void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThreshold = 400){
 /**///======================================================== User Input
 
-   double a1Range[2] = {200, 290};
-   double a0Range[2] = {-0.7, 0.7};
+   double a1Range[2] = {200, 450};
+   double a0Range[2] = {-0.7, 4.0};
 
    double distThreshold   = 0.01;
    bool isXFXN = false; // only use event for both XF and XN valid
@@ -43,6 +43,8 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
    printf("==========================================================\n");
    TBenchmark gClock;  
    gClock.Reset(); gClock.Start("gTimer");
+   
+   gStyle->SetPalette(50);
    
    printf("======================== Cali_compareF\n");
    printf("      e Threshold : %f \n", eThreshold);
@@ -255,17 +257,17 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
       
       TString name;
       name.Form("exPlot%d[%d]", idet, idet%rDet);
-      exPlot[idet]  = new TH2F(name , "exPlot" , 200, zRange[0], zRange[1], 200, 0, 2500);
+      exPlot[idet]  = new TH2F(name , "exPlot" , 200, zRange[0], zRange[1], 200, 0, 3000);
       exPlot[idet]->Reset();
       exPlot[idet]->SetTitle(title + "(exp)");
 
       name.Form("exPlotC%d", idet);
-      exPlotC[idet] = new TH2F(name, "exPlotC", 200, zRange[0], zRange[1], 200, 0, 10);
+      exPlotC[idet] = new TH2F(name, "exPlotC", 200, zRange[0], zRange[1], 200, 0, 13);
       exPlotC[idet]->Reset();
       exPlotC[idet]->SetTitle(title + "(corr)");
       
       name.Form("dummy%d", idet);
-      dummy[idet] = new TH2F(name, "exPlotC", 200, zRange[0], zRange[1], 200, 0, 10);
+      dummy[idet] = new TH2F(name, "exPlotC", 200, zRange[0], zRange[1], 200, 0, 13);
       dummy[idet]->Reset();
       dummy[idet]->SetTitle(title + "(sim)");
       
@@ -278,7 +280,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             expTree->GetEntry(i);
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
-            if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
+            if( cut != NULL &&  !cut->IsInside(zTemp, eTemp) ) continue; 
             if( isXFXN && hitIDTemp != 0 ) continue;
             if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
             
@@ -286,7 +288,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             
             exPlot[idet]->Fill(zTemp, eTemp);
          }
-         exPlot[idet]->Draw();
+         exPlot[idet]->Draw("box");
          
          cScript->cd(2);
          dummy[idet]->Draw();
@@ -325,7 +327,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
         if( detIDTemp != idet ) continue;
         if( eTemp < eThreshold) continue;
         if( isXFXN && hitIDTemp != 0 ) continue;
-        if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
+        if( cut != NULL &&  !cut->IsInside(zTemp, eTemp) ) continue; 
         if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
         countEvent++;
       }
@@ -345,7 +347,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
             if( isXFXN && hitIDTemp != 0 ) continue;
-            if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
+            if( cut != NULL &&  !cut->IsInside(zTemp, eTemp) ) continue; 
             if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
             double minDist = 99;
             
@@ -402,12 +404,12 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
                   expTree->GetEntry(eventE);
                   if( detIDTemp != idet ) continue;
                   if( isXFXN && hitIDTemp != 0 ) continue;
-                  if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
+                  if( cut != NULL &&  !cut->IsInside(zTemp, eTemp) ) continue; 
                   if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
                   exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
                }
                cScript->cd(2);
-               exPlotC[idet]->Draw("same");
+               exPlotC[idet]->Draw("colz same");
                cScript->Update();
                
                gSystem->ProcessEvents();
@@ -434,7 +436,7 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
             if( detIDTemp != idet ) continue;
             if( eTemp < eThreshold) continue;
             if( isXFXN && hitIDTemp != 0 ) continue;
-            if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
+            if( cut != NULL &&  !cut->IsInside(zTemp, eTemp) ) continue; 
             if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
             exPlot[idet]->Fill(zTemp, eTemp);
          }
@@ -461,11 +463,11 @@ void Cali_compareF(TTree *expTree, TFile *refFile, int option = -1, double eThre
          expTree->GetEntry(eventE);
          if( detIDTemp != idet ) continue;
          if( isXFXN && hitIDTemp != 0 ) continue;
-         if( cut != NULL &&  cut->IsInside(zTemp, eTemp) ) continue; 
+         if( cut != NULL &&  !cut->IsInside(zTemp, eTemp) ) continue; 
          if( isCoinTimeBranchExist && TMath::Abs(coinTimeTemp) > coinTimeGate ) continue;
          exPlotC[idet]->Fill(zTemp, eTemp/A1 + A0);
       } 
-      exPlotC[idet]->Draw("same");
+      exPlotC[idet]->Draw("colz same");
       if( option == -1 ) {
          caliResult->cd(); 
          exPlotC[idet]->Write(); 

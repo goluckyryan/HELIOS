@@ -91,19 +91,19 @@ Bool_t Cali_littleTree_trace::Process(Long64_t entry)
    //}
    //if( !rdt_energy ) return kTRUE;
    
-   int rdtMultiHit = 0;
-   for( int i = 0; i < 8; i++){
-      if( !TMath::IsNaN(rdt[i]) ) rdtMultiHit ++;
-   }
+   //int rdtMultiHit = 0;
+   //for( int i = 0; i < 8; i++){
+   //   if( !TMath::IsNaN(rdt[i]) ) rdtMultiHit ++;
+   //}
+   //
+   //if( rdtMultiHit != 2 ) return kTRUE; //######### multiHit gate   
    
-   if( rdtMultiHit != 2 ) return kTRUE; //######### multiHit gate
-   
-   bool rejRDT1 = true; if( isRDTCutExist && cut[0]->IsInside( rdt[4], rdt[0] )) rejRDT1 = false;
-   bool rejRDT2 = true; if( isRDTCutExist && cut[1]->IsInside( rdt[5], rdt[1] )) rejRDT2 = false;
-   bool rejRDT3 = true; if( isRDTCutExist && cut[2]->IsInside( rdt[6], rdt[2] )) rejRDT3 = false;
-   bool rejRDT4 = true; if( isRDTCutExist && cut[3]->IsInside( rdt[7], rdt[3] )) rejRDT4 = false;
-   
-   if( rejRDT1 && rejRDT2 && rejRDT3 && rejRDT4) return kTRUE; //######### rdt gate
+   //bool rejRDT1 = true; if( isRDTCutExist && cut[0]->IsInside( rdt[4], rdt[0] )) rejRDT1 = false;
+   //bool rejRDT2 = true; if( isRDTCutExist && cut[1]->IsInside( rdt[5], rdt[1] )) rejRDT2 = false;
+   //bool rejRDT3 = true; if( isRDTCutExist && cut[2]->IsInside( rdt[6], rdt[2] )) rejRDT3 = false;
+   //bool rejRDT4 = true; if( isRDTCutExist && cut[3]->IsInside( rdt[7], rdt[3] )) rejRDT4 = false;
+   //
+   //if( rejRDT1 && rejRDT2 && rejRDT3 && rejRDT4) return kTRUE; //######### rdt gate
 
    //#################################################################### processing
    ULong64_t eTime = -2000; //this will be the time for Ex valid
