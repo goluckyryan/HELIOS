@@ -14,7 +14,7 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
 /**///======================================================== User input
    
    const char* treeName="tree";
-   double eRange[3]  = {400, 0, 2000};
+   double eRange[3]  = {400, 0, 4000};
 
 /**///======================================================== read tree and create Canvas
    printf("################### Check_e_x.C ######################\n");
@@ -136,7 +136,9 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
 
       tree->Draw(expression, gate, "box");
       line->Draw("same");
+      cCheck->Modified();
       cCheck->Update();
+       gSystem->ProcessEvents();
    }
    
 /**///======================================================== e vs z
@@ -157,7 +159,7 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    
    TH2F * hEZ = new TH2F("hEZ", "e:z; z [mm]; e [MeV]", zRange[0], zRange[1], zRange[2], eRange[0], eRange[1]-100, eRange[2]);
    
-   tree->Draw("e:z >> hEZ", "" );
+   tree->Draw("e:z >> hEZ", "", "colz" );
    if( cut != NULL ) cut->Draw("same");
    
    TLine * line2 = new TLine(zRange[1], eThreshold, zRange[2], eThreshold);
@@ -169,8 +171,10 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    latex.SetTextAlign(11);  //align bottom
    latex.SetTextColor(2);
    latex.DrawLatex(zRange[1]+30,eThreshold,"e-Threshold");
-   
+
+   cCheck2->Modified();
    cCheck2->Update();
+   gSystem->ProcessEvents();
    
    printf("=========== you may want to make a TCutG and rename it as cutEZ, and save into cut.root.\n");
    
@@ -184,7 +188,10 @@ void Check_e_x( TString rootFile = "temp.root",double eThreshold = 400){
    cCheck3->SetLogy();
    TH1F * hMulti = new TH1F("hMulti", "Multi", 20, 0, 20);
    tree->Draw("multiHit >> hMulti", "" );
-   cCheck3->Update();   
+   cCheck3->Modified();
+   cCheck3->Update();
+
+   gSystem->ProcessEvents(); 
    
    
 }
