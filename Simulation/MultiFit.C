@@ -31,7 +31,7 @@ void MultiFit(){
 
 /**///======================================================== initial input
    
-   const char* rootfile="test.root"; const char* treeName="tree";
+   const char* rootfile="transfer.root"; const char* treeName="tree";
    
    double xrange[2] = {-450, -100};
    double exrange[3] = {100, -1, 4}; // number of bin, eMin, eMax
@@ -108,8 +108,8 @@ void MultiFit(){
    //=========== find peaks
    TSpectrum * specPeak = new TSpectrum(20);
    int nPeaks = specPeak->Search(spec, 1 ,"", 0.05);
-   float * xpos = specPeak->GetPositionX();
-   //double * xpos = specPeak->GetPositionX();
+   //float * xpos = specPeak->GetPositionX();
+   double * xpos = specPeak->GetPositionX();
    
    int * inX = new int[nPeaks];
    TMath::Sort(nPeaks, xpos, inX, 0 );  

@@ -31,6 +31,7 @@ public :
    Int_t           runID;
    Float_t         e[100];
    ULong64_t       e_t[100];
+   ULong64_t       EBIS_t;
    Float_t         xf[100];
    ULong64_t       xf_t[100];
    Float_t         xn[100];
@@ -56,6 +57,7 @@ public :
    TBranch        *b_runID; //!
    TBranch        *b_Energy;   //!
    TBranch        *b_EnergyTimestamp;   //!
+   TBranch        *b_EBISTimestamp;   //!
    TBranch        *b_XF;   //!
    TBranch        *b_XFTimestamp;   //!
    TBranch        *b_XN;   //!
@@ -77,6 +79,7 @@ public :
    TBranch        *b_Trace_RDT_Time;  //!
    TBranch        *b_Trace_RDT_RiseTime;  //!
    
+   bool isEBISExist;
    bool isTACExist;
    bool isELUMExist;
    bool isEZEROExist;
@@ -218,8 +221,17 @@ void Cali_e_trace::Init(TTree *tree)
    //fChain->SetBranchAddress("xf_t", xf_t, &b_XFTimestamp);
    //fChain->SetBranchAddress("xn_t", xn_t, &b_XNTimestamp);
    
+   isEBISExist = false;
+   TBranch * br = (TBranch *) fChain->GetListOfBranches()->FindObject("EBIS");
+   if( br == NULL ){
+      printf(" ++++++++ no EBIS data.\n");
+   }else{
+      isEBISExist = true;
+      fChain->SetBranchAddress("EBIS", &EBIS_t, &b_EBISTimestamp);
+   }
+   
    isTACExist = false;
-   TBranch * br = (TBranch *) fChain->GetListOfBranches()->FindObject("tac");
+   br = (TBranch *) fChain->GetListOfBranches()->FindObject("tac");
    if( br == NULL ){
       printf(" ++++++++ no tac data.\n");
    }else{
@@ -273,7 +285,7 @@ void Cali_e_trace::Init(TTree *tree)
       found = saveFileName.First("/");
       saveFileName.Remove(0,found+1);
    }while( found >= 0 );
-   saveFileName = "A_" + saveFileName;
+   saveFileName = "A_" + saveFileName; 
    
    saveFile = new TFile( saveFileName,"recreate");
    newTree =  new TTree("tree","tree");
@@ -306,6 +318,7 @@ void Cali_e_trace::Init(TTree *tree)
    
    newTree->Branch("arrayRDT", &arrayRDT, "arrayRDT/I");
    
+   if( isEBISExist ) newTree->Branch("ebis_t", &EBIS_t, "EBIS_t/l");
    if( isELUMExist ) newTree->Branch("elum", elum, "elum[32]/F");
    if( isEZEROExist ) newTree->Branch("ezero", ezero, "ezero[10]/F");
    
