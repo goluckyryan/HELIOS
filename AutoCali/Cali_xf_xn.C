@@ -12,6 +12,18 @@
 #include <TLine.h>
 #include <TSpectrum.h>
 
+int nPeaks = 16;
+Double_t fpeaks(Double_t *x, Double_t *par) {
+   Double_t result = 0;
+   for (Int_t p=0;p<nPeaks;p++) {
+      Double_t norm  = par[3*p+0];
+      Double_t mean  = par[3*p+1];
+      Double_t sigma = par[3*p+2];
+      result += norm * TMath::Gaus(x[0],mean,sigma, 1);
+   }
+   return result;
+}
+
 
 void Cali_xf_xn(TTree * tree){
 /**///======================================================== initial input
@@ -77,13 +89,6 @@ void Cali_xf_xn(TTree * tree){
    int temp = 0;
    cAlpha->Update();
    gSystem->ProcessEvents();
-//   printf("0 for stop, 1 for save Canvas, 2 for continuous : ");
-//   temp = scanf("%d", &dummy);
-//   if( dummy == 0 ) {
-//      return;
-//   }else if(dummy == 1){
-//      cAlpha->SaveAs("alpha_e.pdf");  //TODO save as root file
-//   }
 
    //----------- 2, find the edge of the energy    
    printf("============== method to find edge:\n");
@@ -119,7 +124,7 @@ void Cali_xf_xn(TTree * tree){
       for( int i = 0; i < numDet; i ++){
          TString name;
          name.Form("p%d", i);
-         p[i] = new TH1F(name, name, 200, 100, 1800);
+         p[i] = new TH1F(name, name, 300, 100, 1800);
          p[i]->SetXTitle(name);
          
          TString expression;
@@ -141,15 +146,19 @@ void Cali_xf_xn(TTree * tree){
       for( int i = 0; i < numDet; i++){
          
          TSpectrum * spec = new TSpectrum(10);
-         nPeaks = spec->Search(q[i], 1, "", 0.2);
+         nPeaks = spec->Search(q[i], 1, "", 0.05);
          printf("%2d | found %d peaks | ", i,  nPeaks);
 
          double * xpos = spec->GetPositionX();
+         double * ypos = spec->GetPositionY();
+         
+         vector<double> height;
          
          int * inX = new int[nPeaks];
          TMath::Sort(nPeaks, xpos, inX, 0 );
          for( int j = 0; j < nPeaks; j++){
             energy[i].push_back(xpos[inX[j]]);
+            height.push_back(ypos[inX[j]]);
          }
          
          for( int j = 0; j < nPeaks; j++){
@@ -157,6 +166,39 @@ void Cali_xf_xn(TTree * tree){
          }
          printf("\n");
          
+         
+        /*//========== Fitting 
+        printf("============= Fitting.....\n");
+
+        
+        double xMin = q[i]->GetXaxis()->GetXmin();
+        double xMax = q[i]->GetXaxis()->GetXmax();
+
+        const int  n = 3 * nPeaks;
+        double * para = new double[n]; 
+        for(int j = 0; j < nPeaks ; j++){
+          para[3*j+0] = height[j] * 0.05 * TMath::Sqrt(TMath::TwoPi());
+          para[3*j+1] = energy[i][j];
+          para[3*j+2] = 50;
+        }
+
+        TF1 * fit = new TF1("fit", fpeaks, xMin, xMax, 3* nPeaks );
+        fit->SetLineWidth(1);
+        fit->SetLineColor(2);
+        fit->SetNpx(1000);
+        fit->SetParameters(para);
+        q[i]->Fit("fit", "q");
+        
+        const Double_t* paraA = fit->GetParameters();
+        
+        energy[i].clear();
+        
+        for( int j = 0; j < nPeaks; j++){
+            energy[i].push_back(paraA[3*j+1]);
+            printf("%7.2f, ", energy[i][j]);
+        }
+        printf("\n");
+        */ 
       }
       
       for( int i = 0; i < numDet; i++){
@@ -224,11 +266,11 @@ void Cali_xf_xn(TTree * tree){
             a1[11] = 1.0;
          }
          
-         printf("%2d | a0: %6.3f, a1: %6.3f \n", i, a0[i], a1[i]);
+         printf("%2d | a0: %6.3f, a1: %6.3f (%14.8f) \n", i, a0[i], a1[i], 1./a1[i]);
          
          TString name;
          name.Form("p%d", i);
-         p[i] = new TH1F(name, name, 200, 0., refEnergy.back() * 1.3);
+         p[i] = new TH1F(name, name, 1000, 1., refEnergy.back() * 1.3);
          p[i]->SetXTitle(name);
          
          TString expression;
@@ -240,7 +282,18 @@ void Cali_xf_xn(TTree * tree){
          gSystem->ProcessEvents();
       }
       
+      TCanvas * cAux = new TCanvas ("cAux", "cAux", 600, 800);
+      cAux->cd(1);
+      p[0]->Draw();
+      gSystem->ProcessEvents();
+      for( int  i = 1; i < numDet; i++){
+         p[i]->Draw("same");
+         gSystem->ProcessEvents();
+      }      
    }
+   
+
+    
    
    //----------- 4, pause for saving correction parameters
    cAlpha->Update();
@@ -256,8 +309,8 @@ void Cali_xf_xn(TTree * tree){
       paraOut = fopen (filename.Data(), "w+");
       printf("=========== save e-correction parameters to %s \n", filename.Data());
       for( int i = 0; i < numDet; i++){
-         if( method == 1) fprintf(paraOut, "%9.6f\t%9.6f\n", xHalf[i], 0.);
-         if( method == 2) fprintf(paraOut, "%9.6f\t%9.6f\n", 1./a1[i], a0[i]);
+         if( method == 1) fprintf(paraOut, "%14.8f\t%9.6f\n", xHalf[i], 0.);
+         if( method == 2) fprintf(paraOut, "%14.8f\t%9.6f\n", 1./a1[i], a0[i]);
       }
       fflush(paraOut);
       fclose(paraOut);

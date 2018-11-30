@@ -9,3 +9,6 @@
 7.390    //beam-energy
 1000000  //number_of_Event_being_generated
 false    //isDacay
+false    //isReDo
+-1.700    //x_offset_of_Beam_mm
+1.200    //y_offset_of_Beam_mm

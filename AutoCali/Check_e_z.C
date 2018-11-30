@@ -349,7 +349,7 @@ void Check_e_z(TString rootfile){
    for(int i = 0; i < nPeaks; i++){
       TString name, title, gate, expression;
       name.Form("hTheta%d", i);
-      title.Form("thetaCM +-3Sigma; thetCM [deg]; count / 0.5 deg");
+      title.Form("thetaCM +-3Sigma; thetCM * sin() [deg]; count / 0.5 deg");
       hTheta[i] = new TH1F(name, title, 100, 0, 45);
       hTheta[i]->SetLineColor(2*i+2);
       expression.Form("thetaCM >> hTheta%d", i);

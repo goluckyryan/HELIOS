@@ -71,10 +71,10 @@ void AutoCalibrationTrace(double eThreshold = 300){
       file.close();
    }
    
-   printf("====================== alpha data. \n");
-   chainAlpha->GetListOfFiles()->Print();
-   printf("====================== data. \n");
-   chain->GetListOfFiles()->Print();
+   //printf("====================== alpha data. \n");
+   //chainAlpha->GetListOfFiles()->Print();
+   //printf("====================== data. \n");
+   //chain->GetListOfFiles()->Print();
    
 /**///=========================================== Calibration
    if( option > 5 || option < 0 ) return;
