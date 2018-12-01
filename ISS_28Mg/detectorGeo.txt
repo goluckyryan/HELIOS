@@ -2,11 +2,11 @@
 925.0  //bore_mm
 11.5   //distance_from_axis
 9.0    //width_of_detector
-1175   //recoil_position_+_for_downstream
-60     //radius_of_recoil_detector
+125.7   //recoil_position_+_for_downstream_[mm]
+48     //radius_of_recoil_detector
 50.5   //length_of_detector
 43.5   //support_length
--138   //first_position_-_for_upstream
+-135   //first_position_-_for_upstream
 4        //number_of_detector_as_same_position
 -294.8 //1st_detector_near_position_in_reference_to_det6
 -236.2 //2nd_det

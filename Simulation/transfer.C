@@ -29,6 +29,8 @@ void transfer(){
    double KEAsigma = 0; //KEAmean*0.001; // MeV/u , assume Guassian
    double thetaMean = 0.; // mrad 
    double thetaSigma = 0.; // mrad , assume Guassian due to small angle
+   double xBeam = 0; // mm
+   double yBeam = 0; // mm
    
    int numEvent = 1000000;
    
@@ -37,8 +39,8 @@ void transfer(){
    double BField = 2.5; // T
    double BFieldTheta = 0.; // direction of B-field
    bool isCoincidentWithRecoil = false; 
-   double eSigma = 0.040 ; // detector energy sigma MeV
-   double zSigma = 0.500 ; // detector position sigma mm
+   double eSigma = 0.005 ; // detector energy sigma MeV
+   double zSigma = 0.010 ; // detector position sigma mm
    
    //---- excitation of Beam 
    int nExA = 1;
@@ -89,6 +91,12 @@ void transfer(){
             if( line.compare("false") == 0 ) isDecay = false;
             if( line.compare("true") == 0 ) isDecay = true;
          }
+         if( i == 10 ) {
+            if( line.compare("false") == 0 ) isReDo = false;
+            if( line.compare("true") == 0 ) isReDo = true;
+         }
+         if( i == 11 ) xBeam = atof(line.c_str());
+         if( i == 12 ) yBeam = atof(line.c_str());
          i = i + 1;
       }
       cFile.close();
@@ -112,19 +120,20 @@ void transfer(){
    printf("=========== %27s ===========\n", reaction.GetReactionName().Data());
    printf("===================================================\n");
    if( isOverided )printf("----- overiding reaction from %s. \n", basicConfig.c_str());
-   printf("       KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f %% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
-   printf("    theta: %7.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
-   printf(" Q-value : %7.4f MeV \n", reaction.GetQValue() );
-   printf("   Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
+   printf("         KE: %7.4f +- %5.4f MeV/u, dp/p = %5.2f %% \n", KEAmean, KEAsigma, KEAsigma/KEAmean * 50.);
+   printf("      theta: %7.4f +- %5.4f MeV/u \n", thetaMean, thetaSigma);
+   printf("offset(x,y): %7.4f, %7.4f mm \n", xBeam, yBeam);
+   printf("   Q-value : %7.4f MeV \n", reaction.GetQValue() );
+   printf("     Max Ex: %7.4f MeV \n", reaction.GetMaxExB() );
    printf("===================================================\n");
    
    //======== Set HELIOS
    printf("############################################## HELIOS configuration\n");   
    HELIOS helios;
-   helios.SetMagneticFieldDirection(BFieldTheta);
+   helios.OverrideMagneticFieldDirection(BFieldTheta);
    bool sethelios = helios.SetDetectorGeometry(heliosDetGeoFile);
    if( !sethelios){
-		helios.SetMagneticField(BField);
+		helios.OverrideMagneticField(BField);
 		printf("======== B-field : %5.2f T, Theta : %6.2f deg\n", BField, BFieldTheta);
 	}
    helios.SetCoincidentWithRecoil(isCoincidentWithRecoil);
@@ -149,10 +158,10 @@ void transfer(){
    
    fprintf(paraOut, "%-15.4f  //%s\n", reaction.GetMass_b(), "mass_b");
    fprintf(paraOut, "%-15d  //%s\n", zb, "charge_b");
-   fprintf(paraOut, "%-15.8f  //%s\n", beta, "betaCM");
+   fprintf(paraOut, "%-15.8f  //%s\n", reaction.GetReactionBeta(), "betaCM");
    fprintf(paraOut, "%-15.4f  //%s\n", reaction.GetCMTotalEnergy(), "Etot");
    fprintf(paraOut, "%-15.4f  //%s\n", reaction.GetMass_B(), "mass_B");
-   fprintf(paraOut, "%-15.4f  //%s\n", slope/beta, "alpha");
+   fprintf(paraOut, "%-15.4f  //%s\n", slope/beta, "alpha=slope/beta");
     
    fflush(paraOut);
    fclose(paraOut);
@@ -239,7 +248,7 @@ void transfer(){
    
    int hit; // the output of Helios.CalHit
    double e, z, x, t, TbLoss;
-   int loop, detID;
+   int loop, detID, detRowID;
    double dphi, rho; //rad of rotation, and radius
    int ExID;
    double Ex, KEA, KEAnew, theta, phi;
@@ -267,12 +276,17 @@ void transfer(){
    tree->Branch("recoilT", &recoilT, "recoilT/D");
    tree->Branch("TbLoss", &TbLoss, "TbLoss/D");
    tree->Branch("detID", &detID, "detID/I");
+   tree->Branch("detRowID", &detRowID, "detRowID/I");
    tree->Branch("loop", &loop, "loop/I");
    tree->Branch("dphi", &dphi, "dphi/D");
    tree->Branch("rho", &rho, "rho/D");
    
    tree->Branch("ExID", &ExID, "ExID/I");
    tree->Branch("Ex", &Ex, "Ex/D");
+   
+   double ExCal, thetaCMCal;
+   tree->Branch("ExCal", &ExCal, "ExCal/D");
+   tree->Branch("thetaCMCal", &thetaCMCal, "thetaCMCal/D");
    
    tree->Branch("theta", &theta, "theta/D");
    tree->Branch("phi", &phi, "phi/D");
@@ -319,9 +333,9 @@ void transfer(){
    //g0->Write();      
    printf("/");
    
-   TF1 ** gx = new TF1*[20];
+   TF1 ** gx = new TF1*[50];
    TString name;
-   for( int i = 1; i <= 20; i++){
+   for( int i = 1; i <= 50; i++){
       name.Form("g%d", i);     
       gx[i] = new TF1(name, "([0]*TMath::Sqrt([1]+[2]*x*x)+[5]*x)/([3]) - [4]", -1000, 1000);      
       double thetacm = i * TMath::DegToRad();
@@ -510,7 +524,7 @@ void transfer(){
          mb = reaction.GetMass_b();
          
          //==== Helios
-         hit = helios.CalHit(Pb, zb, PB, zB);
+         hit = helios.CalHit(Pb, zb, PB, zB, xBeam, yBeam);
          
          e = helios.GetEnergy() + gRandom->Gaus(0, eSigma);
          z = helios.GetZ() ; 
@@ -518,6 +532,7 @@ void transfer(){
          t = helios.GetTime();
          loop = helios.GetLoop();
          detID = helios.GetDetID();
+         detRowID = helios.GetDetRowID();
          dphi = helios.GetdPhi();
          rho = helios.GetRho();
          rhoHit = helios.GetRhoHit();
@@ -526,8 +541,8 @@ void transfer(){
          //rhoBHit = helios.GetR(134.8);
          xHit = helios.GetXPos(z);
          yHit = helios.GetYPos(z);
-         //xHit = helios.GetR(127.6);
-         //yHit = helios.GetYPos(134.8);
+         //xHit = helios.GetXPos(125.7);
+         //yHit = helios.GetYPos(125.7);
          z += gRandom->Gaus(0, zSigma);
          
          recoilT = helios.GetRecoilTime();
@@ -538,6 +553,9 @@ void transfer(){
          //rxHit2 = helios.GetRecoilXPos(1463.7+200);
          //ryHit2 = helios.GetRecoilYPos(1463.7+200);
          
+         reaction.CalExThetaCM(e, z, BField, helios.GetDetectorA());
+         ExCal = reaction.GetEx();
+         thetaCMCal = reaction.GetThetaCM();
          
          //change thetaCM into deg
          thetaCM = thetaCM * TMath::RadToDeg();

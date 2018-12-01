@@ -1,0 +1,5 @@
+//_for_n-Gauss_fit_with_auto-BG_estimation
+//_peak____low____high_____fixed?___sigma_____fixed?__hight
+1.590    1.50    1.70     0       0.065      0       100
+1.800    1.70    1.90     0       0.065      0       100
+1.950    1.90    2.10     0       0.065      0       100

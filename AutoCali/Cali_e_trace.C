@@ -9,7 +9,7 @@
 #include <TH2.h>
 #include <TStyle.h>
 
-bool rejZeroHit = false;
+bool rejZeroHit = true;
 
 void Cali_e_trace::Begin(TTree * /*tree*/)
 {
@@ -23,6 +23,33 @@ void Cali_e_trace::SlaveBegin(TTree * /*tree*/)
 {
    TString option = GetOption();
 }
+
+double xCorr[24] = {
+   1.011, //  0
+   0.981, //  1
+   0.987, //  2
+   0.993, //  3
+   0.999, //  4
+   0.975, //  5
+   0.807, //  6
+   0.837, //  7
+   0.813, //  8
+   0.987, //  9
+   0.981, // 10
+   1.000, // 11
+   0.771, // 12
+   0.789, // 13
+   0.789, // 14
+   0.789, // 15
+   1.005, // 16
+   0.981, // 17
+   0.963, // 18
+   0.969, // 19
+   0.987, // 20
+   0.957, // 21
+   0.981, // 22
+   1.023, // 23
+};
 
 Bool_t Cali_e_trace::Process(Long64_t entry)
 {
@@ -143,6 +170,7 @@ Bool_t Cali_e_trace::Process(Long64_t entry)
          x[idet] = TMath::QuietNaN();
       }
    
+      x[idet] = x[idet] / xCorr[idet];
    
       //if( idet == 1 && e[idet] > 0 ){
       //   printf(" e: %9.3f , %9.3f | xf : %9.3f, %9.3f | xn : %9.3f, %9.3f | x : %9.3f , hitID: %d\n", e[idet], eC[idet], xf[idet], xfC[idet], xn[idet], xnC[idet], x[idet], hitID[idet]);

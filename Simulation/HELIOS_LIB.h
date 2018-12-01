@@ -110,6 +110,10 @@ public:
    void CalReactionConstant();
    TLorentzVector * Event(double thetaCM, double phiCM);
    
+   int CalExThetaCM(double e, double z, double Bfield, double a); // return 0 for no-result, 1 for OK.
+   double GetEx(){return Ex;}
+   double GetThetaCM(){return thetaCM;}
+   
    double GetMomentumbCM(){return p;}
    double GetReactionBeta(){return beta;}
    double GetReactionGamma(){return gamma;}
@@ -123,12 +127,13 @@ private:
    int zA, za, zb, zB;
    double TA, T; // TA = KE of A pre u, T = total energy
    double ExA, ExB;
+   double Ex, thetaCM; //calculated Ex using inverse mapping from e and z to thetaCM
    
    bool isReady;
    bool isBSet;
    
    double k; // CM Boost momentum
-   double beta, gamma;
+   double beta, gamma; //CM boost beta
    double Etot;
    double p; // CM frame momentum of b, B
    
@@ -147,6 +152,9 @@ TransferReaction::TransferReaction(){
    
    ExA = 0;
    ExB = 0;
+   
+   Ex = TMath::QuietNaN();
+   thetaCM = TMath::QuietNaN();
    
    CalReactionConstant();
    
@@ -244,9 +252,74 @@ TLorentzVector * TransferReaction::Event(double thetaCM, double phiCM)
    
    return output;   
 }
+
+
+int TransferReaction::CalExThetaCM(double e, double z, double Bfield, double a){
+   double mass = mb;
+   double massB = mB;
+   double y = e + mass;
+   double slope = 299.792458 * zb * Bfield / TMath::TwoPi() * beta / 1000.; // MeV/mm;
+   double alpha = slope/beta;
+   double G =  alpha * gamma * beta * a ;
+   double Z = alpha * gamma * beta * z;
+   double H = TMath::Sqrt(TMath::Power(gamma * beta,2) * (y*y - mass * mass) ) ;
+   double Et = Etot;
+
+   if( TMath::Abs(Z) < H ) {            
+      //using Newton's method to solve 0 ==  H * sin(phi) - G * tan(phi) - Z = f(phi) 
+      double tolerrence = 0.001;
+      double phi = 0; //initial phi = 0 -> ensure the solution has f'(phi) > 0
+      double nPhi = 0; // new phi
+
+      int iter = 0;
+      do{
+         phi = nPhi;
+         nPhi = phi - (H * TMath::Sin(phi) - G * TMath::Tan(phi) - Z) / (H * TMath::Cos(phi) - G /TMath::Power( TMath::Cos(phi), 2));               
+         iter ++;
+         if( iter > 10 || TMath::Abs(nPhi) > TMath::PiOver2()) break;
+      }while( TMath::Abs(phi - nPhi ) > tolerrence);
+
+      phi = nPhi;
+
+      // check f'(phi) > 0
+      double Df = H * TMath::Cos(phi) - G / TMath::Power( TMath::Cos(phi),2);
+      if( Df > 0 && TMath::Abs(phi) < TMath::PiOver2()  ){
+         double K = H * TMath::Sin(phi);
+         double x = TMath::ACos( mass / ( y * gamma - K));
+         double k = mass * TMath::Tan(x); // momentum of particel b or B in CM frame
+         double EB = TMath::Sqrt(mass*mass + Et*Et - 2*Et*TMath::Sqrt(k*k + mass * mass));
+         Ex = EB - massB;
+
+         double hahaha1 = gamma* TMath::Sqrt(mass * mass + k * k) - y;
+         double hahaha2 = gamma* beta * k;
+         thetaCM = TMath::ACos(hahaha1/hahaha2) * TMath::RadToDeg();
+
+         //double pt = k * TMath::Sin(thetaCM * TMath::DegToRad());
+         //double pp = gamma*beta*TMath::Sqrt(mass*mass + k*k) - gamma * k * TMath::Cos(thetaCM * TMath::DegToRad());
+         //thetaLab = TMath::ATan(pt/pp) * TMath::RadToDeg();
+
+      }else{
+         Ex = TMath::QuietNaN();
+         thetaCM = TMath::QuietNaN();
+         //thetaLab = TMath::QuietNaN();
+         
+         return 0;
+      }
+
+   }else{
+      Ex = TMath::QuietNaN();
+      thetaCM = TMath::QuietNaN();  
+      //thetaLab = TMath::QuietNaN();
+      return 0;
+   }
+   
+   return 1; 
+}
 //=======================================================
 //#######################################################
 //Class for HELIOS
+//input Lorentz vector, detector configuration
+//output e, z, Ex, thetaCM, etc
 //======================================================= 
 class HELIOS{
 public:
@@ -258,16 +331,28 @@ public:
       this->isCoincidentWithRecoil = TorF;
    }
    bool SetDetectorGeometry(string filename);
-   void SetMagneticField(double BField){ this->Bfield = BField;}
-   void SetMagneticFieldDirection(double BfieldTheta){ this->BfieldTheta = BfieldTheta * TMath::DegToRad();} // TODO move to detectorGeo.txt?
-   int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB); // return 0 for no hit, 1 for hit
+   
+   void OverrideMagneticField(double BField){ this->Bfield = BField;}
+   void OverrideMagneticFieldDirection(double BfieldTheta){ this->BfieldTheta = BfieldTheta * TMath::DegToRad();} // TODO move to detectorGeo.txt
+   void OverrideFirstPos(double firstPos){
+      overrideFirstPos = true;
+      printf("------ Overriding FirstPosition to : %8.2f mm \n", firstPos);
+      this->firstPos = firstPos;
+   }
+   void OverrideDetectorDistance(double a){
+      overrideDetDistance = true;
+      printf("------ Overriding Detector Distance to : %8.2f mm \n", a);
+      this->a = a;
+   }
+   
+   int CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB, double xOff = 0, double yOff = 0 ); // return 0 for no hit, 1 for hit
    
    int GetNumberOfDetectorsInSamePos(){return mDet;}
    double GetEnergy(){return e;}
    double GetZ(){return z;}
    double GetX(){return x;} // position in each detector, range from -1, 1
    int GetDetID(){return detID;}
-   int GetMDetID(){return hitMDetID;}
+   int GetDetRowID(){return detRowID;}
    double GetTime(){return t;}
    double GetRho(){return rho;}
    double GetRhoHit(){return rhoHit;} // radius of particle-b hit recoil detector 
@@ -312,12 +397,13 @@ public:
    double GetTime0(){return t0;}
    double GetBField() {return Bfield;}
    double GetDetectorA() {return a;}
+   
 private:
    double theta, phi; // polar angle of particle 
    double e, z, x, rho, dphi, t;
    double vt0, vp0;
    double rhoHit; // radius of particle-b hit on recoil detector
-   int detID, loop, hitMDetID;   // multiloop
+   int detID, loop, detRowID;   // multiloop
    
    double thetaB, phiB;
    double eB, zB, rhoB, tB;
@@ -341,7 +427,9 @@ private:
    double firstPos; // m 
    vector<double> pos; // near position in m
    int nDet, mDet; // nDet = number of different pos, mDet, number of same pos
-   
+
+   bool overrideDetDistance;
+   bool overrideFirstPos;
    bool isCoincidentWithRecoil;
 };
 
@@ -356,7 +444,7 @@ HELIOS::HELIOS(){
    rhoHit = TMath::QuietNaN();
    dphi = TMath::QuietNaN();
    detID = -1;
-   hitMDetID = -1;
+   detRowID = -1;
    loop = -1;
    
    thetaB = TMath::QuietNaN();
@@ -387,6 +475,8 @@ HELIOS::HELIOS(){
    nDet = 0;
    mDet = 0;
    
+   overrideDetDistance = false;
+   overrideFirstPos = false;
    isCoincidentWithRecoil = true;
 }
 
@@ -408,16 +498,16 @@ bool HELIOS::SetDetectorGeometry(string filename){
          //printf("%d, %s \n", i,  x.c_str());
          if( x.substr(0,2) == "//" )  continue;
          
-         if( i == 0 ) Bfield = atof(x.c_str());
-         if( i == 1 ) bore = atof(x.c_str());
-         if( i == 2 ) a    = atof(x.c_str());
-         if( i == 3 ) w    = atof(x.c_str());
-         if( i == 4 ) posRecoil = atof(x.c_str());
-         if( i == 5 ) rhoRecoil   = atof(x.c_str());
-         if( i == 6 ) l    = atof(x.c_str());
-         if( i == 7 ) support = atof(x.c_str());
-         if( i == 8 ) firstPos = atof(x.c_str());
-         if( i == 9 ) mDet = atoi(x.c_str());
+         if( i == 0 )                         Bfield    = atof(x.c_str());
+         if( i == 1 )                         bore      = atof(x.c_str());
+         if( i == 2 && !overrideDetDistance ) a         = atof(x.c_str());
+         if( i == 3 )                         w         = atof(x.c_str());
+         if( i == 4 )                         posRecoil = atof(x.c_str());
+         if( i == 5 )                         rhoRecoil = atof(x.c_str());
+         if( i == 6 )                         l         = atof(x.c_str());
+         if( i == 7 )                         support   = atof(x.c_str());
+         if( i == 8 && !overrideFirstPos )    firstPos  = atof(x.c_str());
+         if( i == 9 )                         mDet      = atoi(x.c_str());
          if( i >= 10 ) {
             pos.push_back(atof(x.c_str()));
          }
@@ -434,12 +524,13 @@ bool HELIOS::SetDetectorGeometry(string filename){
       
       printf("================ B-field: %8.2f T, Theta : %6.2f deg \n", Bfield, BfieldTheta * TMath::RadToDeg());
       printf("==== Recoil detector pos: %8.2f mm, radius: %6.2f mm \n", posRecoil, rhoRecoil);
+      printf("========= First Position: %8.2f mm \n", firstPos);
       printf("====== gap of multi-loop: %8.2f mm \n", firstPos > 0 ? firstPos - support : firstPos + support );
       for(int i = 0; i < nDet ; i++){
          if( firstPos > 0 ){
-            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i], pos[i] + l);
+            printf("%d, %8.2f mm - %8.2f mm \n", i, pos[i], pos[i] + l);
          }else{
-            printf("%d, %6.2f mm - %6.2f mm \n", i, pos[i] - l , pos[i]);
+            printf("%d, %8.2f mm - %8.2f mm \n", i, pos[i] - l , pos[i]);
          }
       }
       printf("=======================\n");
@@ -454,11 +545,11 @@ bool HELIOS::SetDetectorGeometry(string filename){
    return isDetReady;  
 }
 
-int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
+int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB, double xOff, double yOff){
    
    //initialization
    int hit = 0;
-   const double c = 299.792458; // m/s
+   const double c = 299.792458; // mm/ns, standard speed for MeV conversion
    theta = TMath::QuietNaN();
    e = TMath::QuietNaN();
    z = TMath::QuietNaN();
@@ -468,7 +559,8 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    dphi = TMath::QuietNaN();
    detID = -1;
    loop = -1;
-   hitMDetID = -1;
+   detRowID = -1;
+   
    eB = TMath::QuietNaN();
    zB = TMath::QuietNaN();
    tB = TMath::QuietNaN();
@@ -485,7 +577,6 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
    rho = Pb.Pt()  / Bfield / Zb / c * 1000; //mm
    theta = Pb.Theta();
    phi = Pb.Phi();
-
 
    if( isDetReady == false ) {
       //====================== infinite small detector   
@@ -553,9 +644,9 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
          loop += 1;
          int n = 2*loop -1;
          
-         if( loop > 4 ) {
-            return -3;  // when loop > 4
-            break; // maximum 4 loops
+         if( loop > 50 ) {
+            return -3;  // when loop > 50
+            break; // maximum 50 loops
          }
          
          for( int j = startJ ; j < startJ + mDet; j++){
@@ -565,7 +656,9 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
             isHitFromOutside = false;
             
             //========== calculate zHit
-            zHit = rho / TMath::Tan(theta) * ( phiDet - phi + TMath::Power(-1, n) * TMath::ASin(a/rho + TMath::Sin(phi-phiDet)) + TMath::Pi() * n );
+            double aEff = a - (xOff * TMath::Cos(phiDet) + yOff * TMath::Sin(phiDet));
+            
+            zHit = rho / TMath::Tan(theta) * ( phiDet - phi + TMath::Power(-1, n) * TMath::ASin(aEff/rho + TMath::Sin(phi-phiDet)) + TMath::Pi() * n );
             if( firstPos > 0 ){
                if( zHit < pos[0] )  redoFlag = true;
                if(zHit > pos[nDet-1] + l) return -4; // since the zHit is mono-increse, when zHit shoot over the detector
@@ -580,8 +673,8 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
             // when dir == 0, no solution
 
             // calculate the distance from middle of detector
-            double xHit = GetXPos(zHit);
-            double yHit = GetYPos(zHit);      
+            double xHit = GetXPos(zHit) + xOff;
+            double yHit = GetYPos(zHit) + yOff;
             double sHit = TMath::Sqrt(xHit*xHit + yHit*yHit - a*a);
          
             //======= check Block
@@ -595,7 +688,7 @@ int HELIOS::CalHit(TLorentzVector Pb, int Zb, TLorentzVector PB, int ZB){
             if( !redoFlag && isHitFromOutside && sHit < w/2.){      
                isHit = true;
                redoFlag = false;
-               hitMDetID = (j+mDet) % mDet;
+               detRowID = (j+mDet) % mDet;
                break;     // if isHit, break, don't calculate for the rest of the detector
             }else{
                redoFlag = true;
